@@ -25,7 +25,7 @@ def test_format_context_numbered(requires_indexed_docs):
     docs = retrieve("Java programming", top_k=2)
     context = format_context(docs)
     assert "[1]" in context
-    assert "Source:" in context
+    assert "Personal:" in context
 
 
 def test_retrieve_returns_documents(requires_indexed_docs):
