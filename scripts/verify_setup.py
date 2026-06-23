@@ -75,9 +75,12 @@ def main() -> int:
             "query": "test query",
             "messages": [HumanMessage(content="hello")],
             "plan": "",
+            "retrieval_queries": [],
             "retrieved_docs": [],
             "analysis": "",
             "critique": "",
+            "critique_approved": False,
+            "revision_count": 0,
             "report": "",
         })
         results.append(check(

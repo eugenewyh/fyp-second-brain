@@ -30,3 +30,18 @@ def retrieve(query: str, top_k: int = RETRIEVAL_TOP_K) -> list[Document]:
         documents.append(Document(page_content=text, metadata=doc_metadata))
 
     return documents
+
+
+def retrieve_multi(queries: list[str], top_k_per_query: int = 3) -> list[Document]:
+    seen: set[str] = set()
+    results: list[Document] = []
+
+    for query in queries:
+        for doc in retrieve(query, top_k=top_k_per_query):
+            doc_id = f"{doc.metadata.get('source', '')}_{doc.metadata.get('chunk_index', '')}"
+            if doc_id in seen:
+                continue
+            seen.add(doc_id)
+            results.append(doc)
+
+    return results

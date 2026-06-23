@@ -7,7 +7,7 @@ Graph-based multi-agent AI system for autonomous research and lifelong personal 
 
 ## Current Phase
 
-**Phase 1** — Personal knowledge base RAG with terminal query interface.
+**Phase 2** — Multi-agent research workflow with self-critique loops.
 
 ## Prerequisites
 
@@ -64,6 +64,15 @@ Interactive mode:
 
 ```bash
 python scripts/query.py
+```
+
+### Multi-agent research (Phase 2)
+
+Autonomous research with planner, retriever, analyst, verifier, and synthesizer agents:
+
+```bash
+python scripts/research.py "What are servlets in Java?"
+python scripts/research.py "Explain EJB architecture" --verbose
 ```
 
 ## Project structure

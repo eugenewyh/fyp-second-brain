@@ -17,5 +17,7 @@ DOCUMENTS_DIR = PROJECT_ROOT / "data" / "documents"
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 200
 RETRIEVAL_TOP_K = int(os.getenv("RETRIEVAL_TOP_K", "5"))
+RETRIEVAL_TOP_K_PER_QUERY = int(os.getenv("RETRIEVAL_TOP_K_PER_QUERY", "3"))
+MAX_REVISIONS = int(os.getenv("MAX_REVISIONS", "2"))
 
 SUPPORTED_EXTENSIONS = {".pdf", ".txt", ".md"}
