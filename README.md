@@ -7,7 +7,7 @@ Graph-based multi-agent AI system for autonomous research and lifelong personal 
 
 ## Current Phase
 
-**Phase 0** — Project setup, Chroma persistence, document ingestion, LangGraph scaffold.
+**Phase 1** — Personal knowledge base RAG with terminal query interface.
 
 ## Prerequisites
 
@@ -50,6 +50,20 @@ python scripts/ingest.py --input data/documents
 
 ```bash
 python scripts/ingest.py --input "/path/to/your/documents"
+```
+
+### Query your knowledge base
+
+Single question:
+
+```bash
+python scripts/query.py "What is polymorphism in Java?"
+```
+
+Interactive mode:
+
+```bash
+python scripts/query.py
 ```
 
 ## Project structure

@@ -16,5 +16,6 @@ DOCUMENTS_DIR = PROJECT_ROOT / "data" / "documents"
 
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 200
+RETRIEVAL_TOP_K = int(os.getenv("RETRIEVAL_TOP_K", "5"))
 
 SUPPORTED_EXTENSIONS = {".pdf", ".txt", ".md"}
