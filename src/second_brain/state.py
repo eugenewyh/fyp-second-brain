@@ -10,6 +10,7 @@ class GraphState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
     plan: str
     retrieval_queries: list[str]
+    retrieval_stats: dict[str, int]
     retrieved_docs: list[dict]
     analysis: str
     critique: str

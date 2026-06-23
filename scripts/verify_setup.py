@@ -74,6 +74,7 @@ def main() -> int:
             "messages": [],
             "plan": "",
             "retrieval_queries": [],
+            "retrieval_stats": {},
             "retrieved_docs": [],
             "analysis": "",
             "critique": "",

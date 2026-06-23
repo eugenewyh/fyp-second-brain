@@ -53,6 +53,7 @@ def run_research(query: str) -> GraphState:
         "messages": [],
         "plan": "",
         "retrieval_queries": [],
+        "retrieval_stats": {},
         "retrieved_docs": [],
         "analysis": "",
         "critique": "",

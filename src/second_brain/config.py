@@ -20,4 +20,11 @@ RETRIEVAL_TOP_K = int(os.getenv("RETRIEVAL_TOP_K", "5"))
 RETRIEVAL_TOP_K_PER_QUERY = int(os.getenv("RETRIEVAL_TOP_K_PER_QUERY", "3"))
 MAX_REVISIONS = int(os.getenv("MAX_REVISIONS", "2"))
 
+TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
+ENABLE_WEB_SEARCH = os.getenv("ENABLE_WEB_SEARCH", "true").lower() == "true"
+ENABLE_ARXIV = os.getenv("ENABLE_ARXIV", "true").lower() == "true"
+WEB_SEARCH_MAX_RESULTS = int(os.getenv("WEB_SEARCH_MAX_RESULTS", "3"))
+ARXIV_MAX_RESULTS = int(os.getenv("ARXIV_MAX_RESULTS", "3"))
+HYBRID_FALLBACK_THRESHOLD = int(os.getenv("HYBRID_FALLBACK_THRESHOLD", "2"))
+
 SUPPORTED_EXTENSIONS = {".pdf", ".txt", ".md"}

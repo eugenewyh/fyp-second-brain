@@ -7,7 +7,7 @@ Graph-based multi-agent AI system for autonomous research and lifelong personal 
 
 ## Current Phase
 
-**Phase 2** — Multi-agent research workflow with self-critique loops.
+**Phase 3** — Hybrid retrieval (personal + web + arXiv).
 
 ## Prerequisites
 
@@ -74,6 +74,16 @@ Autonomous research with planner, retriever, analyst, verifier, and synthesizer 
 python scripts/research.py "What are servlets in Java?"
 python scripts/research.py "Explain EJB architecture" --verbose
 ```
+
+### Hybrid retrieval (Phase 3)
+
+The retriever agent routes queries to personal documents, Tavily web search, and arXiv. Add your Tavily API key to `.env`:
+
+```bash
+TAVILY_API_KEY=tvly-your-key-here
+```
+
+arXiv works without an API key. If `TAVILY_API_KEY` is unset, web search is skipped and arXiv + personal docs are still used.
 
 ## Project structure
 

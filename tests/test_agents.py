@@ -15,13 +15,13 @@ def test_parse_planner_output():
 2. Find inheritance examples
 
 SEARCH_QUERIES:
-- Java inheritance
-- object oriented programming
-- extends keyword"""
+- [personal] Java inheritance
+- [web] OOP best practices
+- [arxiv] object oriented programming research"""
     plan, queries = parse_planner_output(text)
     assert "OOP" in plan
     assert len(queries) == 3
-    assert "Java inheritance" in queries
+    assert "[personal] Java inheritance" in queries
 
 
 def test_parse_planner_fallback():

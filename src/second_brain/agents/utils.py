@@ -1,4 +1,5 @@
 import re
+from dataclasses import dataclass
 
 from langchain_core.documents import Document
 
@@ -15,6 +16,38 @@ def docs_from_state(items: list[dict]) -> list[Document]:
         Document(page_content=item["page_content"], metadata=dict(item["metadata"]))
         for item in items
     ]
+
+
+@dataclass
+class RetrievalQuery:
+    source: str
+    query: str
+
+
+def _clean_query_text(query: str) -> str:
+    quoted = re.search(r'"([^"]+)"', query)
+    if quoted:
+        return quoted.group(1).strip()
+    if ":" in query:
+        return query.rsplit(":", 1)[-1].strip()
+    return query.strip()
+
+
+def parse_retrieval_query(line: str) -> RetrievalQuery:
+    stripped = line.strip()
+    bracket_match = re.match(r"\[(personal|web|arxiv)\]\s*(.+)", stripped, re.IGNORECASE)
+    if bracket_match:
+        return RetrievalQuery(
+            source=bracket_match.group(1).lower(),
+            query=_clean_query_text(bracket_match.group(2)),
+        )
+    colon_match = re.match(r"(personal|web|arxiv):\s*(.+)", stripped, re.IGNORECASE)
+    if colon_match:
+        return RetrievalQuery(
+            source=colon_match.group(1).lower(),
+            query=_clean_query_text(colon_match.group(2)),
+        )
+    return RetrievalQuery(source="personal", query=_clean_query_text(stripped))
 
 
 def parse_planner_output(text: str) -> tuple[str, list[str]]:

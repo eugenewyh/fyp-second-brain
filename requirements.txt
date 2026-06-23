@@ -5,3 +5,5 @@ langchain-ollama>=0.2
 chromadb>=0.5
 pypdf>=5.0
 python-dotenv>=1.0
+tavily-python>=0.5
+arxiv>=2.1

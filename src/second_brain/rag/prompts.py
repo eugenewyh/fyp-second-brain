@@ -15,6 +15,13 @@ Question: {question}
 Answer with inline citations:"""
 
 
+_SOURCE_LABELS = {
+    "personal": "Personal",
+    "web": "Web",
+    "arxiv": "arXiv",
+}
+
+
 def format_context(documents: list) -> str:
     if not documents:
         return "No relevant documents found."
@@ -22,9 +29,13 @@ def format_context(documents: list) -> str:
     parts = []
     for i, doc in enumerate(documents, start=1):
         source = doc.metadata.get("source", "unknown")
+        source_type = doc.metadata.get("source_type", "personal")
+        type_label = _SOURCE_LABELS.get(source_type, "Source")
         page = doc.metadata.get("page", -1)
         page_label = f", page {page + 1}" if page >= 0 else ""
+        url = doc.metadata.get("source_path", "")
+        url_label = f"\nURL: {url}" if url and source_type in {"web", "arxiv"} else ""
         parts.append(
-            f"[{i}] Source: {source}{page_label}\n{doc.page_content.strip()}"
+            f"[{i}] {type_label}: {source}{page_label}{url_label}\n{doc.page_content.strip()}"
         )
     return "\n\n".join(parts)

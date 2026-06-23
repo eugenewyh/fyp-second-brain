@@ -27,6 +27,7 @@ def retrieve(query: str, top_k: int = RETRIEVAL_TOP_K) -> list[Document]:
     ):
         doc_metadata = dict(metadata)
         doc_metadata["distance"] = distance
+        doc_metadata.setdefault("source_type", "personal")
         documents.append(Document(page_content=text, metadata=doc_metadata))
 
     return documents

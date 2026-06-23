@@ -33,8 +33,17 @@ def print_report(result: dict, verbose: bool = False) -> None:
             for q in queries:
                 print(f"  • {q}")
 
+        stats = result.get("retrieval_stats", {})
+        if stats:
+            print("\n" + "-" * 60)
+            print("RETRIEVAL BREAKDOWN")
+            print("-" * 60)
+            for source_type, count in stats.items():
+                if count > 0:
+                    print(f"  {source_type}: {count}")
+
         docs = docs_from_state(result.get("retrieved_docs", []))
-        print(f"\nRetrieved: {len(docs)} chunk(s)")
+        print(f"\nRetrieved: {len(docs)} total result(s)")
 
         if result.get("analysis"):
             print("\n" + "-" * 60)
