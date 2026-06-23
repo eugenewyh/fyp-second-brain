@@ -7,8 +7,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from langchain_core.messages import HumanMessage
-
 from second_brain.config import EMBEDDING_MODEL, OLLAMA_BASE_URL
 from second_brain.graph import build_graph
 from second_brain.ingestion.pipeline import ingest_file
@@ -68,12 +66,12 @@ def main() -> int:
     except Exception as e:
         results.append(check("Document ingestion", False, str(e)))
 
-    # 4. LangGraph scaffold
+    # 4. LangGraph multi-agent workflow
     try:
         graph = build_graph()
         result = graph.invoke({
             "query": "test query",
-            "messages": [HumanMessage(content="hello")],
+            "messages": [],
             "plan": "",
             "retrieval_queries": [],
             "retrieved_docs": [],
@@ -83,10 +81,12 @@ def main() -> int:
             "revision_count": 0,
             "report": "",
         })
+        has_report = bool(result.get("report"))
+        has_plan = bool(result.get("plan"))
         results.append(check(
-            "LangGraph scaffold",
-            result.get("query") == "test query",
-            "passthrough node executed",
+            "LangGraph workflow",
+            has_report and has_plan,
+            f"plan + report generated ({len(result.get('report', ''))} chars)",
         ))
     except Exception as e:
         results.append(check("LangGraph scaffold", False, str(e)))
