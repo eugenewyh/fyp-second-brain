@@ -7,7 +7,7 @@ Graph-based multi-agent AI system for autonomous research and lifelong personal 
 
 ## Current Phase
 
-**Phase 4** — Tauri 2.0 desktop app (Svelte + Python sidecar).
+**Phase 5** — Evaluation, baselines, UAT, and release packaging.
 
 ## Prerequisites
 
@@ -110,13 +110,49 @@ Desktop features:
 - **Documents** — ingest folders via file picker
 - **Settings** — Ollama models, Tavily API key, feature toggles
 
+### Evaluation (Phase 5)
+
+52 benchmark queries in [`evaluation/benchmarks.json`](evaluation/benchmarks.json):
+
+```bash
+# Preview all 52 queries
+python scripts/run_evaluation.py --dry-run
+
+# Run a quick subset (2 queries)
+python scripts/run_evaluation.py --limit 2
+
+# Run full suite (~60–90 min for all 52 research+query)
+python scripts/run_evaluation.py
+
+# Resume interrupted run
+python scripts/run_evaluation.py --resume evaluation/results/run_YYYYMMDD_HHMMSS.json
+
+# Generate markdown report
+python scripts/generate_eval_report.py evaluation/results/run_YYYYMMDD_HHMMSS.json
+```
+
+**Baseline comparison:** Run the same queries through Claude and Grok manually, score 1–5 in [`evaluation/baseline_template.csv`](evaluation/baseline_template.csv), then:
+
+```bash
+python scripts/compare_baselines.py evaluation/results/run_*.json evaluation/baseline_scores.csv
+```
+
+**UAT:** Use [`evaluation/uat_questionnaire.md`](evaluation/uat_questionnaire.md) with 5–8 participants.
+
+**Release build:**
+
+```bash
+./scripts/package_release.sh
+```
+
 ## Project structure
 
 ```
 src/second_brain/     Core package (config, memory, ingestion, graph)
 sidecar/              FastAPI HTTP server for desktop app
 desktop/              Tauri 2.0 + Svelte frontend
-scripts/              CLI entry points
+evaluation/           52 benchmark queries, UAT template, results
+scripts/              CLI entry points + evaluation runners
 data/documents/       User document drop folder
 data/chroma/          Persistent vector database (gitignored)
 tests/                Unit tests
@@ -131,4 +167,4 @@ tests/                Unit tests
 | 2 | Multi-agent workflow with self-critique |
 | 3 | Hybrid retrieval (personal + web + arXiv) |
 | 4 | Tauri 2.0 desktop app (Svelte) |
-| 5 | Evaluation + packaging |
+| 5 | Evaluation + packaging (current) |

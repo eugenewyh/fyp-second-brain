@@ -1,0 +1,5 @@
+query_id,category,query,system_answer,baseline_model,baseline_answer,scorer_name,score_accuracy,score_citations,score_completeness,score_gaps,score_overall,notes
+PJ01,personal_java,"What packages make up the Java Servlet architecture?",,,claude,,,,,,
+PJ01,personal_java,"What packages make up the Java Servlet architecture?",,,grok,,,,,,
+HY01,hybrid,"What are servlets in Java and how do they compare to modern web frameworks?",,,claude,,,,,,
+HY01,hybrid,"What are servlets in Java and how do they compare to modern web frameworks?",,,grok,,,,,,
