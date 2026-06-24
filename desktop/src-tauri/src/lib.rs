@@ -1,8 +1,10 @@
-use std::path::PathBuf;
+use std::fs;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 use std::time::Duration;
 
+use serde::Serialize;
 use tauri::{Manager, RunEvent, State};
 
 struct SidecarState(Mutex<Option<Child>>);
@@ -78,6 +80,73 @@ fn get_project_root() -> String {
     project_root().to_string_lossy().to_string()
 }
 
+#[derive(Serialize)]
+struct VaultNode {
+    name: String,
+    path: String,
+    #[serde(rename = "type")]
+    entry_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    children: Option<Vec<VaultNode>>,
+}
+
+fn read_dir_entries(dir: &Path, max_depth: u8) -> Vec<VaultNode> {
+    let mut entries: Vec<VaultNode> = Vec::new();
+    let Ok(read_dir) = fs::read_dir(dir) else {
+        return entries;
+    };
+
+    let mut items: Vec<_> = read_dir.filter_map(Result::ok).collect();
+    items.sort_by_key(|e| e.file_name());
+
+    for entry in items {
+        let path = entry.path();
+        let name = entry.file_name().to_string_lossy().to_string();
+        if name.starts_with('.') {
+            continue;
+        }
+        let is_dir = path.is_dir();
+        let children = if is_dir && max_depth > 0 {
+            let nested = read_dir_entries(&path, max_depth - 1);
+            if nested.is_empty() {
+                None
+            } else {
+                Some(nested)
+            }
+        } else {
+            None
+        };
+        entries.push(VaultNode {
+            name,
+            path: path.to_string_lossy().to_string(),
+            entry_type: if is_dir { "folder".into() } else { "file".into() },
+            children,
+        });
+    }
+    entries
+}
+
+#[tauri::command]
+fn list_vault_tree() -> Result<Vec<VaultNode>, String> {
+    let vault_dir = project_root().join("data").join("documents");
+    if !vault_dir.exists() {
+        fs::create_dir_all(&vault_dir).map_err(|e| format!("Failed to create vault dir: {e}"))?;
+    }
+    Ok(vec![VaultNode {
+        name: "data/documents/".into(),
+        path: vault_dir.to_string_lossy().to_string(),
+        entry_type: "folder".into(),
+        children: {
+            let kids = read_dir_entries(&vault_dir, 4);
+            if kids.is_empty() {
+                None
+            } else {
+                Some(kids)
+            }
+        },
+    }])
+}
+
 #[tauri::command]
 fn restart_sidecar(state: State<SidecarState>) -> Result<String, String> {
     stop_sidecar_process(&state);
@@ -95,7 +164,12 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .manage(sidecar_state)
-        .invoke_handler(tauri::generate_handler![get_sidecar_url, get_project_root, restart_sidecar])
+        .invoke_handler(tauri::generate_handler![
+            get_sidecar_url,
+            get_project_root,
+            list_vault_tree,
+            restart_sidecar
+        ])
         .setup(|app| {
             let state = app.state::<SidecarState>();
             if let Err(error) = start_sidecar_process(&state) {

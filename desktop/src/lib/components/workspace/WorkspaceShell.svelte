@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
   import {
     applyResize,
+    constrainPaneWidths,
     DEFAULT_LEFT_WIDTH,
     DEFAULT_RIGHT_WIDTH,
     MIN_PANE_WIDTH,
@@ -26,35 +27,69 @@
     rightWidth = $bindable(DEFAULT_RIGHT_WIDTH),
   }: Props = $props();
 
+  let shellEl: HTMLDivElement | undefined = $state();
+  let containerWidth = $state(1200);
   let dragging: ResizeSide | null = $state(null);
   let dragStartX = $state(0);
   let dragStartWidth = $state(0);
+
+  function syncContainerWidth() {
+    if (shellEl) {
+      containerWidth = shellEl.clientWidth;
+      const constrained = constrainPaneWidths(leftWidth, rightWidth, containerWidth);
+      leftWidth = constrained.leftWidth;
+      rightWidth = constrained.rightWidth;
+    }
+  }
+
+  function applyDrag(deltaX: number) {
+    if (!dragging) return;
+    const next =
+      dragging === "left"
+        ? applyResize(dragStartWidth, deltaX, "left", MIN_PANE_WIDTH, MAX_PANE_WIDTH)
+        : applyResize(dragStartWidth, deltaX, "right", MIN_PANE_WIDTH, MAX_PANE_WIDTH);
+
+    const constrained = constrainPaneWidths(
+      dragging === "left" ? next : leftWidth,
+      dragging === "right" ? next : rightWidth,
+      containerWidth,
+    );
+    leftWidth = constrained.leftWidth;
+    rightWidth = constrained.rightWidth;
+  }
+
+  function onWindowPointerMove(e: PointerEvent) {
+    applyDrag(e.clientX - dragStartX);
+  }
+
+  function endDrag() {
+    dragging = null;
+    window.removeEventListener("pointermove", onWindowPointerMove);
+    window.removeEventListener("pointerup", endDrag);
+    window.removeEventListener("pointercancel", endDrag);
+  }
 
   function onSplitterPointerDown(side: ResizeSide, e: PointerEvent) {
     dragging = side;
     dragStartX = e.clientX;
     dragStartWidth = side === "left" ? leftWidth : rightWidth;
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    syncContainerWidth();
+    window.addEventListener("pointermove", onWindowPointerMove);
+    window.addEventListener("pointerup", endDrag);
+    window.addEventListener("pointercancel", endDrag);
+    e.preventDefault();
   }
 
-  function onSplitterPointerMove(e: PointerEvent) {
-    if (!dragging) return;
-    const delta = e.clientX - dragStartX;
-    if (dragging === "left") {
-      leftWidth = applyResize(dragStartWidth, delta, "left", MIN_PANE_WIDTH, MAX_PANE_WIDTH);
-    } else {
-      rightWidth = applyResize(dragStartWidth, delta, "right", MIN_PANE_WIDTH, MAX_PANE_WIDTH);
-    }
-  }
-
-  function onSplitterPointerUp(e: PointerEvent) {
-    if (!dragging) return;
-    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-    dragging = null;
-  }
+  $effect(() => {
+    if (!shellEl) return;
+    syncContainerWidth();
+    const observer = new ResizeObserver(() => syncContainerWidth());
+    observer.observe(shellEl);
+    return () => observer.disconnect();
+  });
 </script>
 
-<div class="workspace-shell" data-testid="workspace-shell" class:dragging>
+<div bind:this={shellEl} class="workspace-shell" data-testid="workspace-shell" class:dragging>
   <div
     class="pane pane-left"
     data-testid="pane-left"
@@ -74,9 +109,6 @@
     data-testid="splitter-left"
     style:width="{SPLITTER_WIDTH}px"
     onpointerdown={(e) => onSplitterPointerDown("left", e)}
-    onpointermove={onSplitterPointerMove}
-    onpointerup={onSplitterPointerUp}
-    onpointercancel={onSplitterPointerUp}
   ></div>
 
   <div class="pane pane-center" data-testid="pane-center">
@@ -92,9 +124,6 @@
     data-testid="splitter-right"
     style:width="{SPLITTER_WIDTH}px"
     onpointerdown={(e) => onSplitterPointerDown("right", e)}
-    onpointermove={onSplitterPointerMove}
-    onpointerup={onSplitterPointerUp}
-    onpointercancel={onSplitterPointerUp}
   ></div>
 
   <div
@@ -151,6 +180,7 @@
     background: transparent;
     position: relative;
     z-index: 2;
+    touch-action: none;
   }
 
   .splitter:hover,

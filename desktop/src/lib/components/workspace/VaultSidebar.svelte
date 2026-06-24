@@ -1,4 +1,9 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+  import { filterVaultTree, loadVaultTree } from "$lib/vault/load";
+  import type { VaultNode } from "$lib/vault/types";
+  import { VAULT_ROOT_LABEL } from "$lib/vault/types";
+
   interface Props {
     collectionCount: number;
     connected: boolean;
@@ -21,45 +26,50 @@
     onSemanticChange,
   }: Props = $props();
 
-  const vaultTree = [
-    { name: "data/documents/", type: "folder", children: [
-      { name: "lectures/", type: "folder", children: [
-        { name: "java-servlets.pdf", type: "file" },
-        { name: "spring-boot.md", type: "file" },
-      ]},
-      { name: "notes/", type: "folder", children: [
-        { name: "research-ideas.md", type: "file" },
-      ]},
-    ]},
-  ];
+  let vaultTree = $state<VaultNode[]>([]);
+  let vaultLoading = $state(true);
+
+  const displayTree = $derived(filterVaultTree(vaultTree, fuzzyQuery));
+
+  onMount(async () => {
+    vaultLoading = true;
+    vaultTree = await loadVaultTree();
+    vaultLoading = false;
+  });
 </script>
 
 <aside class="vault-sidebar" data-testid="vault-sidebar">
   <section class="section">
     <h3 class="section-title">Vault</h3>
-    <div class="vault-tree" data-testid="vault-tree">
-      {#each vaultTree as node}
-        <div class="tree-folder">
-          <span class="tree-icon">📁</span>
-          <span>{node.name}</span>
-        </div>
-        {#if node.children}
-          {#each node.children as child}
-            <div class="tree-folder nested">
-              <span class="tree-icon">📁</span>
-              <span>{child.name}</span>
-            </div>
-            {#if child.children}
-              {#each child.children as file}
-                <div class="tree-file nested-2">
-                  <span class="tree-icon">{file.type === "file" ? "📄" : "📁"}</span>
-                  <span>{file.name}</span>
-                </div>
-              {/each}
-            {/if}
-          {/each}
-        {/if}
-      {/each}
+    <div class="vault-tree" data-testid="vault-tree" data-vault-root={VAULT_ROOT_LABEL}>
+      {#if vaultLoading}
+        <p class="tree-status">Loading vault…</p>
+      {:else if displayTree.length === 0}
+        <p class="tree-status">No files in {VAULT_ROOT_LABEL}</p>
+      {:else}
+        {#each displayTree as node}
+          <div class="tree-folder">
+            <span class="tree-icon">📁</span>
+            <span>{node.name}</span>
+          </div>
+          {#if node.children}
+            {#each node.children as child}
+              <div class="tree-entry nested" class:tree-folder={child.type === "folder"} class:tree-file={child.type === "file"}>
+                <span class="tree-icon">{child.type === "folder" ? "📁" : "📄"}</span>
+                <span>{child.name}</span>
+              </div>
+              {#if child.children}
+                {#each child.children as grandchild}
+                  <div class="tree-entry nested-2" class:tree-folder={grandchild.type === "folder"} class:tree-file={grandchild.type === "file"}>
+                    <span class="tree-icon">{grandchild.type === "folder" ? "📁" : "📄"}</span>
+                    <span>{grandchild.name}</span>
+                  </div>
+                {/each}
+              {/if}
+            {/each}
+          {/if}
+        {/each}
+      {/if}
     </div>
   </section>
 
@@ -145,8 +155,14 @@
     color: var(--text);
   }
 
+  .tree-status {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
   .tree-folder,
-  .tree-file {
+  .tree-file,
+  .tree-entry {
     display: flex;
     align-items: center;
     gap: 0.35rem;

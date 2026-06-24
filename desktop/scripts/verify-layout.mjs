@@ -8,6 +8,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const BUILD_DIR = join(ROOT, "build");
 const SCRATCH = process.env.SCRATCH_DIR || join(ROOT, "..", ".verify-scratch");
 const PORT = 4173;
+const SIDECAR = "http://127.0.0.1:8765";
 
 const MIME = {
   ".html": "text/html",
@@ -16,6 +17,17 @@ const MIME = {
   ".json": "application/json",
   ".png": "image/png",
   ".svg": "image/svg+xml",
+};
+
+const MOCK_RESEARCH = {
+  query: "servlets in Java",
+  plan: "1. Search personal docs\n2. Search web",
+  retrieval_queries: ["[personal] servlets"],
+  retrieval_stats: { personal: 3 },
+  retrieval_log: ["[personal] servlets → 3 result(s)"],
+  analysis: "Analysis text",
+  revision_count: 0,
+  report: "## Executive Summary\nServlets are Java web components.\n\n## Key Findings\n- Used for HTTP handling",
 };
 
 function startServer() {
@@ -43,8 +55,36 @@ async function main() {
     if (msg.type() === "error") errors.push(`console: ${msg.text()}`);
   });
 
+  await page.route(`${SIDECAR}/health`, async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ status: "ok" }) });
+  });
+
+  await page.route(`${SIDECAR}/api/status`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        collection_count: 416,
+        project_root: "/Users/eugene/fyp-second-brain",
+        ollama_url: "http://localhost:11434",
+      }),
+    });
+  });
+
+  await page.route(`${SIDECAR}/api/research`, async (route) => {
+    if (route.request().method() === "POST") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(MOCK_RESEARCH),
+      });
+    } else {
+      await route.continue();
+    }
+  });
+
   await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: "networkidle" });
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(800);
 
   const checks = {
     commandBar: await page.getByText("Ask Second Brain").count(),
@@ -52,6 +92,7 @@ async function main() {
     paneCenter: await page.getByTestId("pane-center").count(),
     paneRight: await page.getByTestId("pane-right").count(),
     vaultTree: await page.getByTestId("vault-tree").count(),
+    vaultRoot: await page.getByTestId("vault-tree").getAttribute("data-vault-root"),
     fuzzySearch: await page.getByTestId("fuzzy-search").count(),
     semanticSearch: await page.getByTestId("semantic-search").count(),
     graphOverview: await page.getByTestId("graph-overview").count(),
@@ -79,6 +120,14 @@ async function main() {
   const leftWidthAfter = await page.getByTestId("pane-left").evaluate((el) => el.getBoundingClientRect().width);
   const widthDelta = leftWidthAfter - leftWidthBefore;
 
+  const centerWidth = await page.getByTestId("pane-center").evaluate((el) => el.getBoundingClientRect().width);
+
+  await page.getByTestId("research-query").fill("What are servlets in Java?");
+  await page.getByTestId("run-research").click();
+  await page.getByTestId("research-report").waitFor({ state: "visible", timeout: 10000 });
+  const reportHeading = await page.getByTestId("research-report").locator("h2").first().textContent();
+  const researchFlowWorked = reportHeading?.includes("Executive Summary") ?? false;
+
   const screenshotPath = join(SCRATCH, "workspace-screenshot.png");
   await page.screenshot({ path: screenshotPath, fullPage: true });
 
@@ -90,9 +139,19 @@ async function main() {
     leftWidthBefore,
     leftWidthAfter,
     widthDelta,
+    centerWidth,
     resizeWorked: widthDelta > 10,
+    centerMinOk: centerWidth >= 200,
+    researchFlowWorked,
+    reportHeading,
     errors,
-    pass: errors.length === 0 && Object.values(checks).every((c) => c > 0) && widthDelta > 10,
+    pass:
+      errors.length === 0 &&
+      Object.values(checks).every((c) => (typeof c === "string" ? c.length > 0 : c > 0)) &&
+      checks.vaultRoot === "data/documents/" &&
+      widthDelta > 10 &&
+      centerWidth >= 200 &&
+      researchFlowWorked,
   };
 
   writeFileSync(join(SCRATCH, "playwright-verification.json"), JSON.stringify(report, null, 2));
