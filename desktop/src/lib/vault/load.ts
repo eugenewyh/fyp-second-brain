@@ -33,6 +33,11 @@ export async function loadVaultTree(): Promise<VaultNode[]> {
   }
 }
 
+/** True when fuzzy filter excluded all nodes but the vault itself has files. */
+export function isVaultFilterEmpty(nodes: VaultNode[], filtered: VaultNode[]): boolean {
+  return !isVaultTreeEmpty(nodes) && filtered.length === 0;
+}
+
 /** True when vault has no files (root only or empty). */
 export function isVaultTreeEmpty(nodes: VaultNode[]): boolean {
   if (nodes.length === 0) return true;

@@ -1,6 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { filterVaultTree, isVaultTreeEmpty, loadVaultTree } from "$lib/vault/load";
+  import {
+    filterVaultTree,
+    isVaultFilterEmpty,
+    isVaultTreeEmpty,
+    loadVaultTree,
+  } from "$lib/vault/load";
   import type { VaultNode } from "$lib/vault/types";
   import { VAULT_ROOT_LABEL } from "$lib/vault/types";
 
@@ -31,7 +36,10 @@
 
   const displayTree = $derived(filterVaultTree(vaultTree, fuzzyQuery));
 
-  const vaultIsEmpty = $derived(!vaultLoading && isVaultTreeEmpty(displayTree));
+  const vaultIsEmpty = $derived(!vaultLoading && isVaultTreeEmpty(vaultTree));
+  const filterHasNoMatches = $derived(
+    !vaultLoading && isVaultFilterEmpty(vaultTree, displayTree),
+  );
 
   onMount(async () => {
     vaultLoading = true;
@@ -48,6 +56,8 @@
         <p class="tree-status">Loading vault…</p>
       {:else if vaultIsEmpty}
         <p class="tree-status" data-testid="vault-empty">No files in {VAULT_ROOT_LABEL}</p>
+      {:else if filterHasNoMatches}
+        <p class="tree-status" data-testid="vault-no-matches">No matches for "{fuzzyQuery}"</p>
       {:else}
         {#each displayTree as node}
           <div class="tree-folder">

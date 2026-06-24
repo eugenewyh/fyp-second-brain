@@ -122,6 +122,17 @@ async function main() {
 
   const centerWidth = await page.getByTestId("pane-center").evaluate((el) => el.getBoundingClientRect().width);
 
+  const syncQuery = "sync-test-query-abc123";
+  await page.getByTestId("command-bar-input").fill(syncQuery);
+  const legacyNav = page.getByRole("navigation", { name: "Legacy workspace modes" });
+  await legacyNav.getByRole("button", { name: "Query", exact: true }).click();
+  await page.waitForTimeout(200);
+  await legacyNav.getByRole("button", { name: "Research", exact: true }).click();
+  await page.waitForTimeout(200);
+  const cmdValue = await page.getByTestId("command-bar-input").inputValue();
+  const textareaValue = await page.getByTestId("research-query").inputValue();
+  const querySyncAfterLegacyToggle = cmdValue === syncQuery && textareaValue === syncQuery;
+
   await page.getByTestId("research-query").fill("What are servlets in Java?");
   await page.getByTestId("run-research").click();
   await page.getByTestId("research-report").waitFor({ state: "visible", timeout: 10000 });
@@ -135,6 +146,8 @@ async function main() {
   server.close();
 
   const report = {
+    mode: "playwright-static-ui",
+    note: "UI layout uses mocked /api/research; real sidecar checked by scripts/verify-sidecar.mjs (plan step 3)",
     checks,
     leftWidthBefore,
     leftWidthAfter,
@@ -142,6 +155,9 @@ async function main() {
     centerWidth,
     resizeWorked: widthDelta > 10,
     centerMinOk: centerWidth >= 200,
+    querySyncAfterLegacyToggle,
+    cmdValue,
+    textareaValue,
     researchFlowWorked,
     reportHeading,
     errors,
@@ -151,6 +167,7 @@ async function main() {
       checks.vaultRoot === "data/documents/" &&
       widthDelta > 10 &&
       centerWidth >= 200 &&
+      querySyncAfterLegacyToggle &&
       researchFlowWorked,
   };
 

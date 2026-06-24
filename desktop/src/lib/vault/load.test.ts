@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterVaultTree, isVaultTreeEmpty } from "./load";
+import { filterVaultTree, isVaultFilterEmpty, isVaultTreeEmpty } from "./load";
 import type { VaultNode } from "./types";
 
 const sampleTree: VaultNode[] = [
@@ -36,6 +36,17 @@ describe("isVaultTreeEmpty", () => {
 
   it("returns false when root has files", () => {
     expect(isVaultTreeEmpty(sampleTree)).toBe(false);
+  });
+});
+
+describe("isVaultFilterEmpty", () => {
+  it("returns true when vault has files but filter matches nothing", () => {
+    expect(isVaultFilterEmpty(sampleTree, filterVaultTree(sampleTree, "zzznomatch"))).toBe(true);
+  });
+
+  it("returns false when vault is actually empty", () => {
+    const empty = [{ name: "data/documents/", path: "/p", type: "folder" as const }];
+    expect(isVaultFilterEmpty(empty, filterVaultTree(empty, "java"))).toBe(false);
   });
 });
 
