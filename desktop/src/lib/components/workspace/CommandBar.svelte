@@ -3,7 +3,6 @@
     query: string;
     connected: boolean;
     loading: boolean;
-    onQueryChange: (value: string) => void;
     onSubmit: () => void;
     onLegacyMode?: (mode: "research" | "query" | "documents" | "settings") => void;
     activeLegacyMode?: "research" | "query" | "documents" | "settings";
@@ -13,7 +12,6 @@
     query = $bindable(""),
     connected,
     loading,
-    onQueryChange,
     onSubmit,
     onLegacyMode,
     activeLegacyMode = "research",
@@ -37,8 +35,7 @@
     <input
       type="text"
       placeholder="Ask anything — ⌘↵ to run research"
-      value={query}
-      oninput={(e) => onQueryChange(e.currentTarget.value)}
+      bind:value={query}
       onkeydown={handleKeydown}
       data-testid="command-bar-input"
     />

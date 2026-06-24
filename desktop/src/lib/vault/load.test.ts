@@ -26,14 +26,23 @@ describe("filterVaultTree", () => {
     expect(filterVaultTree(sampleTree, "")).toEqual(sampleTree);
   });
 
-  it("filters to matching file names including nested entries", () => {
+  it("filters to nested matching file via pruned parent folders", () => {
     const filtered = filterVaultTree(sampleTree, "java");
-    const serialized = JSON.stringify(filtered);
-    expect(serialized).toContain("java.pdf");
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0].children).toHaveLength(1);
+    expect(filtered[0].children?.[0].name).toBe("lectures");
+    expect(filtered[0].children?.[0].children?.[0].name).toBe("java.pdf");
   });
 
-  it("keeps parent folder when child matches", () => {
+  it("keeps parent folder when folder name matches", () => {
     const filtered = filterVaultTree(sampleTree, "lectures");
     expect(filtered[0].name).toBe("data/documents/");
+    expect(filtered[0].children?.[0].name).toBe("lectures");
+  });
+
+  it("excludes non-matching siblings when a child matches", () => {
+    const filtered = filterVaultTree(sampleTree, "java");
+    const topChildren = filtered[0].children ?? [];
+    expect(topChildren.some((c) => c.name === "notes.md")).toBe(false);
   });
 });

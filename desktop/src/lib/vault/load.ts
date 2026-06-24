@@ -44,8 +44,11 @@ export function filterVaultTree(nodes: VaultNode[], query: string): VaultNode[] 
       .map(matchNode)
       .filter((n): n is VaultNode => n !== null);
 
-    if (selfMatch || childMatches.length > 0) {
-      return { ...node, children: childMatches.length ? childMatches : node.children };
+    if (childMatches.length > 0) {
+      return { ...node, children: childMatches };
+    }
+    if (selfMatch) {
+      return { ...node, children: node.children };
     }
     return null;
   }

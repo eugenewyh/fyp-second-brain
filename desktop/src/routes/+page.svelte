@@ -164,7 +164,6 @@
     bind:query={researchQuery}
     {connected}
     loading={researchLoading}
-    onQueryChange={(v) => (researchQuery = v)}
     onSubmit={runResearch}
     onLegacyMode={setWorkspaceMode}
     activeLegacyMode={workspaceMode}
