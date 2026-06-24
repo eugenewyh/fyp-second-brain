@@ -9,3 +9,7 @@ build/
 data/chroma/
 .DS_Store
 *.log
+desktop/node_modules/
+desktop/build/
+desktop/.svelte-kit/
+desktop/src-tauri/target/

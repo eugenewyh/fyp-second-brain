@@ -7,7 +7,7 @@ Graph-based multi-agent AI system for autonomous research and lifelong personal 
 
 ## Current Phase
 
-**Phase 3** — Hybrid retrieval (personal + web + arXiv).
+**Phase 4** — Tauri 2.0 desktop app (Svelte + Python sidecar).
 
 ## Prerequisites
 
@@ -85,10 +85,37 @@ TAVILY_API_KEY=tvly-your-key-here
 
 arXiv works without an API key. If `TAVILY_API_KEY` is unset, web search is skipped and arXiv + personal docs are still used.
 
+### Desktop app (Phase 4)
+
+Requires [Node.js](https://nodejs.org/) and [Rust](https://rustup.rs/).
+
+```bash
+# From project root — sidecar starts automatically with the app
+cd desktop
+npm install
+npm run tauri dev
+```
+
+The Tauri app spawns the Python sidecar (`sidecar/server.py`) on `http://127.0.0.1:8765`.
+
+To run the sidecar standalone (for debugging):
+
+```bash
+./scripts/start_sidecar.sh
+```
+
+Desktop features:
+- **Research** — full multi-agent workflow with report viewer
+- **Quick Query** — fast personal RAG
+- **Documents** — ingest folders via file picker
+- **Settings** — Ollama models, Tavily API key, feature toggles
+
 ## Project structure
 
 ```
 src/second_brain/     Core package (config, memory, ingestion, graph)
+sidecar/              FastAPI HTTP server for desktop app
+desktop/              Tauri 2.0 + Svelte frontend
 scripts/              CLI entry points
 data/documents/       User document drop folder
 data/chroma/          Persistent vector database (gitignored)

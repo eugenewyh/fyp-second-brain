@@ -1,0 +1,1 @@
+"""HTTP API sidecar for the Tauri desktop application."""

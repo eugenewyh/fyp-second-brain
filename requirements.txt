@@ -7,3 +7,5 @@ pypdf>=5.0
 python-dotenv>=1.0
 tavily-python>=0.5
 arxiv>=2.1
+fastapi>=0.115
+uvicorn>=0.32
