@@ -6,7 +6,11 @@ let cachedBaseUrl: string | null = null;
 
 export async function getBaseUrl(): Promise<string> {
   if (!cachedBaseUrl) {
-    cachedBaseUrl = await invoke<string>("get_sidecar_url");
+    try {
+      cachedBaseUrl = await invoke<string>("get_sidecar_url");
+    } catch {
+      cachedBaseUrl = DEFAULT_URL;
+    }
   }
   return cachedBaseUrl;
 }
