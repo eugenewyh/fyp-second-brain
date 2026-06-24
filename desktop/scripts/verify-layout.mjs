@@ -147,7 +147,8 @@ async function main() {
 
   const report = {
     mode: "playwright-static-ui",
-    note: "UI layout uses mocked /api/research; real sidecar checked by scripts/verify-sidecar.mjs (plan step 3)",
+    note: "Plan step 2: static UI with mocked /api/research. Plan step 3: scripts/verify-sidecar-contract.py (live health/status + research route contract).",
+    scriptVersion: "2026-06-24-sync-legacy",
     checks,
     leftWidthBefore,
     leftWidthAfter,

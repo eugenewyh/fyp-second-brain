@@ -12,6 +12,7 @@
     "test": "vitest run",
     "verify:layout": "node scripts/verify-layout.mjs",
     "verify:sidecar": "python3 scripts/verify-sidecar-contract.py",
+    "verify:all": "bash scripts/capture-evidence.sh",
     "tauri": "tauri"
   },
   "license": "MIT",
