@@ -3,9 +3,11 @@ import logging
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from second_brain.agents.prompts import FORCED_SYNTHESIS_NOTE, SYNTHESIZER_SYSTEM, SYNTHESIZER_USER
+from second_brain.agents.retrieval_notes import build_retrieval_notes
 from second_brain.agents.utils import docs_from_state
 from second_brain.config import MAX_REVISIONS
 from second_brain.memory.llm import get_llm
+from second_brain.rag.citations import format_bibliography, strip_sources_section
 from second_brain.rag.prompts import format_context
 from second_brain.state import GraphState
 
@@ -21,6 +23,10 @@ def synthesizer_node(state: GraphState) -> dict:
     was_forced = revision_count >= MAX_REVISIONS
 
     critique_note = FORCED_SYNTHESIS_NOTE if was_forced else ""
+    retrieval_note = build_retrieval_notes(
+        state.get("retrieval_stats", {}),
+        state.get("retrieval_log", []),
+    )
     context = format_context(documents)
     llm = get_llm()
 
@@ -31,10 +37,14 @@ def synthesizer_node(state: GraphState) -> dict:
             plan=plan,
             analysis=analysis,
             context=context,
+            retrieval_note=retrieval_note,
             critique_note=critique_note,
         )),
     ])
-    report = response.content if isinstance(response.content, str) else str(response.content)
+    report_body = response.content if isinstance(response.content, str) else str(response.content)
+    report_body = strip_sources_section(report_body)
+    bibliography = format_bibliography(documents)
+    report = f"{report_body}\n\n## Sources\n\n{bibliography}"
 
     logger.info("Synthesizer: report generated (%d chars)", len(report))
 

@@ -2,6 +2,7 @@ import logging
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
+from second_brain.agents.grounding import check_grounding
 from second_brain.agents.prompts import VERIFIER_SYSTEM, VERIFIER_USER
 from second_brain.agents.utils import docs_from_state, parse_verifier_output
 from second_brain.config import MAX_REVISIONS
@@ -17,6 +18,19 @@ def verifier_node(state: GraphState) -> dict:
     analysis = state.get("analysis", "")
     documents = docs_from_state(state.get("retrieved_docs", []))
     revision_count = state.get("revision_count", 0)
+
+    grounded, grounding_issues = check_grounding(analysis, documents)
+    if not grounded:
+        feedback = "Rule-based grounding check failed:\n" + "\n".join(
+            f"- {issue}" for issue in grounding_issues
+        )
+        logger.info("Verifier: REVISE (grounding) — %d issue(s)", len(grounding_issues))
+        return {
+            "critique": feedback,
+            "critique_approved": False,
+            "revision_count": revision_count + 1,
+            "messages": [HumanMessage(content="[Verifier] Revision requested (grounding)")],
+        }
 
     context = format_context(documents)
     llm = get_llm(temperature=0.1)
@@ -35,7 +49,10 @@ def verifier_node(state: GraphState) -> dict:
     if not approved and revision_count >= MAX_REVISIONS:
         logger.info("Verifier: max revisions reached — forcing approval")
         approved = True
-        feedback = f"Max revisions ({MAX_REVISIONS}) reached. Proceeding with best available analysis.\n{feedback}"
+        feedback = (
+            f"Max revisions ({MAX_REVISIONS}) reached. Proceeding with best available analysis.\n"
+            f"{feedback}"
+        )
 
     logger.info("Verifier: %s", "APPROVED" if approved else f"REVISE (attempt {revision_count + 1})")
 

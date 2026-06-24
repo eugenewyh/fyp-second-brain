@@ -11,6 +11,7 @@ class GraphState(TypedDict):
     plan: str
     retrieval_queries: list[str]
     retrieval_stats: dict[str, int]
+    retrieval_log: list[str]
     retrieved_docs: list[dict]
     analysis: str
     critique: str

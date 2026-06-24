@@ -3,6 +3,7 @@ import logging
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from second_brain.agents.prompts import ANALYST_REVISION_NOTE, ANALYST_SYSTEM, ANALYST_USER
+from second_brain.agents.retrieval_notes import build_retrieval_notes
 from second_brain.agents.utils import docs_from_state
 from second_brain.memory.llm import get_llm
 from second_brain.rag.prompts import format_context
@@ -22,6 +23,10 @@ def analyst_node(state: GraphState) -> dict:
     if critique and revision_count > 0:
         critique_section = ANALYST_REVISION_NOTE.format(critique=critique)
 
+    retrieval_note = build_retrieval_notes(
+        state.get("retrieval_stats", {}),
+        state.get("retrieval_log", []),
+    )
     context = format_context(documents)
     llm = get_llm()
 
@@ -31,6 +36,7 @@ def analyst_node(state: GraphState) -> dict:
             query=query,
             plan=plan,
             context=context,
+            retrieval_note=retrieval_note,
             critique_section=critique_section,
         )),
     ])

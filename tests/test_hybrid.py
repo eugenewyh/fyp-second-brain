@@ -41,9 +41,10 @@ def test_hybrid_retrieve_personal_only():
     if collection_count() == 0:
         pytest.skip("No documents indexed")
 
-    docs, stats = hybrid_retrieve(["[personal] Java servlet"], main_query="Java servlet")
+    docs, stats, log = hybrid_retrieve(["[personal] Java servlet"], main_query="Java servlet")
     assert stats.get("personal", 0) > 0
     assert all(d.metadata.get("source_type") == "personal" for d in docs)
+    assert any("[personal]" in entry for entry in log)
 
 
 @patch("second_brain.agents.hybrid_retriever.search_web")
@@ -55,9 +56,18 @@ def test_hybrid_retrieve_web_tag(mock_available, mock_web):
             metadata={"source": "Example", "source_path": "https://example.com", "source_type": "web"},
         ),
     ]
-    docs, stats = hybrid_retrieve(["[web] servlet tutorial"], main_query="servlets")
+    docs, stats, log = hybrid_retrieve(["[web] servlet tutorial"], main_query="servlets")
     assert stats.get("web", 0) == 1
     assert docs[0].metadata["source_type"] == "web"
+    assert any("[web]" in entry for entry in log)
+
+
+def test_hybrid_retrieve_arxiv_logs_attempt():
+    docs, stats, log = hybrid_retrieve(
+        ["[arxiv] servlets in java web development"],
+        main_query="servlets",
+    )
+    assert any(entry.startswith("[arxiv]") for entry in log)
 
 
 @pytest.mark.network

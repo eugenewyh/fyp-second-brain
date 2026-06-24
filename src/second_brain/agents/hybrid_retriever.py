@@ -26,33 +26,55 @@ def _doc_key(doc: Document) -> str:
     return f"{source_type}_{doc.metadata.get('source_path', doc.metadata.get('source', ''))}"
 
 
-def _fetch_for_source(parsed: RetrievalQuery) -> list[Document]:
+def _reformulate_arxiv_query(query: str) -> str:
+    return f'all:"{query}" OR web application server OR HTTP servlet container'
+
+
+def _fetch_arxiv(parsed: RetrievalQuery, retrieval_log: list[str]) -> list[Document]:
+    docs = search_arxiv(parsed.query)
+    log_entry = f"[arxiv] {parsed.query} → {len(docs)} result(s)"
+
+    if not docs:
+        reformulated = _reformulate_arxiv_query(parsed.query)
+        docs = search_arxiv(reformulated)
+        log_entry += f"; retry '{reformulated}' → {len(docs)} result(s)"
+
+    retrieval_log.append(log_entry)
+    return docs
+
+
+def _fetch_for_source(parsed: RetrievalQuery, retrieval_log: list[str]) -> list[Document]:
     if parsed.source == "web":
         if not ENABLE_WEB_SEARCH:
-            logger.info("Web search disabled — skipping: %s", parsed.query)
+            retrieval_log.append(f"[web] {parsed.query} → skipped (disabled)")
             return []
-        return search_web(parsed.query)
+        docs = search_web(parsed.query)
+        retrieval_log.append(f"[web] {parsed.query} → {len(docs)} result(s)")
+        return docs
 
     if parsed.source == "arxiv":
         if not ENABLE_ARXIV:
-            logger.info("arXiv search disabled — skipping: %s", parsed.query)
+            retrieval_log.append(f"[arxiv] {parsed.query} → skipped (disabled)")
             return []
-        return search_arxiv(parsed.query)
+        return _fetch_arxiv(parsed, retrieval_log)
 
-    return retrieve(parsed.query, top_k=RETRIEVAL_TOP_K_PER_QUERY)
+    docs = retrieve(parsed.query, top_k=RETRIEVAL_TOP_K_PER_QUERY)
+    retrieval_log.append(f"[personal] {parsed.query} → {len(docs)} result(s)")
+    return docs
 
 
 def hybrid_retrieve(
     query_lines: list[str],
     main_query: str,
-) -> tuple[list[Document], dict[str, int]]:
+) -> tuple[list[Document], dict[str, int], list[str]]:
     parsed_queries = [parse_retrieval_query(line) for line in query_lines]
     seen: set[str] = set()
     documents: list[Document] = []
     stats = {"personal": 0, "web": 0, "arxiv": 0}
+    retrieval_log: list[str] = []
 
     for parsed in parsed_queries:
-        for doc in _fetch_for_source(parsed):
+        for doc in _fetch_for_source(parsed, retrieval_log):
             key = _doc_key(doc)
             if key in seen:
                 continue
@@ -68,7 +90,9 @@ def hybrid_retrieve(
     if personal_count < HYBRID_FALLBACK_THRESHOLD and not has_web_query:
         if ENABLE_WEB_SEARCH and is_web_search_available():
             logger.info("Fallback: personal results thin (%d) — trying web", personal_count)
-            for doc in search_web(main_query):
+            fallback_docs = search_web(main_query)
+            retrieval_log.append(f"[web] fallback '{main_query}' → {len(fallback_docs)} result(s)")
+            for doc in fallback_docs:
                 key = _doc_key(doc)
                 if key not in seen:
                     seen.add(key)
@@ -78,11 +102,12 @@ def hybrid_retrieve(
     if personal_count < HYBRID_FALLBACK_THRESHOLD and not has_arxiv_query:
         if ENABLE_ARXIV:
             logger.info("Fallback: personal results thin (%d) — trying arXiv", personal_count)
-            for doc in search_arxiv(main_query):
+            fallback = RetrievalQuery(source="arxiv", query=main_query)
+            for doc in _fetch_arxiv(fallback, retrieval_log):
                 key = _doc_key(doc)
                 if key not in seen:
                     seen.add(key)
                     documents.append(doc)
                     stats["arxiv"] = stats.get("arxiv", 0) + 1
 
-    return documents, stats
+    return documents, stats, retrieval_log

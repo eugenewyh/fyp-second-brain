@@ -75,6 +75,7 @@ def main() -> int:
             "plan": "",
             "retrieval_queries": [],
             "retrieval_stats": {},
+            "retrieval_log": [],
             "retrieved_docs": [],
             "analysis": "",
             "critique": "",

@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 def retriever_node(state: GraphState) -> dict:
     queries = state.get("retrieval_queries") or [state["query"]]
-    documents, stats = hybrid_retrieve(queries, main_query=state["query"])
+    documents, stats, retrieval_log = hybrid_retrieve(queries, main_query=state["query"])
 
     stats_summary = ", ".join(f"{k}={v}" for k, v in stats.items() if v > 0)
     logger.info(
@@ -22,6 +22,7 @@ def retriever_node(state: GraphState) -> dict:
     return {
         "retrieved_docs": docs_to_state(documents),
         "retrieval_stats": stats,
+        "retrieval_log": retrieval_log,
         "messages": [
             HumanMessage(content=f"[Retriever] Hybrid search: {len(documents)} result(s) ({stats_summary})"),
         ],

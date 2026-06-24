@@ -34,13 +34,22 @@ def print_report(result: dict, verbose: bool = False) -> None:
                 print(f"  • {q}")
 
         stats = result.get("retrieval_stats", {})
-        if stats:
+        retrieval_log = result.get("retrieval_log", [])
+        if stats or retrieval_log:
             print("\n" + "-" * 60)
             print("RETRIEVAL BREAKDOWN")
             print("-" * 60)
-            for source_type, count in stats.items():
+            attempted = {entry.split("]")[0].strip("[") for entry in retrieval_log if entry.startswith("[")}
+            for source_type in ("personal", "web", "arxiv"):
+                count = stats.get(source_type, 0)
                 if count > 0:
                     print(f"  {source_type}: {count}")
+                elif source_type in attempted:
+                    print(f"  {source_type}: 0 (attempted, no matches)")
+            if retrieval_log:
+                print("\n  Query log:")
+                for entry in retrieval_log:
+                    print(f"    {entry}")
 
         docs = docs_from_state(result.get("retrieved_docs", []))
         print(f"\nRetrieved: {len(docs)} total result(s)")

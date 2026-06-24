@@ -54,6 +54,7 @@ def run_research(query: str) -> GraphState:
         "plan": "",
         "retrieval_queries": [],
         "retrieval_stats": {},
+        "retrieval_log": [],
         "retrieved_docs": [],
         "analysis": "",
         "critique": "",

@@ -24,6 +24,9 @@ Rules:
 - Use [arxiv] for academic research, formal studies, or theoretical background
 - Include at least one [personal] query; add [web] or [arxiv] when external knowledge helps
 - Search queries should be specific keywords/phrases, not full sentences
+- Do NOT prefix queries with "query:" — output only the search terms
+- For [arxiv], use research-oriented terms (e.g. "web application architecture", "HTTP server design") not tutorial topics
+- Example format: [personal] java servlet architecture
 - Do not answer the question — only plan the research"""
 
 PLANNER_USER = "Research question: {query}"
@@ -35,7 +38,9 @@ ANALYST_SYSTEM = """You are a Document Analyst Agent. Analyze retrieved document
 Rules:
 - Use ONLY information from the provided sources
 - Cite sources inline as [1], [2], etc. matching source numbers
-- Distinguish between personal documents, web results, and arXiv papers when relevant
+- Distinguish between Personal, Web, and arXiv sources using their type labels
+- NEVER call a Web or Personal source an "academic paper", "journal article", or "arXiv paper"
+- If no arXiv sources were retrieved, do not invent academic paper claims
 - Identify key themes, facts, and connections across sources
 - Note contradictions between sources or gaps in the evidence
 - Be thorough but concise"""
@@ -45,7 +50,7 @@ ANALYST_USER = """Research question: {query}
 Research plan:
 {plan}
 
-Retrieved documents:
+{retrieval_note}Retrieved documents:
 {context}
 
 {critique_section}
@@ -59,6 +64,7 @@ VERIFIER_SYSTEM = """You are a Verifier / Self-Critic Agent. Review the analysis
 
 Check for:
 - Claims not supported by the sources (hallucinations)
+- Web or Personal sources mislabeled as academic papers
 - Missing important information from the sources
 - Incorrect citations or misinterpretations
 - Logical gaps
@@ -90,21 +96,24 @@ Format the report with these sections:
 ## Key Findings
 ## Detailed Analysis
 ## Identified Gaps
-## Sources
+
+Do NOT include a Sources section — it will be appended automatically.
 
 Rules:
 - Preserve all inline citations [1], [2], etc.
 - Executive summary: 2-3 sentences
 - Key findings: bullet points
-- Identified gaps: what the documents do NOT cover
-- Sources: numbered list matching citations"""
+- Identified Gaps MUST list: (a) topics not covered by any source, (b) source types that returned zero results
+- If arXiv returned nothing, state that explicitly in Identified Gaps
+- Never say "no gaps found" if any limitations exist
+- Never call a Web or Personal source an academic paper"""
 
 SYNTHESIZER_USER = """Research question: {query}
 
 Research plan:
 {plan}
 
-Approved analysis:
+{retrieval_note}Approved analysis:
 {analysis}
 
 Source documents:
@@ -112,6 +121,6 @@ Source documents:
 
 {critique_note}
 
-Generate the final report:"""
+Generate the final report (without a Sources section):"""
 
-FORCED_SYNTHESIS_NOTE = "Note: Analysis reached maximum revision attempts. Synthesize the best available analysis and note limitations in Identified Gaps."
+FORCED_SYNTHESIS_NOTE = "Note: Analysis reached maximum revision attempts. Synthesize the best available analysis and note all limitations in Identified Gaps."
