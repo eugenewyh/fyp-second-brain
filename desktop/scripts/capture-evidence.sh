@@ -39,4 +39,9 @@ git -C "$(dirname "$DESKTOP")" diff --name-only "$PHASE_BASE" HEAD -- desktop/ |
 
 grep -E "Tests +[0-9]+ passed" "$SCRATCH/test.log" | tail -1 | tee "$SCRATCH/test-count.txt"
 
+echo "=== emit completion ===" | tee "$SCRATCH/emit-completion.log"
+SCRATCH_DIR="$SCRATCH" node scripts/emit-completion.mjs | tee "$SCRATCH/completion.md" > GOAL_EVIDENCE.md
+cp GOAL_EVIDENCE.md "$SCRATCH/completion.md"
+
 echo "Evidence captured in $SCRATCH"
+echo "GOAL_EVIDENCE.md written in $DESKTOP"
