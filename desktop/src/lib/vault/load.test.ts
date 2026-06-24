@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterVaultTree } from "./load";
+import { filterVaultTree, isVaultTreeEmpty } from "./load";
 import type { VaultNode } from "./types";
 
 const sampleTree: VaultNode[] = [
@@ -20,6 +20,24 @@ const sampleTree: VaultNode[] = [
     ],
   },
 ];
+
+describe("isVaultTreeEmpty", () => {
+  it("returns true for empty array", () => {
+    expect(isVaultTreeEmpty([])).toBe(true);
+  });
+
+  it("returns true for root folder with no children", () => {
+    expect(
+      isVaultTreeEmpty([
+        { name: "data/documents/", path: "/proj/data/documents", type: "folder" },
+      ]),
+    ).toBe(true);
+  });
+
+  it("returns false when root has files", () => {
+    expect(isVaultTreeEmpty(sampleTree)).toBe(false);
+  });
+});
 
 describe("filterVaultTree", () => {
   it("returns full tree when query is empty", () => {

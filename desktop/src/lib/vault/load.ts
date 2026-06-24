@@ -33,6 +33,16 @@ export async function loadVaultTree(): Promise<VaultNode[]> {
   }
 }
 
+/** True when vault has no files (root only or empty). */
+export function isVaultTreeEmpty(nodes: VaultNode[]): boolean {
+  if (nodes.length === 0) return true;
+  if (nodes.length === 1) {
+    const children = nodes[0].children;
+    return !children || children.length === 0;
+  }
+  return false;
+}
+
 /** Filter vault nodes by fuzzy query (case-insensitive substring match). */
 export function filterVaultTree(nodes: VaultNode[], query: string): VaultNode[] {
   const q = query.trim().toLowerCase();

@@ -1,12 +1,12 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { api, waitForSidecar, type ResearchResult, type Settings } from "$lib/api";
-  import { renderReport } from "$lib/research/render";
   import { runResearchQuery } from "$lib/research/run";
   import CommandBar from "$lib/components/workspace/CommandBar.svelte";
   import WorkspaceShell from "$lib/components/workspace/WorkspaceShell.svelte";
   import VaultSidebar from "$lib/components/workspace/VaultSidebar.svelte";
   import InspectorPanel from "$lib/components/workspace/InspectorPanel.svelte";
+  import ResearchCenter from "$lib/components/workspace/ResearchCenter.svelte";
   import LegacyPanels from "$lib/components/legacy/LegacyPanels.svelte";
 
   type WorkspaceMode = "research" | "query" | "documents" | "settings";
@@ -69,9 +69,9 @@
 
   async function runResearch() {
     if (!researchQuery.trim()) return;
+    workspaceMode = "research";
     researchLoading = true;
     researchResult = null;
-    workspaceMode = "research";
     const outcome = await runResearchQuery(researchQuery);
     researchResult = outcome.result;
     if (outcome.error) {
@@ -182,84 +182,40 @@
     {/snippet}
 
     {#snippet center()}
-      {#if workspaceMode === "research"}
-        <!-- Legacy Research tab evolved into center workspace (markup preserved verbatim) -->
-        <section class="panel research-panel" data-testid="research-workspace">
-          <h2>Autonomous Research</h2>
-          <p class="hint">Multi-agent workflow: planner → retriever → analyst → verifier → synthesizer</p>
-
-          <div class="input-row">
-            <textarea
-              bind:value={researchQuery}
-              placeholder="e.g. What are servlets in Java and how do they compare to modern frameworks?"
-              rows="3"
-              data-testid="research-query"
-            ></textarea>
-          </div>
-          <div class="actions">
-            <button
-              class="btn-primary"
-              onclick={runResearch}
-              disabled={researchLoading || !connected}
-              data-testid="run-research"
-            >
-              {researchLoading ? "Researching…" : "Run Research"}
-            </button>
-            {#if researchResult}
-              <button class="btn-secondary" onclick={() => (showDetails = !showDetails)}>
-                {showDetails ? "Hide details" : "Show details"}
-              </button>
-            {/if}
-          </div>
-
-          {#if researchLoading}
-            <div class="loading">Running multi-agent pipeline… This may take 1–2 minutes.</div>
-          {/if}
-
-          {#if researchResult && showDetails}
-            <div class="details">
-              <h3>Plan</h3>
-              <pre>{researchResult.plan}</pre>
-              <h3>Retrieval</h3>
-              <pre>{JSON.stringify(researchResult.retrieval_stats, null, 2)}</pre>
-              {#if researchResult.retrieval_log.length}
-                <pre>{researchResult.retrieval_log.join("\n")}</pre>
-              {/if}
-              {#if researchResult.revision_count}
-                <p>Revisions: {researchResult.revision_count}</p>
-              {/if}
-            </div>
-          {/if}
-
-          {#if researchResult}
-            <div class="report report-content" data-testid="research-report">
-              {@html renderReport(researchResult.report)}
-            </div>
-          {/if}
-        </section>
-      {:else}
-        <LegacyPanels
-          mode={workspaceMode}
+      <div class="center-workspace">
+        <ResearchCenter
+          bind:query={researchQuery}
           {connected}
-          bind:quickQuestion
-          {quickLoading}
-          {quickAnswer}
-          {quickSources}
-          bind:ingestPath
-          {ingestLoading}
-          {ingestMessage}
-          {settings}
-          bind:settingsForm
-          {settingsSaving}
-          {settingsMessage}
-          onQuickQuestionChange={(v) => (quickQuestion = v)}
-          onRunQuickQuery={runQuickQuery}
-          onIngestPathChange={(v) => (ingestPath = v)}
-          onRunIngest={runIngest}
-          onSettingsFormChange={(v) => (settingsForm = v)}
-          onSaveSettings={saveSettings}
+          bind:loading={researchLoading}
+          bind:result={researchResult}
+          bind:showDetails
+          onRun={runResearch}
+          hidden={workspaceMode !== "research"}
         />
-      {/if}
+        {#if workspaceMode !== "research"}
+          <LegacyPanels
+            mode={workspaceMode}
+            {connected}
+            bind:quickQuestion
+            {quickLoading}
+            {quickAnswer}
+            {quickSources}
+            bind:ingestPath
+            {ingestLoading}
+            {ingestMessage}
+            {settings}
+            bind:settingsForm
+            {settingsSaving}
+            {settingsMessage}
+            onQuickQuestionChange={(v) => (quickQuestion = v)}
+            onRunQuickQuery={runQuickQuery}
+            onIngestPathChange={(v) => (ingestPath = v)}
+            onRunIngest={runIngest}
+            onSettingsFormChange={(v) => (settingsForm = v)}
+            onSaveSettings={saveSettings}
+          />
+        {/if}
+      </div>
     {/snippet}
 
     {#snippet right()}
@@ -284,69 +240,10 @@
     overflow: hidden;
   }
 
-  .research-panel {
-    padding: 1.25rem 1.5rem;
+  .center-workspace {
     height: 100%;
-    overflow-y: auto;
-  }
-
-  .research-panel h2 {
-    font-size: 1.4rem;
-    margin-bottom: 0.25rem;
-  }
-
-  .hint {
-    color: var(--text-muted);
-    font-size: 0.85rem;
-    margin-bottom: 1.25rem;
-  }
-
-  .input-row {
-    margin-bottom: 0.75rem;
-  }
-
-  .actions {
+    overflow: hidden;
     display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1.25rem;
-  }
-
-  .loading {
-    color: var(--warning);
-    padding: 1rem;
-    background: var(--surface);
-    border-radius: var(--radius);
-    margin-bottom: 1rem;
-  }
-
-  .report {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    line-height: 1.6;
-    max-height: 60vh;
-    overflow-y: auto;
-  }
-
-  .details {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1rem;
-    margin-bottom: 1rem;
-    font-size: 0.8rem;
-  }
-
-  .details pre {
-    white-space: pre-wrap;
-    color: var(--text-muted);
-    margin-bottom: 0.75rem;
-  }
-
-  .details h3 {
-    font-size: 0.85rem;
-    color: var(--accent);
-    margin-bottom: 0.3rem;
+    flex-direction: column;
   }
 </style>
