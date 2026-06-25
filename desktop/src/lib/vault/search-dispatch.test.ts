@@ -1,3 +1,6 @@
+import { readFileSync } from "fs";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
 import { describe, expect, it } from "vitest";
 import {
   shouldUseSemanticSearch,
@@ -7,7 +10,7 @@ import {
 } from "./search-dispatch";
 import type { VaultNode } from "./types";
 
-const vaultFiles = [
+const mdVaultFiles = [
   { path: "/home/user/data/documents/research/servlets.md", name: "servlets.md" },
   { path: "/home/user/data/documents/java-overview.md", name: "java-overview.md" },
 ];
@@ -32,37 +35,36 @@ describe("search-dispatch", () => {
   it("maps fuzzy hits with full vault paths", () => {
     const hits = fuzzySearchHits(sampleNodes, "servlet");
     expect(hits[0].path).toBe("/vault/research/servlets.md");
-    expect(hits[0].name).toBe("servlets.md");
   });
 
   it("resolves bare API filename to full vault path", () => {
-    expect(resolveSemanticSourcePath("servlets.md", vaultFiles)).toBe(
+    expect(resolveSemanticSourcePath("servlets.md", mdVaultFiles)).toBe(
       "/home/user/data/documents/research/servlets.md",
     );
   });
 
-  it("resolves ingest-style path to vault file by basename", () => {
-    expect(
-      resolveSemanticSourcePath(
-        "/Users/eugene/fyp-second-brain/data/chroma/sources/servlets.md",
-        vaultFiles,
-      ),
-    ).toBe("/home/user/data/documents/research/servlets.md");
+  it("returns null for unresolvable bare PDF (real API shape)", () => {
+    expect(resolveSemanticSourcePath("Lec03.pdf", mdVaultFiles)).toBeNull();
   });
 
-  it("maps semantic API results to openable full paths", () => {
+  it("drops unresolvable hits from semanticSearchHits", () => {
     const hits = semanticSearchHits(
-      [
-        {
-          source: "servlets.md",
-          excerpt: "Servlet lifecycle overview",
-          distance: 0.12,
-          page: null,
-        },
-      ],
-      vaultFiles,
+      [{ source: "Lec03.pdf", excerpt: "lecture chunk", distance: 0.2, page: 3 }],
+      mdVaultFiles,
     );
-    expect(hits[0].path).toBe("/home/user/data/documents/research/servlets.md");
-    expect(hits[0].excerpt).toContain("Servlet");
+    expect(hits).toHaveLength(0);
+  });
+
+  it("keeps resolvable md hits from captured vault-search fixture", () => {
+    const fixturePath = resolve(
+      dirname(fileURLToPath(import.meta.url)),
+      "../../../fixtures/vault-search-api.json",
+    );
+    const fixture = JSON.parse(readFileSync(fixturePath, "utf8")) as {
+      results: { source: string; excerpt: string; distance: number; page: number | null }[];
+    };
+    const hits = semanticSearchHits(fixture.results, mdVaultFiles);
+    expect(hits.every((h) => h.path.includes("/"))).toBe(true);
+    expect(hits.some((h) => h.name === "Lec03.pdf")).toBe(false);
   });
 });

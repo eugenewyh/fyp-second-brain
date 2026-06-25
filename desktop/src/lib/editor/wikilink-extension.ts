@@ -33,7 +33,6 @@ export const WikiLink = Mark.create({
 
   renderHTML({ HTMLAttributes }) {
     const target = HTMLAttributes.target ?? "";
-    const alias = HTMLAttributes.alias ?? target;
     return [
       "a",
       mergeAttributes(HTMLAttributes, {
@@ -41,7 +40,7 @@ export const WikiLink = Mark.create({
         class: "wikilink",
         href: "#",
       }),
-      alias,
+      0,
     ];
   },
 

@@ -1,0 +1,17 @@
+{
+  "query": "servlet",
+  "results": [
+    {
+      "source": "servlets.md",
+      "excerpt": "Servlet lifecycle and deployment",
+      "distance": 0.15,
+      "page": null
+    },
+    {
+      "source": "Lec03.pdf",
+      "excerpt": "PDF lecture chunk not openable as note",
+      "distance": 0.22,
+      "page": 3
+    }
+  ]
+}

@@ -1,13 +1,14 @@
 <script lang="ts">
   import { onMount, onDestroy, tick } from "svelte";
-  import { Editor } from "@tiptap/core";
-  import StarterKit from "@tiptap/starter-kit";
+  import type { Editor } from "@tiptap/core";
   import { readNote, writeNote, loadVaultTree, getVaultRoot } from "$lib/vault/load";
-  import { splitFrontmatter, markdownBodyToHtml } from "$lib/vault/markdown";
+  import { splitFrontmatter } from "$lib/vault/markdown";
   import { flattenVaultFiles } from "$lib/vault/flatten";
-  import { serializeEditorHtmlToNote } from "$lib/editor/note-save";
-  import { activateWikilinkTarget } from "$lib/editor/wikilink-click";
-  import { WikiLink } from "$lib/editor/wikilink-extension";
+  import {
+    createEditorFromMarkdown,
+    serializeOpenEditor,
+    activateWikilink,
+  } from "$lib/editor/note-editor-session";
   import { workspace } from "$lib/stores/workspace.svelte";
   import { tabs } from "$lib/stores/tabs.svelte";
 
@@ -20,27 +21,31 @@
   let editor: Editor | null = null;
   let loading = $state(true);
   let saving = $state(false);
+  let vaultReady = $state(false);
   let error = $state("");
   let saveMessage = $state("");
   let frontmatter = $state("");
   let vaultFiles = $state<{ path: string; name: string }[]>([]);
   let lastVaultNonce = 0;
 
-  async function refreshVaultFiles() {
+  async function refreshVaultFiles(): Promise<void> {
+    vaultReady = false;
     if (!workspace.vaultRoot) {
       workspace.vaultRoot = await getVaultRoot();
     }
     const tree = await loadVaultTree(workspace.vaultRoot);
     vaultFiles = flattenVaultFiles(tree);
+    vaultReady = true;
   }
 
   function handleWikilinkClick(event: MouseEvent) {
+    if (!vaultReady) return;
     const el = (event.target as HTMLElement).closest("a[data-wikilink]");
     if (!el || !editorEl?.contains(el)) return;
     event.preventDefault();
     const target = el.getAttribute("data-wikilink");
     if (!target) return;
-    const resolved = activateWikilinkTarget(target, vaultFiles);
+    const resolved = activateWikilink(target, vaultFiles);
     if (resolved) {
       tabs.openNoteTab(resolved);
       workspace.setActiveNote(resolved);
@@ -64,12 +69,8 @@
       const raw = await readNote(path);
       const parts = splitFrontmatter(raw);
       frontmatter = parts.frontmatter;
-      const html = markdownBodyToHtml(parts.body);
 
-      editor = new Editor({
-        element: editorEl,
-        extensions: [StarterKit, WikiLink],
-        content: html || "<p></p>",
+      editor = createEditorFromMarkdown(parts.body, editorEl, {
         editorProps: {
           attributes: { class: "tiptap-surface" },
         },
@@ -92,10 +93,11 @@
     saving = true;
     saveMessage = "";
     try {
-      const content = serializeEditorHtmlToNote(frontmatter, editor.getHTML());
+      const content = serializeOpenEditor(editor, frontmatter);
       await writeNote(path, content);
       saveMessage = "Saved";
       workspace.requestVaultRefresh();
+      await refreshVaultFiles();
     } catch (e) {
       saveMessage = e instanceof Error ? e.message : "Save failed";
     } finally {
@@ -107,7 +109,7 @@
     const nonce = workspace.vaultRefreshNonce;
     if (nonce > 0 && nonce !== lastVaultNonce && !loading) {
       lastVaultNonce = nonce;
-      refreshVaultFiles();
+      void refreshVaultFiles();
     }
   });
 

@@ -15,8 +15,11 @@ export function fuzzySearchHits(nodes: VaultNode[], query: string): VaultSearchH
   return fuzzySearchVault(nodes, query);
 }
 
-/** Map API source (often bare filename or ingest path) to full vault path for open/read. */
-export function resolveSemanticSourcePath(source: string, vaultFiles: VaultFileRef[]): string {
+/** Map API source to a vault path openable in the UI; null when not in the vault index. */
+export function resolveSemanticSourcePath(
+  source: string,
+  vaultFiles: VaultFileRef[],
+): string | null {
   const exact = vaultFiles.find((f) => f.path === source);
   if (exact) return exact.path;
 
@@ -29,21 +32,24 @@ export function resolveSemanticSourcePath(source: string, vaultFiles: VaultFileR
   if (byStem) return byStem.path;
 
   const partial = vaultFiles.find((f) => normalizeNoteName(f.name).includes(want));
-  return partial?.path ?? source;
+  return partial?.path ?? null;
 }
 
+/** Only returns hits resolvable to a vault file path (drops bare PDFs etc.). */
 export function semanticSearchHits(
   results: VaultSearchResult[],
   vaultFiles: VaultFileRef[],
 ): VaultSearchHit[] {
-  return results.map((r) => {
+  const hits: VaultSearchHit[] = [];
+  for (const r of results) {
     const path = resolveSemanticSourcePath(r.source, vaultFiles);
-    const name = path.split("/").pop() ?? r.source.split("/").pop() ?? r.source;
-    return {
+    if (!path) continue;
+    hits.push({
       path,
-      name,
+      name: path.split("/").pop() ?? r.source,
       score: r.distance ?? 0,
       excerpt: r.excerpt,
-    };
-  });
+    });
+  }
+  return hits;
 }
