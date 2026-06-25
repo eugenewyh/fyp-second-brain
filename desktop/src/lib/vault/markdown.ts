@@ -1,9 +1,39 @@
-import { wikilinksInMarkdownToSyntax, wikilinksToHtml } from "./wikilinks";
+import { marked } from "marked";
+import TurndownService from "turndown";
+import { wikilinksToHtml } from "./wikilinks";
 
 export interface NoteParts {
   frontmatter: string;
   body: string;
 }
+
+marked.setOptions({ gfm: true, breaks: false });
+
+const turndown = new TurndownService({
+  headingStyle: "atx",
+  bulletListMarker: "-",
+  codeBlockStyle: "fenced",
+  emDelimiter: "*",
+  strongDelimiter: "**",
+});
+
+turndown.addRule("wikiLink", {
+  filter: (node: HTMLElement) =>
+    node.nodeName === "A" && Boolean(node.getAttribute("data-wikilink")),
+  replacement: (content: string, node: HTMLElement) => {
+    const el = node;
+    const target = el.getAttribute("data-wikilink") ?? "";
+    const alias = content.trim();
+    if (!target) return alias;
+    if (alias === target) return `[[${target}]]`;
+    return `[[${target}|${alias}]]`;
+  },
+});
+
+turndown.addRule("strikethrough", {
+  filter: ["del", "s"],
+  replacement: (content: string) => `~~${content}~~`,
+});
 
 export function splitFrontmatter(content: string): NoteParts {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
@@ -19,59 +49,15 @@ export function joinFrontmatter(parts: NoteParts): string {
   return `${parts.frontmatter}${parts.body}`;
 }
 
-/** Minimal markdown → HTML for TipTap load (headings, lists, paragraphs, wikilinks). */
+/** Markdown body → HTML for TipTap (GFM via marked; wikilinks pre-expanded). */
 export function markdownBodyToHtml(body: string): string {
-  const withWiki = wikilinksToHtml(body);
-  const lines = withWiki.split(/\r?\n/);
-  const html: string[] = [];
-  let inList = false;
-
-  for (const line of lines) {
-    if (line.startsWith("## ")) {
-      if (inList) {
-        html.push("</ul>");
-        inList = false;
-      }
-      html.push(`<h2>${line.slice(3)}</h2>`);
-    } else if (line.startsWith("# ")) {
-      if (inList) {
-        html.push("</ul>");
-        inList = false;
-      }
-      html.push(`<h1>${line.slice(2)}</h1>`);
-    } else if (line.startsWith("- ")) {
-      if (!inList) {
-        html.push("<ul>");
-        inList = true;
-      }
-      html.push(`<li>${line.slice(2)}</li>`);
-    } else if (line.trim() === "") {
-      if (inList) {
-        html.push("</ul>");
-        inList = false;
-      }
-    } else {
-      if (inList) {
-        html.push("</ul>");
-        inList = false;
-      }
-      html.push(`<p>${line}</p>`);
-    }
-  }
-  if (inList) html.push("</ul>");
-  return html.join("");
+  const withWiki = wikilinksToHtml(body.trim());
+  const html = marked.parse(withWiki, { async: false }) as string;
+  return html.trim();
 }
 
-/** Serialize TipTap HTML back to markdown body text. */
+/** TipTap HTML → markdown body (turndown with wikilink rule). */
 export function htmlBodyToMarkdown(html: string): string {
-  let text = wikilinksInMarkdownToSyntax(html);
-  text = text
-    .replace(/<h1>([\s\S]*?)<\/h1>/gi, "# $1\n\n")
-    .replace(/<h2>([\s\S]*?)<\/h2>/gi, "## $1\n\n")
-    .replace(/<li>([\s\S]*?)<\/li>/gi, "- $1\n")
-    .replace(/<\/?ul>/gi, "")
-    .replace(/<p>([\s\S]*?)<\/p>/gi, "$1\n\n")
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/?[^>]+>/g, "");
-  return text.replace(/\n{3,}/g, "\n\n").trim() + "\n";
+  const md = turndown.turndown(html).trim();
+  return md ? `${md}\n` : "";
 }

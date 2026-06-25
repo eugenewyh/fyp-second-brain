@@ -1,18 +1,34 @@
-import { Mark, mergeAttributes } from "@tiptap/core";
-import { markInputRule } from "@tiptap/core";
+import { Mark, mergeAttributes, markInputRule } from "@tiptap/core";
 
 export const WikiLink = Mark.create({
   name: "wikiLink",
 
   addAttributes() {
     return {
-      target: { default: null },
-      alias: { default: null },
+      target: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-wikilink"),
+      },
+      alias: {
+        default: null,
+        parseHTML: (element) => element.textContent?.trim() ?? null,
+      },
     };
   },
 
   parseHTML() {
-    return [{ tag: "a[data-wikilink]" }];
+    return [
+      {
+        tag: "a[data-wikilink]",
+        getAttrs: (element) => {
+          const el = element as HTMLElement;
+          const target = el.getAttribute("data-wikilink");
+          if (!target) return false;
+          const alias = el.textContent?.trim() || target;
+          return { target, alias };
+        },
+      },
+    ];
   },
 
   renderHTML({ HTMLAttributes }) {
