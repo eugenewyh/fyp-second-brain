@@ -13,6 +13,7 @@ desktop/node_modules/
 desktop/build/
 desktop/.svelte-kit/
 desktop/src-tauri/target/
+.verify-scratch/
 evaluation/results/*.json
 evaluation/results/*.md
 !evaluation/results/.gitkeep
