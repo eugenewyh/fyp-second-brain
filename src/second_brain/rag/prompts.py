@@ -14,6 +14,26 @@ Question: {question}
 
 Answer with inline citations:"""
 
+CHAT_SYSTEM_PROMPT = """You are a contextual research assistant helping the user explore their personal knowledge base.
+Answer using the retrieved document context and any open-note context provided. If context is insufficient, say so clearly.
+
+Rules:
+- Cite sources inline using [1], [2], etc. matching the source numbers in the context.
+- Be concise and accurate. Do not invent facts not supported by the context.
+- Maintain conversational continuity with prior turns in this thread."""
+
+CHAT_CONTEXT_BLOCK = """Open note: {note_path}
+{selected_block}
+{excerpt_block}"""
+
+CHAT_USER_WITH_CONTEXT = """Retrieved context from personal documents:
+
+{context}
+
+User message: {message}
+
+Answer with inline citations:"""
+
 
 _SOURCE_LABELS = {
     "personal": "Personal",

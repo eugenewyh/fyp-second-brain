@@ -11,7 +11,11 @@
 
   onMount(() => {
     workspace.init();
-    return startVaultWatcher(() => {});
+    let cleanup: (() => void) | undefined;
+    void startVaultWatcher(() => {}).then((stop) => {
+      cleanup = stop;
+    });
+    return () => cleanup?.();
   });
 
   function onKeydown(e: KeyboardEvent) {

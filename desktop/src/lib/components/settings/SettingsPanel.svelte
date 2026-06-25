@@ -2,11 +2,16 @@
   import { api, type Settings } from "$lib/api";
   import { connection } from "$lib/stores/connection.svelte";
   import { tabs } from "$lib/stores/tabs.svelte";
+  import {
+    loadAutoIngestEnabled,
+    saveAutoIngestEnabled,
+  } from "$lib/vault/watcher-prefs";
 
   let settings = $state<Settings | null>(null);
   let settingsForm = $state<Record<string, string>>({});
   let settingsSaving = $state(false);
   let settingsMessage = $state("");
+  let autoIngest = $state(loadAutoIngestEnabled());
 
   async function loadSettings() {
     settings = await api.getSettings();
@@ -73,6 +78,19 @@
       <label>
         Max Revisions
         <input bind:value={settingsForm.MAX_REVISIONS} />
+      </label>
+      <label>
+        Auto-ingest on file changes
+        <select
+          value={autoIngest ? "true" : "false"}
+          onchange={(e) => {
+            autoIngest = (e.currentTarget as HTMLSelectElement).value === "true";
+            saveAutoIngestEnabled(autoIngest);
+          }}
+        >
+          <option value="true">Enabled</option>
+          <option value="false">Disabled</option>
+        </select>
       </label>
     </div>
 

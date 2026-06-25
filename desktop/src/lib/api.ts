@@ -64,6 +64,23 @@ export interface QueryResult {
   sources: Source[];
 }
 
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface ChatContext {
+  note_path?: string | null;
+  selected_text?: string | null;
+  note_excerpt?: string | null;
+}
+
+export interface ChatResult {
+  question: string;
+  answer: string;
+  sources: Source[];
+}
+
 export interface ResearchResult {
   query: string;
   plan: string;
@@ -99,6 +116,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ question, top_k }),
     }),
+  chat: (messages: ChatMessage[], context?: ChatContext, top_k = 5) =>
+    apiFetch<ChatResult>("/api/chat", {
+      method: "POST",
+      body: JSON.stringify({ messages, context: context ?? null, top_k }),
+    }),
   research: (query: string) =>
     apiFetch<ResearchResult>("/api/research", {
       method: "POST",
@@ -107,6 +129,11 @@ export const api = {
   ingest: (path: string) =>
     apiFetch<{ ingested_chunks: number; collection_total: number; path: string }>(
       "/api/ingest",
+      { method: "POST", body: JSON.stringify({ path }) },
+    ),
+  ingestFile: (path: string) =>
+    apiFetch<{ ingested_chunks: number; collection_total: number; path: string }>(
+      "/api/ingest/file",
       { method: "POST", body: JSON.stringify({ path }) },
     ),
   getSettings: () => apiFetch<Settings>("/api/settings"),

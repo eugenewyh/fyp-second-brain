@@ -9,6 +9,15 @@
     serializeOpenEditor,
     activateWikilink,
   } from "$lib/editor/note-editor-session";
+  import { htmlBodyToMarkdown, markdownBodyToHtml } from "$lib/vault/markdown";
+  import {
+    loadEditorViewMode,
+    loadSplitRatio,
+    saveEditorViewMode,
+    saveSplitRatio,
+    type EditorViewMode,
+  } from "$lib/workspace/editor-prefs";
+  import PaneResizer from "$lib/components/workspace/PaneResizer.svelte";
   import { workspace } from "$lib/stores/workspace.svelte";
   import { tabs } from "$lib/stores/tabs.svelte";
 
@@ -18,7 +27,12 @@
 
   let { path }: Props = $props();
   let editorEl: HTMLDivElement | undefined = $state();
+  let previewEl: HTMLDivElement | undefined = $state();
   let editor: Editor | null = null;
+  let viewMode = $state<EditorViewMode>(loadEditorViewMode());
+  let splitRatio = $state(loadSplitRatio());
+  let previewHtml = $state("");
+  let previewTimer: ReturnType<typeof setTimeout> | null = null;
   let loading = $state(true);
   let saving = $state(false);
   let vaultReady = $state(false);
@@ -41,7 +55,10 @@
   function handleWikilinkClick(event: MouseEvent) {
     if (!vaultReady) return;
     const el = (event.target as HTMLElement).closest("a[data-wikilink]");
-    if (!el || !editorEl?.contains(el)) return;
+    if (!el) return;
+    const inEditor = editorEl?.contains(el);
+    const inPreview = previewEl?.contains(el);
+    if (!inEditor && !inPreview) return;
     event.preventDefault();
     const target = el.getAttribute("data-wikilink");
     if (!target) return;
@@ -50,6 +67,29 @@
       tabs.openNoteTab(resolved);
       workspace.setActiveNote(resolved);
     }
+  }
+
+  function schedulePreviewUpdate() {
+    if (!editor) return;
+    if (previewTimer) clearTimeout(previewTimer);
+    previewTimer = setTimeout(() => {
+      const body = htmlBodyToMarkdown(editor!.getHTML());
+      previewHtml = markdownBodyToHtml(body);
+    }, 150);
+  }
+
+  function setViewMode(mode: EditorViewMode) {
+    viewMode = mode;
+    saveEditorViewMode(mode);
+    schedulePreviewUpdate();
+  }
+
+  function onSplitResize(delta: number) {
+    const wrap = editorEl?.parentElement?.parentElement;
+    if (!wrap) return;
+    const total = wrap.clientWidth || 1;
+    splitRatio = Math.min(0.75, Math.max(0.25, splitRatio + delta / total));
+    saveSplitRatio(splitRatio);
   }
 
   async function initEditor() {
@@ -74,6 +114,7 @@
         editorProps: {
           attributes: { class: "tiptap-surface" },
         },
+        onUpdate: () => schedulePreviewUpdate(),
         onSelectionUpdate: ({ editor: ed }) => {
           const { from, to } = ed.state.selection;
           if (from !== to) {
@@ -81,6 +122,7 @@
           }
         },
       });
+      previewHtml = markdownBodyToHtml(parts.body);
     } catch (e) {
       error = e instanceof Error ? e.message : "Failed to load note";
     } finally {
@@ -116,10 +158,13 @@
   onMount(() => {
     initEditor();
     editorEl?.addEventListener("click", handleWikilinkClick);
+    previewEl?.addEventListener("click", handleWikilinkClick);
   });
 
   onDestroy(() => {
+    if (previewTimer) clearTimeout(previewTimer);
     editorEl?.removeEventListener("click", handleWikilinkClick);
+    previewEl?.removeEventListener("click", handleWikilinkClick);
     editor?.destroy();
     editor = null;
   });
@@ -131,9 +176,16 @@
       <h2>{path.split("/").pop()}</h2>
       <p class="hint path-hint">{path}</p>
     </div>
-    <button class="btn-primary" onclick={saveNote} disabled={saving || loading || !!error}>
-      {saving ? "Saving…" : "Save"}
-    </button>
+    <div class="toolbar-actions">
+      <div class="view-toggle" role="group" aria-label="Editor view mode">
+        <button class:active={viewMode === "edit"} onclick={() => setViewMode("edit")}>Edit</button>
+        <button class:active={viewMode === "split"} onclick={() => setViewMode("split")}>Split</button>
+        <button class:active={viewMode === "preview"} onclick={() => setViewMode("preview")}>Preview</button>
+      </div>
+      <button class="btn-primary" onclick={saveNote} disabled={saving || loading || !!error}>
+        {saving ? "Saving…" : "Save"}
+      </button>
+    </div>
   </div>
 
   {#if loading}
@@ -144,7 +196,28 @@
     <p class="error">{error}</p>
   {/if}
 
-  <div class="editor-wrap" class:hidden={loading || !!error} bind:this={editorEl}></div>
+  <div
+    class="editor-layout"
+    class:split={viewMode === "split"}
+    class:preview-only={viewMode === "preview"}
+    class:hidden={loading || !!error}
+  >
+    {#if viewMode !== "preview"}
+      <div class="editor-wrap" style={viewMode === "split" ? `flex: ${splitRatio}` : ""} bind:this={editorEl}></div>
+    {/if}
+    {#if viewMode === "split"}
+      <PaneResizer onResize={onSplitResize} />
+    {/if}
+    {#if viewMode !== "edit"}
+      <div
+        class="preview-wrap"
+        style={viewMode === "split" ? `flex: ${1 - splitRatio}` : ""}
+        bind:this={previewEl}
+      >
+        {@html previewHtml}
+      </div>
+    {/if}
+  </div>
 
   {#if saveMessage}
     <p class="save-msg">{saveMessage}</p>
@@ -170,24 +243,77 @@
     gap: 1rem;
   }
 
+  .toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .view-toggle {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .view-toggle button {
+    font-size: 0.7rem;
+    padding: 0.35rem 0.55rem;
+    background: var(--surface);
+    color: var(--text-muted);
+    border: none;
+    border-radius: 0;
+  }
+
+  .view-toggle button.active {
+    background: var(--accent);
+    color: white;
+  }
+
+  .editor-layout {
+    display: flex;
+    min-height: 50vh;
+    max-height: 70vh;
+    gap: 0;
+  }
+
+  .editor-layout.hidden {
+    display: none;
+  }
+
+  .editor-layout.preview-only .preview-wrap {
+    flex: 1;
+  }
+
   .path-hint {
     font-size: 0.75rem;
     word-break: break-all;
     color: var(--text-muted);
   }
 
-  .editor-wrap {
+  .editor-wrap,
+  .preview-wrap {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    min-height: 50vh;
-    max-height: 70vh;
     overflow-y: auto;
     padding: 1rem 1.25rem;
+    min-height: 50vh;
   }
 
-  .editor-wrap.hidden {
-    display: none;
+  .editor-wrap {
+    flex: 1;
+  }
+
+  .preview-wrap {
+    flex: 1;
+    line-height: 1.6;
+  }
+
+  .preview-wrap :global(a.wikilink) {
+    color: var(--accent);
+    text-decoration: underline;
+    cursor: pointer;
   }
 
   :global(.tiptap-surface) {

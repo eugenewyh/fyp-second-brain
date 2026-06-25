@@ -6,7 +6,9 @@
   import IngestPanel from "$lib/components/documents/IngestPanel.svelte";
   import SettingsPanel from "$lib/components/settings/SettingsPanel.svelte";
   import NoteEditor from "$lib/components/editor/NoteEditor.svelte";
+  import PdfViewer from "$lib/components/editor/PdfViewer.svelte";
   import EditorPlaceholder from "$lib/components/editor/EditorPlaceholder.svelte";
+  import { isPdfPath } from "$lib/vault/pdf";
 </script>
 
 <div class="center-workspace">
@@ -24,6 +26,10 @@
       {#if tabs.activeTab.path.endsWith(".md")}
         {#key tabs.activeTab.path}
           <NoteEditor path={tabs.activeTab.path} />
+        {/key}
+      {:else if isPdfPath(tabs.activeTab.path)}
+        {#key tabs.activeTab.path}
+          <PdfViewer path={tabs.activeTab.path} />
         {/key}
       {:else}
         <EditorPlaceholder path={tabs.activeTab.path} />

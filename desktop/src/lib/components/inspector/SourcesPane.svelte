@@ -1,5 +1,31 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { research } from "$lib/stores/research.svelte";
+  import { chat } from "$lib/stores/chat.svelte";
+  import { tabs } from "$lib/stores/tabs.svelte";
+  import { workspace } from "$lib/stores/workspace.svelte";
+  import { resolveSourcePath } from "$lib/vault/source-path";
+  import { loadVaultTree, getVaultRoot } from "$lib/vault/load";
+  import { flattenVaultFiles } from "$lib/vault/flatten";
+
+  let vaultFiles = $state<{ path: string; name: string }[]>([]);
+
+  onMount(async () => {
+    const root = workspace.vaultRoot ?? (await getVaultRoot());
+    workspace.vaultRoot = root;
+    const tree = await loadVaultTree(root);
+    vaultFiles = flattenVaultFiles(tree);
+  });
+
+  function openSource(source: string, page: number | null) {
+    const path = resolveSourcePath(source, workspace.vaultRoot, vaultFiles);
+    if (!path) return;
+    tabs.openNoteTab(path);
+    workspace.setActiveNote(path);
+    if (path.endsWith(".pdf") && page) {
+      workspace.pdfJumpPage = page;
+    }
+  }
 </script>
 
 <div class="sources">
@@ -17,13 +43,28 @@
       <p class="label">Stats</p>
       <pre>{JSON.stringify(research.result.retrieval_stats, null, 2)}</pre>
     </div>
+  {:else if chat.lastSources.length}
+    <h4>Chat sources</h4>
+    <ul>
+      {#each chat.lastSources as src}
+        <li>
+          <button class="source-btn" onclick={() => openSource(src.source, src.page)}>
+            <strong>[{src.index}]</strong> {src.source}
+            {#if src.page}<span>, p.{src.page}</span>{/if}
+          </button>
+          <p class="excerpt">{src.excerpt?.slice(0, 100)}</p>
+        </li>
+      {/each}
+    </ul>
   {:else if research.quickResult?.sources.length}
     <h4>Query sources</h4>
     <ul>
       {#each research.quickResult.sources as src}
         <li>
-          <strong>[{src.index}]</strong> {src.source}
-          {#if src.page}<span>, p.{src.page}</span>{/if}
+          <button class="source-btn" onclick={() => openSource(src.source, src.page)}>
+            <strong>[{src.index}]</strong> {src.source}
+            {#if src.page}<span>, p.{src.page}</span>{/if}
+          </button>
           <p class="excerpt">{src.excerpt?.slice(0, 100)}</p>
         </li>
       {/each}
@@ -83,5 +124,17 @@
   .hint {
     color: var(--text-muted);
     font-size: 0.75rem;
+  }
+
+  .source-btn {
+    background: transparent;
+    color: var(--text);
+    padding: 0;
+    font-size: inherit;
+    text-align: left;
+  }
+
+  .source-btn:hover {
+    color: var(--accent);
   }
 </style>

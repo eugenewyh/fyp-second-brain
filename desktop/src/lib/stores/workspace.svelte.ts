@@ -20,7 +20,9 @@ class WorkspaceStore {
   vaultRefreshNonce = $state(0);
   inspectorTab = $state<"chat" | "agent" | "backlinks" | "sources">("chat");
   vaultRoot = $state<string | null>(null);
-  recentNotePaths = $state<string[]>([]);
+  recentNotePaths = $state<string[]>(loadRecentNotePaths());
+  pdfJumpPage = $state<number | null>(null);
+  watcherStatus = $state<"idle" | "ingesting" | string>("idle");
 
   init() {
     const saved = loadLayout();
@@ -28,6 +30,7 @@ class WorkspaceStore {
     this.rightWidth = saved.rightWidth;
     this.leftCollapsed = saved.leftCollapsed;
     this.rightCollapsed = saved.rightCollapsed;
+    this.recentNotePaths = loadRecentNotePaths();
   }
 
   persist() {
@@ -67,6 +70,7 @@ class WorkspaceStore {
     this.activeNotePath = path;
     if (path) {
       this.recentNotePaths = [path, ...this.recentNotePaths.filter((p) => p !== path)].slice(0, 8);
+      saveRecentNotePaths(this.recentNotePaths);
     }
   }
 
@@ -81,6 +85,25 @@ class WorkspaceStore {
   requestVaultRefresh() {
     this.vaultRefreshNonce += 1;
   }
+}
+
+const RECENT_STORAGE_KEY = "second-brain-recent-notes";
+
+function loadRecentNotePaths(): string[] {
+  if (typeof localStorage === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(RECENT_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? parsed.filter((p) => typeof p === "string").slice(0, 8) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentNotePaths(paths: string[]): void {
+  if (typeof localStorage === "undefined") return;
+  localStorage.setItem(RECENT_STORAGE_KEY, JSON.stringify(paths));
 }
 
 export const workspace = new WorkspaceStore();

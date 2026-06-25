@@ -366,11 +366,11 @@ python scripts/generate_eval_report.py evaluation/results/run_*.json
 
 ### Desktop UI (deferred)
 
-- [ ] Split-view editor + live preview toggle in center pane
-- [ ] Full multi-turn contextual AI chat in inspector (currently Quick Query RAG)
-- [ ] Interactive knowledge graph / suggested connections beyond “Recently touched”
-- [ ] File watcher auto-ingest (`watcher.ts` stub remains)
-- [ ] In-app PDF viewing (PDFs appear in tree; only `.md` is editable)
+- [x] Split-view editor + live preview toggle in center pane
+- [x] Full multi-turn contextual AI chat in inspector (currently Quick Query RAG)
+- [x] Interactive knowledge graph / suggested connections beyond “Recently touched”
+- [x] File watcher auto-ingest (`watcher.ts` stub remains)
+- [x] In-app PDF viewing (PDFs appear in tree; only `.md` is editable)
 
 ### FYP submission (manual)
 

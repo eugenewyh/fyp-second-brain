@@ -16,10 +16,10 @@ load_dotenv(ROOT / ".env")
 
 from second_brain.config import PROJECT_ROOT  # noqa: E402
 from second_brain.graph import run_research  # noqa: E402
-from second_brain.ingestion.pipeline import ingest_directory  # noqa: E402
+from second_brain.ingestion.pipeline import ingest_directory, ingest_file  # noqa: E402
 from second_brain.memory.chroma_store import collection_count  # noqa: E402
 from second_brain.memory.retriever import retrieve  # noqa: E402
-from second_brain.rag.chain import ask  # noqa: E402
+from second_brain.rag.chain import ChatContext, ChatMessage, ask, chat_with_context  # noqa: E402
 
 app = FastAPI(title="Second Brain Sidecar", version="0.1.0")
 app.add_middleware(
@@ -47,11 +47,32 @@ class QueryRequest(BaseModel):
     top_k: int = Field(default=5, ge=1, le=20)
 
 
+class ChatMessageRequest(BaseModel):
+    role: str
+    content: str
+
+
+class ChatContextRequest(BaseModel):
+    note_path: str | None = None
+    selected_text: str | None = None
+    note_excerpt: str | None = None
+
+
+class ChatRequest(BaseModel):
+    messages: list[ChatMessageRequest]
+    context: ChatContextRequest | None = None
+    top_k: int = Field(default=5, ge=1, le=20)
+
+
 class ResearchRequest(BaseModel):
     query: str
 
 
 class IngestRequest(BaseModel):
+    path: str
+
+
+class IngestFileRequest(BaseModel):
     path: str
 
 
@@ -103,6 +124,34 @@ def status():
     }
 
 
+@app.post("/api/chat")
+def chat(req: ChatRequest):
+    if collection_count() == 0:
+        raise HTTPException(400, "Knowledge base is empty. Ingest documents first.")
+    messages = [ChatMessage(role=m.role, content=m.content) for m in req.messages]
+    ctx = None
+    if req.context:
+        ctx = ChatContext(
+            note_path=req.context.note_path,
+            selected_text=req.context.selected_text,
+            note_excerpt=req.context.note_excerpt,
+        )
+    response = chat_with_context(messages, context=ctx, top_k=req.top_k)
+    return {
+        "question": response.question,
+        "answer": response.answer,
+        "sources": [
+            {
+                "index": s.index,
+                "source": s.source,
+                "page": s.page,
+                "excerpt": s.excerpt,
+            }
+            for s in response.sources
+        ],
+    }
+
+
 @app.post("/api/query")
 def query(req: QueryRequest):
     if collection_count() == 0:
@@ -146,6 +195,22 @@ def ingest(req: IngestRequest):
     if not target.is_dir():
         raise HTTPException(400, f"Not a directory: {target}")
     count = ingest_directory(target)
+    return {
+        "ingested_chunks": count,
+        "collection_total": collection_count(),
+        "path": str(target),
+    }
+
+
+@app.post("/api/ingest/file")
+def ingest_single_file(req: IngestFileRequest):
+    target = Path(req.path).expanduser().resolve()
+    if not target.is_file():
+        raise HTTPException(400, f"Not a file: {target}")
+    suffix = target.suffix.lower()
+    if suffix not in {".pdf", ".txt", ".md"}:
+        raise HTTPException(400, f"Unsupported file type: {suffix}")
+    count = ingest_file(target)
     return {
         "ingested_chunks": count,
         "collection_total": collection_count(),
