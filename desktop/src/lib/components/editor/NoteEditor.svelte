@@ -2,18 +2,14 @@
   import { onMount, onDestroy, tick } from "svelte";
   import { Editor } from "@tiptap/core";
   import StarterKit from "@tiptap/starter-kit";
-  import { readNote, writeNote, loadVaultTree } from "$lib/vault/load";
-  import {
-    splitFrontmatter,
-    joinFrontmatter,
-    markdownBodyToHtml,
-    htmlBodyToMarkdown,
-  } from "$lib/vault/markdown";
-  import { resolveWikilinkTarget } from "$lib/vault/wikilinks";
+  import { readNote, writeNote, loadVaultTree, getVaultRoot } from "$lib/vault/load";
+  import { splitFrontmatter, markdownBodyToHtml } from "$lib/vault/markdown";
+  import { flattenVaultFiles } from "$lib/vault/flatten";
+  import { serializeEditorHtmlToNote } from "$lib/editor/note-save";
+  import { activateWikilinkTarget } from "$lib/editor/wikilink-click";
   import { WikiLink } from "$lib/editor/wikilink-extension";
   import { workspace } from "$lib/stores/workspace.svelte";
   import { tabs } from "$lib/stores/tabs.svelte";
-  import type { VaultNode } from "$lib/vault/types";
 
   interface Props {
     path: string;
@@ -28,16 +24,14 @@
   let saveMessage = $state("");
   let frontmatter = $state("");
   let vaultFiles = $state<{ path: string; name: string }[]>([]);
+  let lastVaultNonce = 0;
 
-  function flattenFiles(nodes: VaultNode[]): { path: string; name: string }[] {
-    const out: { path: string; name: string }[] = [];
-    for (const n of nodes) {
-      if (n.type === "file" && n.name.endsWith(".md")) {
-        out.push({ path: n.path, name: n.name });
-      }
-      if (n.children) out.push(...flattenFiles(n.children));
+  async function refreshVaultFiles() {
+    if (!workspace.vaultRoot) {
+      workspace.vaultRoot = await getVaultRoot();
     }
-    return out;
+    const tree = await loadVaultTree(workspace.vaultRoot);
+    vaultFiles = flattenVaultFiles(tree);
   }
 
   function handleWikilinkClick(event: MouseEvent) {
@@ -46,7 +40,7 @@
     event.preventDefault();
     const target = el.getAttribute("data-wikilink");
     if (!target) return;
-    const resolved = resolveWikilinkTarget(target, vaultFiles);
+    const resolved = activateWikilinkTarget(target, vaultFiles);
     if (resolved) {
       tabs.openNoteTab(resolved);
       workspace.setActiveNote(resolved);
@@ -65,10 +59,7 @@
       await tick();
       if (!editorEl) throw new Error("Editor surface not ready");
 
-      if (workspace.vaultRoot) {
-        const tree = await loadVaultTree(workspace.vaultRoot);
-        vaultFiles = flattenFiles(tree);
-      }
+      await refreshVaultFiles();
 
       const raw = await readNote(path);
       const parts = splitFrontmatter(raw);
@@ -101,8 +92,8 @@
     saving = true;
     saveMessage = "";
     try {
-      const body = htmlBodyToMarkdown(editor.getHTML());
-      await writeNote(path, joinFrontmatter({ frontmatter, body }));
+      const content = serializeEditorHtmlToNote(frontmatter, editor.getHTML());
+      await writeNote(path, content);
       saveMessage = "Saved";
       workspace.requestVaultRefresh();
     } catch (e) {
@@ -111,6 +102,14 @@
       saving = false;
     }
   }
+
+  $effect(() => {
+    const nonce = workspace.vaultRefreshNonce;
+    if (nonce > 0 && nonce !== lastVaultNonce && !loading) {
+      lastVaultNonce = nonce;
+      refreshVaultFiles();
+    }
+  });
 
   onMount(() => {
     initEditor();

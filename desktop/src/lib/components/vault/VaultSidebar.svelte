@@ -7,6 +7,7 @@
     fuzzySearchHits,
     semanticSearchHits,
   } from "$lib/vault/search-dispatch";
+  import { flattenVaultFiles } from "$lib/vault/flatten";
   import type { VaultSearchHit } from "$lib/vault/types";
   import type { VaultNode } from "$lib/vault/types";
   import { workspace } from "$lib/stores/workspace.svelte";
@@ -49,7 +50,7 @@
       searchLoading = true;
       try {
         const res = await api.vaultSearch(query.trim());
-        searchHits = semanticSearchHits(res.results);
+        searchHits = semanticSearchHits(res.results, flattenVaultFiles(nodes));
       } catch (e) {
         searchError = e instanceof Error ? e.message : "Semantic search failed";
         searchHits = [];

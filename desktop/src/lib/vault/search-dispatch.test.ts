@@ -3,8 +3,14 @@ import {
   shouldUseSemanticSearch,
   fuzzySearchHits,
   semanticSearchHits,
+  resolveSemanticSourcePath,
 } from "./search-dispatch";
 import type { VaultNode } from "./types";
+
+const vaultFiles = [
+  { path: "/home/user/data/documents/research/servlets.md", name: "servlets.md" },
+  { path: "/home/user/data/documents/java-overview.md", name: "java-overview.md" },
+];
 
 const sampleNodes: VaultNode[] = [
   {
@@ -23,22 +29,40 @@ describe("search-dispatch", () => {
     expect(shouldUseSemanticSearch("fuzzy")).toBe(false);
   });
 
-  it("maps fuzzy hits from vault nodes", () => {
+  it("maps fuzzy hits with full vault paths", () => {
     const hits = fuzzySearchHits(sampleNodes, "servlet");
-    expect(hits.length).toBeGreaterThan(0);
+    expect(hits[0].path).toBe("/vault/research/servlets.md");
     expect(hits[0].name).toBe("servlets.md");
   });
 
-  it("maps semantic API results to search hits with excerpts", () => {
-    const hits = semanticSearchHits([
-      {
-        source: "/data/documents/servlets.md",
-        excerpt: "Servlet lifecycle overview",
-        distance: 0.12,
-        page: null,
-      },
-    ]);
-    expect(hits[0].path).toContain("servlets.md");
+  it("resolves bare API filename to full vault path", () => {
+    expect(resolveSemanticSourcePath("servlets.md", vaultFiles)).toBe(
+      "/home/user/data/documents/research/servlets.md",
+    );
+  });
+
+  it("resolves ingest-style path to vault file by basename", () => {
+    expect(
+      resolveSemanticSourcePath(
+        "/Users/eugene/fyp-second-brain/data/chroma/sources/servlets.md",
+        vaultFiles,
+      ),
+    ).toBe("/home/user/data/documents/research/servlets.md");
+  });
+
+  it("maps semantic API results to openable full paths", () => {
+    const hits = semanticSearchHits(
+      [
+        {
+          source: "servlets.md",
+          excerpt: "Servlet lifecycle overview",
+          distance: 0.12,
+          page: null,
+        },
+      ],
+      vaultFiles,
+    );
+    expect(hits[0].path).toBe("/home/user/data/documents/research/servlets.md");
     expect(hits[0].excerpt).toContain("Servlet");
   });
 });
