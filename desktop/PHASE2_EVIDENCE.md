@@ -1,6 +1,6 @@
 # Phase 2 Workspace Evidence
 
-Generated: 2026-06-25T08:05:15.364Z
+Generated: 2026-06-25T08:05:31.255Z
 
 ## Vitest
 - Test files passed: 5
@@ -10,7 +10,7 @@ Generated: 2026-06-25T08:05:15.364Z
 - Errors: 0
 
 ## Git
-- HEAD: 946c155
+- HEAD: af0dbc0
 
 ## Shipped modules (integration-tested)
 - `src/lib/editor/note-editor-session.ts` — real `new Editor()`, `getHTML()`, `serializeOpenEditor`, `activateWikilink`
