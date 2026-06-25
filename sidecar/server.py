@@ -18,6 +18,7 @@ from second_brain.config import PROJECT_ROOT  # noqa: E402
 from second_brain.graph import run_research  # noqa: E402
 from second_brain.ingestion.pipeline import ingest_directory  # noqa: E402
 from second_brain.memory.chroma_store import collection_count  # noqa: E402
+from second_brain.memory.retriever import retrieve  # noqa: E402
 from second_brain.rag.chain import ask  # noqa: E402
 
 app = FastAPI(title="Second Brain Sidecar", version="0.1.0")
@@ -56,6 +57,16 @@ class IngestRequest(BaseModel):
 
 class SettingsUpdate(BaseModel):
     values: dict[str, str]
+
+
+class VaultSearchRequest(BaseModel):
+    query: str
+    top_k: int = Field(default=8, ge=1, le=20)
+
+
+class VaultRelatedRequest(BaseModel):
+    text: str
+    top_k: int = Field(default=5, ge=1, le=20)
 
 
 def _read_env() -> dict[str, str]:
@@ -156,6 +167,37 @@ def update_settings(req: SettingsUpdate):
     allowed = {k: v for k, v in req.values.items() if k in ENV_KEYS}
     _write_env(allowed)
     return {"updated": list(allowed.keys()), "values": _read_env()}
+
+
+def _format_retrieval_results(docs) -> list[dict]:
+    results = []
+    for doc in docs:
+        meta = doc.metadata
+        results.append(
+            {
+                "source": meta.get("source", "unknown"),
+                "excerpt": doc.page_content[:300],
+                "distance": meta.get("distance"),
+                "page": meta.get("page"),
+            }
+        )
+    return results
+
+
+@app.post("/api/vault/search")
+def vault_search(req: VaultSearchRequest):
+    if collection_count() == 0:
+        raise HTTPException(400, "Knowledge base is empty. Ingest documents first.")
+    docs = retrieve(req.query, top_k=req.top_k)
+    return {"query": req.query, "results": _format_retrieval_results(docs)}
+
+
+@app.post("/api/vault/related")
+def vault_related(req: VaultRelatedRequest):
+    if collection_count() == 0:
+        return {"query": req.text, "results": []}
+    docs = retrieve(req.text, top_k=req.top_k)
+    return {"query": req.text, "results": _format_retrieval_results(docs)}
 
 
 def main():

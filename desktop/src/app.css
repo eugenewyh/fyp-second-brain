@@ -11,6 +11,9 @@
   --warning: #f0b429;
   --error: #f56565;
   --radius: 10px;
+  --pane-bg: #161922;
+  --resizer-hover: #5b8def;
+  --tab-active: #242836;
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 15px;
   line-height: 1.5;

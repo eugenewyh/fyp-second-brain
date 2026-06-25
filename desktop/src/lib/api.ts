@@ -6,11 +6,7 @@ let cachedBaseUrl: string | null = null;
 
 export async function getBaseUrl(): Promise<string> {
   if (!cachedBaseUrl) {
-    try {
-      cachedBaseUrl = await invoke<string>("get_sidecar_url");
-    } catch {
-      cachedBaseUrl = DEFAULT_URL;
-    }
+    cachedBaseUrl = await invoke<string>("get_sidecar_url");
   }
   return cachedBaseUrl;
 }
@@ -84,6 +80,18 @@ export interface Settings {
   tavily_configured: boolean;
 }
 
+export interface VaultSearchResult {
+  source: string;
+  excerpt: string;
+  distance: number;
+  page: number | null;
+}
+
+export interface VaultSearchResponse {
+  query: string;
+  results: VaultSearchResult[];
+}
+
 export const api = {
   status: () => apiFetch<Status>("/api/status"),
   query: (question: string, top_k = 5) =>
@@ -108,4 +116,14 @@ export const api = {
       body: JSON.stringify({ values }),
     }),
   restartSidecar: () => invoke<string>("restart_sidecar"),
+  vaultSearch: (query: string, top_k = 8) =>
+    apiFetch<VaultSearchResponse>("/api/vault/search", {
+      method: "POST",
+      body: JSON.stringify({ query, top_k }),
+    }),
+  vaultRelated: (text: string, top_k = 5) =>
+    apiFetch<VaultSearchResponse>("/api/vault/related", {
+      method: "POST",
+      body: JSON.stringify({ text, top_k }),
+    }),
 };
