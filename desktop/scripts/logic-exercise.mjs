@@ -1,24 +1,99 @@
 import { execSync } from "child_process";
+import { existsSync, writeFileSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const repoRoot = resolve(root, "..");
 const scratch = process.env.SCRATCH_DIR ?? root;
 
 process.chdir(root);
 
-console.log("=== npm test ===");
-const testOut = execSync("npm test", { encoding: "utf8" });
-console.log(testOut);
+const lines = [];
 
-console.log("=== npm run check ===");
-const checkOut = execSync("npm run check", { encoding: "utf8" });
-console.log(checkOut);
+function section(title) {
+  lines.push(`\n=== ${title} ===\n`);
+  console.log(`=== ${title} ===`);
+}
 
-console.log("=== npm run build ===");
-const buildOut = execSync("npm run build", { encoding: "utf8" });
-console.log(buildOut);
+function run(cmd, cwd = root) {
+  const out = execSync(cmd, { cwd, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] });
+  lines.push(out);
+  console.log(out);
+  return out;
+}
 
-const { writeFileSync } = await import("fs");
-writeFileSync(resolve(scratch, "logic-exercise.log"), testOut + checkOut + buildOut);
+section("shipped file existence");
+const shipped = [
+  "src/lib/editor/note-editor-session.ts",
+  "src/lib/editor/note-editor-session.test.ts",
+  "src/lib/editor/wikilink-extension.ts",
+  "src/lib/components/editor/NoteEditor.svelte",
+  "src/lib/vault/search-dispatch.ts",
+  "src/lib/vault/markdown.ts",
+  "src/lib/vault/wikilinks.ts",
+  "fixtures/vault-search-api.json",
+];
+for (const rel of shipped) {
+  const ok = existsSync(resolve(root, rel));
+  const line = `${rel}: ${ok ? "OK" : "MISSING"}`;
+  lines.push(`${line}\n`);
+  console.log(line);
+}
+
+section("vitest — shipped module tests (real imports)");
+run(
+  "npx vitest run src/lib/editor/note-editor-session.test.ts src/lib/components/editor/NoteEditor.test.ts src/lib/vault/search-dispatch.test.ts src/lib/vault/markdown.test.ts src/lib/vault/wikilinks.test.ts --reporter=verbose",
+);
+
+section("source grep — vault refresh hooks");
+run(
+  'grep -n "requestVaultRefresh" src/lib/components/research/ResearchReport.svelte src/lib/components/documents/IngestPanel.svelte src/lib/components/editor/NoteEditor.svelte',
+);
+
+section("source grep — semantic search dispatch");
+run(
+  'grep -n "shouldUseSemanticSearch\\|vaultSearchMode\\|vaultSearch\\|semanticSearchHits" src/lib/components/vault/VaultSidebar.svelte src/lib/vault/search-dispatch.ts',
+);
+
+section("source grep — TipTap editor path");
+run(
+  'grep -n "createEditorFromMarkdown\\|serializeOpenEditor\\|activateWikilink\\|writeNote" src/lib/components/editor/NoteEditor.svelte src/lib/editor/note-editor-session.ts',
+);
+
+section("npm test (full suite)");
+const testOut = run("npm test");
+
+section("npm run check");
+const checkOut = run("npm run check");
+
+section("npm run build");
+const buildOut = run("npm run build");
+
+writeFileSync(resolve(scratch, "logic-exercise.log"), lines.join(""));
+
+writeFileSync(
+  resolve(scratch, "git-log.txt"),
+  execSync("git log --oneline -12", { cwd: repoRoot, encoding: "utf8" }),
+);
+writeFileSync(
+  resolve(scratch, "changed-files.txt"),
+  execSync("git diff --name-only 2825360 HEAD -- desktop/src", { cwd: repoRoot, encoding: "utf8" }),
+);
+writeFileSync(
+  resolve(scratch, "changes.patch"),
+  execSync("git diff 2825360 HEAD -- desktop/src", { cwd: repoRoot, encoding: "utf8" }),
+);
+writeFileSync(
+  resolve(scratch, "git-desktop-files.txt"),
+  execSync("git ls-files desktop/src", { cwd: repoRoot, encoding: "utf8" }),
+);
+writeFileSync(
+  resolve(scratch, "summary-grep.log"),
+  execSync(
+    'grep -n "3-pane\\|TipTap\\|semantic\\|wikilink\\|Vault sidebar" ../PROJECT_SUMMARY.md',
+    { cwd: root, encoding: "utf8" },
+  ),
+);
+
 console.log("logic-exercise complete");

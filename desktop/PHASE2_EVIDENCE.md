@@ -1,19 +1,20 @@
 # Phase 2 Workspace Evidence
 
-Generated: 2026-06-25T07:58:57.834Z
+Generated: 2026-06-25T08:01:57.017Z
 
 ## Vitest
-- Test files passed: 4
-- Tests passed: 18
+- Test files passed: 5
+- Tests passed: 20
 
 ## svelte-check
 - Errors: 0
 
 ## Git
-- HEAD: 6bd73d3
+- HEAD: 405bb54
 
 ## Shipped modules (integration-tested)
 - `src/lib/editor/note-editor-session.ts` — real `new Editor()`, `getHTML()`, `serializeOpenEditor`, `activateWikilink`
+- `src/lib/components/editor/NoteEditor.svelte` — mounted in vitest; save → `writeNote` + `requestVaultRefresh`; wikilink click → `tabs.openNoteTab`
 - `src/lib/vault/search-dispatch.ts` — `resolveSemanticSourcePath` returns null for unopenable sources; PDF hits dropped
 
 ## Acceptance criteria

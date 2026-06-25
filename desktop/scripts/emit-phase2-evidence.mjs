@@ -43,6 +43,7 @@ Generated: ${new Date().toISOString()}
 
 ## Shipped modules (integration-tested)
 - \`src/lib/editor/note-editor-session.ts\` — real \`new Editor()\`, \`getHTML()\`, \`serializeOpenEditor\`, \`activateWikilink\`
+- \`src/lib/components/editor/NoteEditor.svelte\` — mounted in vitest; save → \`writeNote\` + \`requestVaultRefresh\`; wikilink click → \`tabs.openNoteTab\`
 - \`src/lib/vault/search-dispatch.ts\` — \`resolveSemanticSourcePath\` returns null for unopenable sources; PDF hits dropped
 
 ## Acceptance criteria
