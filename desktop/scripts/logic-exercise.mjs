@@ -73,27 +73,17 @@ const buildOut = run("npm run build");
 writeFileSync(resolve(scratch, "logic-exercise.log"), lines.join(""));
 
 writeFileSync(
-  resolve(scratch, "git-log.txt"),
-  execSync("git log --oneline -12", { cwd: repoRoot, encoding: "utf8" }),
-);
-writeFileSync(
-  resolve(scratch, "changed-files.txt"),
-  execSync("git diff --name-only 2825360 HEAD -- desktop/src", { cwd: repoRoot, encoding: "utf8" }),
-);
-writeFileSync(
-  resolve(scratch, "changes.patch"),
-  execSync("git diff 2825360 HEAD -- desktop/src", { cwd: repoRoot, encoding: "utf8" }),
-);
-writeFileSync(
-  resolve(scratch, "git-desktop-files.txt"),
-  execSync("git ls-files desktop/src", { cwd: repoRoot, encoding: "utf8" }),
-);
-writeFileSync(
   resolve(scratch, "summary-grep.log"),
   execSync(
     'grep -n "3-pane\\|TipTap\\|semantic\\|wikilink\\|Vault sidebar" ../PROJECT_SUMMARY.md',
     { cwd: root, encoding: "utf8" },
   ),
 );
+
+execSync(`node scripts/sync-goal-evidence.mjs "${resolve(scratch, "vitest.log")}"`, {
+  cwd: root,
+  stdio: "inherit",
+  env: { ...process.env, SCRATCH_DIR: scratch },
+});
 
 console.log("logic-exercise complete");

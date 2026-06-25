@@ -35,7 +35,11 @@ export function resolveSemanticSourcePath(
   return partial?.path ?? null;
 }
 
-/** Only returns hits resolvable to a vault file path (drops bare PDFs etc.). */
+function isEditableNotePath(path: string): boolean {
+  return path.toLowerCase().endsWith(".md");
+}
+
+/** Only returns hits resolvable to an editable .md note (drops PDFs and other types). */
 export function semanticSearchHits(
   results: VaultSearchResult[],
   vaultFiles: VaultFileRef[],
@@ -43,7 +47,7 @@ export function semanticSearchHits(
   const hits: VaultSearchHit[] = [];
   for (const r of results) {
     const path = resolveSemanticSourcePath(r.source, vaultFiles);
-    if (!path) continue;
+    if (!path || !isEditableNotePath(path)) continue;
     hits.push({
       path,
       name: path.split("/").pop() ?? r.source,

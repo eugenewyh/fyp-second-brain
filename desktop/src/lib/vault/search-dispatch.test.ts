@@ -55,6 +55,18 @@ describe("search-dispatch", () => {
     expect(hits).toHaveLength(0);
   });
 
+  it("drops PDF even when present in vault index (non-md not editable)", () => {
+    const vaultWithPdf = [
+      ...mdVaultFiles,
+      { path: "/home/user/data/documents/Lec03.pdf", name: "Lec03.pdf" },
+    ];
+    const hits = semanticSearchHits(
+      [{ source: "Lec03.pdf", excerpt: "lecture", distance: 0.1, page: 1 }],
+      vaultWithPdf,
+    );
+    expect(hits).toHaveLength(0);
+  });
+
   it("keeps resolvable md hits from captured vault-search fixture", () => {
     const fixturePath = resolve(
       dirname(fileURLToPath(import.meta.url)),

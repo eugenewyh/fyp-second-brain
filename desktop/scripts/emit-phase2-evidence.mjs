@@ -56,3 +56,12 @@ Generated: ${new Date().toISOString()}
 
 writeFileSync(resolve(root, "PHASE2_EVIDENCE.md"), md);
 console.log("Wrote desktop/PHASE2_EVIDENCE.md");
+
+const syncScript = resolve(root, "scripts/sync-goal-evidence.mjs");
+if (existsSync(syncScript)) {
+  execSync(`node "${syncScript}" "${vitestLogPath}"`, {
+    cwd: root,
+    stdio: "inherit",
+    env: { ...process.env, SCRATCH_DIR: process.env.SCRATCH_DIR ?? "" },
+  });
+}
