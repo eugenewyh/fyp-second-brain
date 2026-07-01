@@ -1,6 +1,8 @@
 <script lang="ts">
   import { tabs } from "$lib/stores/tabs.svelte";
+  import { research } from "$lib/stores/research.svelte";
   import TabBar from "./TabBar.svelte";
+  import WelcomePanel from "./WelcomePanel.svelte";
   import ResearchPanel from "$lib/components/research/ResearchPanel.svelte";
   import QuickQueryPanel from "$lib/components/query/QuickQueryPanel.svelte";
   import IngestPanel from "$lib/components/documents/IngestPanel.svelte";
@@ -9,13 +11,26 @@
   import PdfViewer from "$lib/components/editor/PdfViewer.svelte";
   import EditorPlaceholder from "$lib/components/editor/EditorPlaceholder.svelte";
   import { isPdfPath } from "$lib/vault/pdf";
+
+  const showWelcome = $derived(
+    tabs.activeTab?.type === "research" &&
+      !research.query &&
+      !research.result &&
+      !research.loading,
+  );
+
+  const isNoteTab = $derived(tabs.activeTab?.type === "note");
 </script>
 
 <div class="center-workspace">
   <TabBar />
-  <div class="center-content">
+  <div class="center-content" class:flush={isNoteTab}>
     {#if tabs.activeTab?.type === "research"}
-      <ResearchPanel />
+      {#if showWelcome}
+        <WelcomePanel />
+      {:else}
+        <ResearchPanel />
+      {/if}
     {:else if tabs.activeTab?.type === "query"}
       <QuickQueryPanel />
     {:else if tabs.activeTab?.type === "ingest"}
@@ -35,7 +50,7 @@
         <EditorPlaceholder path={tabs.activeTab.path} />
       {/if}
     {:else}
-      <ResearchPanel />
+      <WelcomePanel />
     {/if}
   </div>
 </div>
@@ -46,12 +61,19 @@
     flex-direction: column;
     height: 100%;
     min-width: 0;
-    background: var(--bg);
+    background: var(--bg-elevated);
   }
 
   .center-content {
     flex: 1;
     overflow-y: auto;
-    padding: 1.25rem 1.5rem;
+    padding: 1rem 1.25rem;
+  }
+
+  .center-content.flush {
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 </style>

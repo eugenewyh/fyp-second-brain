@@ -10,6 +10,8 @@
   import { mergeSuggestions, type SuggestionItem } from "$lib/vault/suggestions";
   import { buildGraphData } from "$lib/vault/graph-data";
   import KnowledgeGraph from "./KnowledgeGraph.svelte";
+  import SectionLabel from "$lib/ui/SectionLabel.svelte";
+  import Button from "$lib/ui/Button.svelte";
 
   let suggestions = $state<SuggestionItem[]>([]);
   let graphExpanded = $state(false);
@@ -90,7 +92,7 @@
 </script>
 
 <div class="graph-mini">
-  <h3>Recently touched</h3>
+  <SectionLabel>Recent</SectionLabel>
   {#if workspace.recentNotePaths.length}
     <ul>
       {#each workspace.recentNotePaths as path}
@@ -103,7 +105,7 @@
     <p class="empty">Open a note to see history</p>
   {/if}
 
-  <h3>Suggested connections</h3>
+  <div class="section-gap"><SectionLabel>Suggested</SectionLabel></div>
   {#if suggestions.length}
     <ul>
       {#each suggestions as item}
@@ -122,9 +124,9 @@
     <p class="empty">Open a note for backlinks & related chunks</p>
   {/if}
 
-  <button class="graph-toggle" onclick={() => (graphExpanded = !graphExpanded)}>
+  <Button variant="ghost" onclick={() => (graphExpanded = !graphExpanded)}>
     {graphExpanded ? "Hide graph" : "Show graph"}
-  </button>
+  </Button>
   {#if graphExpanded && graphData.nodes.length}
     <KnowledgeGraph data={graphData} />
   {/if}
@@ -132,21 +134,14 @@
 
 <style>
   .graph-mini {
-    padding: 0.65rem;
-    border-top: 1px solid var(--border);
+    padding: 0.5rem 0.65rem;
+    border-top: 1px solid var(--border-subtle);
     font-size: 0.75rem;
   }
 
-  .graph-mini h3 {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+  .section-gap {
+    margin-top: 0.65rem;
     margin-bottom: 0.35rem;
-  }
-
-  .graph-mini h3:not(:first-child) {
-    margin-top: 0.75rem;
   }
 
   .graph-mini ul {
@@ -180,15 +175,8 @@
   }
 
   .empty {
-    color: var(--text-muted);
-    font-size: 0.7rem;
-  }
-
-  .graph-toggle {
-    margin-top: 0.5rem;
-    font-size: 0.7rem;
-    color: var(--accent);
-    background: transparent;
-    padding: 0.2rem 0;
+    color: var(--text-faint);
+    font-size: 0.65rem;
+    margin-bottom: 0.25rem;
   }
 </style>

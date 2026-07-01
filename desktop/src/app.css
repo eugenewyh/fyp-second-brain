@@ -1,21 +1,29 @@
 :root {
-  --bg: #0f1117;
-  --surface: #1a1d27;
-  --surface-hover: #242836;
-  --border: #2e3345;
-  --text: #e8eaef;
-  --text-muted: #8b92a8;
-  --accent: #5b8def;
-  --accent-hover: #4a7de0;
-  --success: #3ecf8e;
-  --warning: #f0b429;
-  --error: #f56565;
-  --radius: 10px;
-  --pane-bg: #161922;
-  --resizer-hover: #5b8def;
-  --tab-active: #242836;
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 15px;
+  --bg: #0a0a0b;
+  --bg-elevated: #111113;
+  --surface: #161618;
+  --surface-hover: #1e1e22;
+  --pane-bg: #0e0e10;
+  --border: #2a2a2f;
+  --border-subtle: #1f1f24;
+  --text: #ececef;
+  --text-muted: #8b8b95;
+  --text-faint: #5c5c66;
+  --accent: #6b8cff;
+  --accent-hover: #5a7aef;
+  --accent-muted: color-mix(in srgb, var(--accent) 18%, transparent);
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --error: #f87171;
+  --radius: 6px;
+  --radius-sm: 4px;
+  --resizer-hover: var(--accent);
+  --tab-active: var(--surface-hover);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --shell-height: 40px;
+  color-scheme: dark;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  font-size: 14px;
   line-height: 1.5;
   color: var(--text);
   background: var(--bg);
@@ -36,21 +44,26 @@ button {
   font-family: inherit;
   cursor: pointer;
   border: none;
-  border-radius: var(--radius);
-  padding: 0.55rem 1rem;
-  font-size: 0.9rem;
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 500;
-  transition: background 0.15s, opacity 0.15s;
+  transition: background 0.12s ease, color 0.12s ease, opacity 0.12s ease;
 }
 
 button:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .btn-primary {
   background: var(--accent);
-  color: white;
+  color: #fff;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -58,44 +71,99 @@ button:disabled {
 }
 
 .btn-secondary {
-  background: var(--surface-hover);
+  background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: var(--border);
+  background: var(--surface-hover);
+  border-color: var(--border);
 }
 
 input,
 textarea,
 select {
   font-family: inherit;
-  font-size: 0.9rem;
-  background: var(--bg);
+  font-size: 0.8125rem;
+  background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.65rem;
   width: 100%;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-faint);
 }
 
 input:focus,
 textarea:focus,
 select:focus {
   outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  outline-offset: 0;
+  border-color: transparent;
 }
 
 textarea {
   resize: vertical;
-  min-height: 80px;
+  min-height: 72px;
+}
+
+.ui-scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.ui-list-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  background: transparent;
+  color: var(--text-muted);
+  text-align: left;
+  font-size: 0.75rem;
+  border-radius: var(--radius-sm);
+  border: none;
+}
+
+.ui-list-item:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.ui-list-item.active {
+  background: var(--surface-hover);
+  color: var(--text);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.ui-empty {
+  padding: 1rem;
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  text-align: center;
+}
+
+.ui-kbd {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  padding: 0.15rem 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  background: var(--surface);
 }
 
 .report-content h2 {
-  font-size: 1.1rem;
-  margin: 1.2rem 0 0.5rem;
-  color: var(--accent);
+  font-size: 1rem;
+  margin: 1rem 0 0.4rem;
+  color: var(--text);
+  font-weight: 600;
 }
 
 .report-content h2:first-child {
@@ -104,10 +172,46 @@ textarea {
 
 .report-content p,
 .report-content li {
-  margin-bottom: 0.5rem;
-  color: var(--text);
+  margin-bottom: 0.45rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
 }
 
 .report-content ul {
+  padding-left: 1.1rem;
+}
+
+:global(.tiptap-surface) {
+  outline: none;
+  line-height: 1.65;
+  min-height: 45vh;
+  color: var(--text);
+}
+
+:global(.tiptap-surface h1) {
+  font-size: 1.25rem;
+  margin: 0.75rem 0 0.5rem;
+  font-weight: 600;
+}
+
+:global(.tiptap-surface h2) {
+  font-size: 1.05rem;
+  color: var(--text);
+  margin: 0.65rem 0 0.35rem;
+  font-weight: 600;
+}
+
+:global(.tiptap-surface ul) {
   padding-left: 1.2rem;
+  margin: 0.45rem 0;
+}
+
+:global(.tiptap-surface a.wikilink) {
+  color: var(--accent);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+:global(.tiptap-surface a.wikilink:hover) {
+  text-decoration: underline;
 }

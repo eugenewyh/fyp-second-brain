@@ -38,7 +38,7 @@
 
 <style>
   .pane-resizer {
-    width: 4px;
+    width: 2px;
     cursor: col-resize;
     background: transparent;
     flex-shrink: 0;

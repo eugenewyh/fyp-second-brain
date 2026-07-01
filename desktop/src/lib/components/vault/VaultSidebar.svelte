@@ -17,6 +17,9 @@
   import VaultTree from "./VaultTree.svelte";
   import GraphMini from "./GraphMini.svelte";
   import VaultStatus from "./VaultStatus.svelte";
+  import SectionLabel from "$lib/ui/SectionLabel.svelte";
+  import Button from "$lib/ui/Button.svelte";
+  import { PanelLeftClose } from "@lucide/svelte";
 
   let nodes = $state<VaultNode[]>([]);
   let loading = $state(true);
@@ -43,7 +46,7 @@
 
     if (shouldUseSemanticSearch(workspace.vaultSearchMode)) {
       if (!connection.connected) {
-        searchError = "Sidecar offline — semantic search unavailable";
+        searchError = "Sidecar offline";
         searchHits = [];
         return;
       }
@@ -52,7 +55,7 @@
         const res = await api.vaultSearch(query.trim());
         searchHits = semanticSearchHits(res.results, flattenVaultFiles(nodes));
       } catch (e) {
-        searchError = e instanceof Error ? e.message : "Semantic search failed";
+        searchError = e instanceof Error ? e.message : "Search failed";
         searchHits = [];
       } finally {
         searchLoading = false;
@@ -83,34 +86,36 @@
 
 <aside class="vault-sidebar">
   <div class="header">
-    <h2>Vault</h2>
-    <button class="collapse-btn" onclick={() => workspace.toggleLeft()} title="Collapse">◀</button>
+    <SectionLabel>Vault</SectionLabel>
+    <Button variant="icon" title="Collapse" onclick={() => workspace.toggleLeft()}>
+      <PanelLeftClose size={15} strokeWidth={1.75} />
+    </Button>
   </div>
 
   <VaultSearch onSearch={onSearch} />
 
-  <div class="tree-area">
+  <div class="tree-area ui-scroll">
     {#if loading}
-      <p class="loading">Loading vault…</p>
+      <p class="ui-empty">Loading…</p>
     {:else if searchLoading}
-      <p class="loading">Searching embeddings…</p>
+      <p class="ui-empty">Searching…</p>
     {:else if searchError}
       <p class="search-error">{searchError}</p>
     {:else if searchHits.length}
       <ul class="search-results">
         {#each searchHits as hit (hit.path)}
           <li>
-            <button onclick={() => openHit(hit)}>
+            <button class="ui-list-item" onclick={() => openHit(hit)}>
               <span class="hit-name">{hit.name}</span>
               {#if hit.excerpt}
-                <span class="hit-excerpt">{hit.excerpt.slice(0, 100)}…</span>
+                <span class="hit-excerpt">{hit.excerpt.slice(0, 80)}…</span>
               {/if}
             </button>
           </li>
         {/each}
       </ul>
     {:else if workspace.vaultSearchQuery.trim()}
-      <p class="empty">No results</p>
+      <p class="ui-empty">No results</p>
     {:else}
       <VaultTree {nodes} filter={workspace.vaultSearchQuery} />
     {/if}
@@ -125,7 +130,7 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: var(--pane-bg, var(--surface));
+    background: var(--pane-bg);
     overflow: hidden;
   }
 
@@ -133,69 +138,39 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.65rem 0.75rem;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .header h2 {
-    font-size: 0.85rem;
-    font-weight: 600;
-  }
-
-  .collapse-btn {
-    background: transparent;
-    color: var(--text-muted);
-    padding: 0.2rem 0.4rem;
-    font-size: 0.75rem;
+    padding: 0.55rem 0.65rem;
+    border-bottom: 1px solid var(--border-subtle);
+    min-height: 36px;
   }
 
   .tree-area {
     flex: 1;
-    overflow-y: auto;
-    padding: 0.35rem 0;
-  }
-
-  .loading,
-  .empty {
-    padding: 1rem;
-    font-size: 0.8rem;
-    color: var(--text-muted);
+    padding: 0.25rem 0.35rem;
   }
 
   .search-error {
     padding: 0.75rem;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--error);
   }
 
   .search-results {
     list-style: none;
-    padding: 0.25rem 0.5rem;
   }
 
-  .search-results button {
-    width: 100%;
-    text-align: left;
-    padding: 0.4rem 0.5rem;
-    background: transparent;
-    color: var(--text);
-    font-size: 0.8rem;
-    border-radius: 4px;
-    display: flex;
+  .search-results .ui-list-item {
     flex-direction: column;
-    gap: 0.2rem;
-  }
-
-  .search-results button:hover {
-    background: var(--surface-hover);
+    align-items: flex-start;
+    gap: 0.15rem;
   }
 
   .hit-name {
     font-weight: 500;
+    color: var(--text);
   }
 
   .hit-excerpt {
-    font-size: 0.7rem;
-    color: var(--text-muted);
+    font-size: 0.65rem;
+    color: var(--text-faint);
   }
 </style>

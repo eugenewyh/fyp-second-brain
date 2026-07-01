@@ -1,32 +1,33 @@
 <script lang="ts">
   import { tabs } from "$lib/stores/tabs.svelte";
+  import type { Component } from "svelte";
+  import {
+    FlaskConical,
+    MessageSquare,
+    FileText,
+    FolderOpen,
+    Settings,
+    X,
+  } from "@lucide/svelte";
 
-  function icon(type: string): string {
-    switch (type) {
-      case "research":
-        return "🔬";
-      case "query":
-        return "💬";
-      case "note":
-        return "📝";
-      case "ingest":
-        return "📁";
-      case "settings":
-        return "⚙️";
-      default:
-        return "•";
-    }
-  }
+  const icons: Record<string, Component> = {
+    research: FlaskConical,
+    query: MessageSquare,
+    note: FileText,
+    ingest: FolderOpen,
+    settings: Settings,
+  };
 </script>
 
 <div class="tab-bar">
   {#each tabs.tabs as tab (tab.id)}
+    {@const Icon = icons[tab.type] ?? FileText}
     <button
       class="tab"
       class:active={tabs.activeTabId === tab.id}
       onclick={() => tabs.activate(tab.id)}
     >
-      <span class="tab-icon">{icon(tab.type)}</span>
+      <Icon size={13} strokeWidth={1.75} />
       <span class="tab-label">{tab.label}</span>
       {#if tabs.tabs.length > 1}
         <span
@@ -43,7 +44,9 @@
               tabs.closeTab(tab.id);
             }
           }}
-        >×</span>
+        >
+          <X size={12} strokeWidth={2} />
+        </span>
       {/if}
     </button>
   {/each}
@@ -52,48 +55,55 @@
 <style>
   .tab-bar {
     display: flex;
-    gap: 2px;
-    padding: 0.4rem 0.5rem 0;
-    background: var(--pane-bg, var(--bg));
-    border-bottom: 1px solid var(--border);
+    gap: 0;
+    padding: 0 0.5rem;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border-subtle);
     overflow-x: auto;
     flex-shrink: 0;
+    min-height: 34px;
   }
 
   .tab {
     display: flex;
     align-items: center;
     gap: 0.35rem;
-    padding: 0.45rem 0.7rem;
+    padding: 0.4rem 0.65rem;
     background: transparent;
-    color: var(--text-muted);
-    border-radius: var(--radius) var(--radius) 0 0;
-    font-size: 0.8rem;
+    color: var(--text-faint);
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 0.75rem;
     white-space: nowrap;
-  }
-
-  .tab:hover {
-    background: var(--surface-hover);
-    color: var(--text);
-  }
-
-  .tab.active {
-    background: var(--surface);
-    color: var(--text);
-    border: 1px solid var(--border);
-    border-bottom-color: var(--surface);
+    border-radius: 0;
     margin-bottom: -1px;
   }
 
+  .tab:hover {
+    color: var(--text-muted);
+    background: transparent;
+  }
+
+  .tab.active {
+    color: var(--text);
+    border-bottom-color: var(--accent);
+  }
+
   .tab-close {
-    opacity: 0.5;
-    font-size: 1rem;
-    line-height: 1;
-    padding: 0 0.15rem;
+    display: flex;
+    opacity: 0;
+    padding: 0.1rem;
+    border-radius: 3px;
+    color: var(--text-faint);
+  }
+
+  .tab:hover .tab-close,
+  .tab.active .tab-close {
+    opacity: 1;
   }
 
   .tab-close:hover {
-    opacity: 1;
-    color: var(--error);
+    color: var(--text);
+    background: var(--surface-hover);
   }
 </style>

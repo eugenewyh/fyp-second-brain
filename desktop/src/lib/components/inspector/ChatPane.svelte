@@ -4,6 +4,8 @@
   import { chat } from "$lib/stores/chat.svelte";
   import { readNote } from "$lib/vault/load";
   import { splitFrontmatter } from "$lib/vault/markdown";
+  import Button from "$lib/ui/Button.svelte";
+  import { Send } from "@lucide/svelte";
 
   let message = $state("");
   let noteExcerpt = $state("");
@@ -49,51 +51,56 @@
 
 <div class="chat-pane">
   <p class="context">
-    Aware of:
-    <strong>{workspace.activeNotePath?.split("/").pop() ?? "no note"}</strong>
-    {#if workspace.selectedText}
-      <span class="selection">+ selected text</span>
+    {#if workspace.activeNotePath}
+      <span class="note-name">{workspace.activeNotePath.split("/").pop()}</span>
+      {#if workspace.selectedText}<span class="selection"> · selection</span>{/if}
+    {:else}
+      <span class="faint">No note open</span>
     {/if}
   </p>
 
-  <div class="messages" aria-live="polite">
+  <div class="messages ui-scroll" aria-live="polite">
     {#if thread.length === 0}
-      <p class="hint">Ask about the open note or your vault. Conversation stays in this thread.</p>
+      <p class="ui-empty">Ask about the open note or your vault</p>
     {:else}
       {#each thread as turn}
         <div class="bubble" class:user={turn.role === "user"} class:assistant={turn.role === "assistant"}>
-          <span class="role">{turn.role === "user" ? "You" : "Assistant"}</span>
           <p>{turn.content}</p>
           {#if turn.role === "assistant" && turn.sources?.length}
-            <button class="link-btn" onclick={viewSources}>View sources ({turn.sources.length})</button>
+            <button class="link-btn" onclick={viewSources}>Sources ({turn.sources.length})</button>
           {/if}
         </div>
       {/each}
     {/if}
     {#if chat.loading}
-      <p class="hint">Thinking…</p>
+      <p class="thinking">Thinking…</p>
     {/if}
     {#if chat.error}
       <p class="error">{chat.error}</p>
     {/if}
   </div>
 
-  <div class="actions">
-    {#if thread.length}
-      <button class="ghost" onclick={clearChat} disabled={chat.loading}>Clear</button>
-    {/if}
-  </div>
+  {#if thread.length}
+    <div class="top-actions">
+      <Button variant="ghost" onclick={clearChat} disabled={chat.loading}>Clear</Button>
+    </div>
+  {/if}
 
   <div class="input-row">
     <input
       bind:value={message}
-      placeholder="Ask about this note…"
-      onkeydown={(e) => e.key === "Enter" && send()}
+      placeholder="Message…"
+      onkeydown={(e) => e.key === "Enter" && !e.shiftKey && send()}
       disabled={!connection.connected || chat.loading}
     />
-    <button class="btn-primary" onclick={send} disabled={!connection.connected || chat.loading}>
-      Send
-    </button>
+    <Button
+      variant="primary"
+      onclick={send}
+      disabled={!connection.connected || chat.loading}
+      title="Send"
+    >
+      <Send size={14} strokeWidth={1.75} />
+    </Button>
   </div>
 </div>
 
@@ -102,12 +109,17 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    padding: 0.75rem;
-    gap: 0.5rem;
+    padding: 0.5rem 0.65rem 0.65rem;
+    gap: 0.4rem;
   }
 
   .context {
-    font-size: 0.75rem;
+    font-size: 0.65rem;
+    color: var(--text-faint);
+    font-family: var(--font-mono);
+  }
+
+  .note-name {
     color: var(--text-muted);
   }
 
@@ -117,85 +129,75 @@
 
   .messages {
     flex: 1;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 0.75rem;
-    font-size: 0.8rem;
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.45rem;
+    min-height: 0;
   }
 
   .bubble {
     padding: 0.5rem 0.6rem;
-    border-radius: var(--radius);
-    background: var(--surface);
-    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    line-height: 1.45;
+    max-width: 95%;
   }
 
   .bubble.user {
     align-self: flex-end;
-    max-width: 92%;
-    border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    color: var(--text);
   }
 
   .bubble.assistant {
     align-self: flex-start;
-    max-width: 92%;
-  }
-
-  .role {
-    display: block;
-    font-size: 0.65rem;
+    background: transparent;
     color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-bottom: 0.25rem;
+    padding-left: 0;
   }
 
   .bubble p {
     white-space: pre-wrap;
-    line-height: 1.45;
   }
 
-  .link-btn,
-  .ghost {
+  .link-btn {
     margin-top: 0.35rem;
     background: transparent;
     color: var(--accent);
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     padding: 0;
   }
 
-  .actions {
+  .top-actions {
     display: flex;
     justify-content: flex-end;
   }
 
-  .hint {
-    color: var(--text-muted);
-    font-size: 0.75rem;
+  .thinking {
+    font-size: 0.7rem;
+    color: var(--text-faint);
   }
 
   .error {
+    font-size: 0.7rem;
     color: var(--error);
-    font-size: 0.75rem;
   }
 
   .input-row {
     display: flex;
-    gap: 0.4rem;
+    gap: 0.35rem;
+    align-items: center;
   }
 
   .input-row input {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
+    padding: 0.45rem 0.55rem;
+    flex: 1;
   }
 
-  .input-row button {
-    flex-shrink: 0;
-    font-size: 0.8rem;
-    padding: 0.45rem 0.7rem;
+  .input-row :global(.ui-btn.primary) {
+    padding: 0.45rem 0.55rem;
+    min-width: 36px;
   }
 </style>

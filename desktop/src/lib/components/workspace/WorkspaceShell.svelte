@@ -8,6 +8,8 @@
   import CenterWorkspace from "./CenterWorkspace.svelte";
   import InspectorPanel from "$lib/components/inspector/InspectorPanel.svelte";
   import { startVaultWatcher } from "$lib/vault/watcher";
+  import Button from "$lib/ui/Button.svelte";
+  import { PanelLeft, PanelRight } from "@lucide/svelte";
 
   onMount(() => {
     workspace.init();
@@ -39,7 +41,11 @@
       </div>
       <PaneResizer onResize={(dx) => workspace.setLeftWidth(workspace.leftWidth + dx)} />
     {:else}
-      <button class="rail" onclick={() => workspace.toggleLeft()} title="Open vault">◧</button>
+      <div class="rail">
+        <Button variant="icon" title="Open vault" onclick={() => workspace.toggleLeft()}>
+          <PanelLeft size={16} strokeWidth={1.75} />
+        </Button>
+      </div>
     {/if}
 
     <div class="pane center">
@@ -52,7 +58,11 @@
         <InspectorPanel />
       </div>
     {:else}
-      <button class="rail" onclick={() => workspace.toggleRight()} title="Open inspector">◨</button>
+      <div class="rail">
+        <Button variant="icon" title="Open inspector" onclick={() => workspace.toggleRight()}>
+          <PanelRight size={16} strokeWidth={1.75} />
+        </Button>
+      </div>
     {/if}
   </div>
 </div>
@@ -63,6 +73,7 @@
     flex-direction: column;
     height: 100vh;
     overflow: hidden;
+    background: var(--bg);
   }
 
   .panes {
@@ -74,33 +85,34 @@
   .pane {
     flex-shrink: 0;
     overflow: hidden;
-    border-right: 1px solid var(--border);
+    border-right: 1px solid var(--border-subtle);
   }
 
   .pane.right {
     border-right: none;
-    border-left: 1px solid var(--border);
+    border-left: 1px solid var(--border-subtle);
   }
 
   .pane.center {
     flex: 1;
     min-width: 320px;
     border-right: none;
+    background: var(--bg-elevated);
   }
 
   .rail {
-    width: 28px;
+    width: 32px;
     flex-shrink: 0;
-    background: var(--surface);
-    color: var(--text-muted);
-    border: none;
-    border-right: 1px solid var(--border);
-    font-size: 0.85rem;
-    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 0.5rem;
+    background: var(--pane-bg);
+    border-right: 1px solid var(--border-subtle);
   }
 
-  .rail:hover {
-    background: var(--surface-hover);
-    color: var(--text);
+  .panes > .rail:last-child {
+    border-right: none;
+    border-left: 1px solid var(--border-subtle);
   }
 </style>

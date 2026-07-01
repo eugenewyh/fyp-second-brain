@@ -41,7 +41,9 @@ describe("NoteEditor.svelte (mounted)", () => {
 
     await vi.waitUntil(() => target.querySelector(".tiptap-surface"), { timeout: 5000 });
 
-    const saveBtn = target.querySelector("button.btn-primary") as HTMLButtonElement;
+    const saveBtn = [...target.querySelectorAll("button")].find((b) =>
+      b.textContent?.includes("Save"),
+    ) as HTMLButtonElement;
     expect(saveBtn).toBeTruthy();
     saveBtn.click();
 

@@ -26,8 +26,8 @@
       .width(containerEl.clientWidth)
       .height(180)
       .nodeLabel((n: { label: string }) => n.label)
-      .nodeColor((n: { isActive?: boolean }) => (n.isActive ? "var(--accent)" : "var(--text-muted)"))
-      .linkColor(() => "color-mix(in srgb, var(--accent) 40%, var(--border))")
+      .nodeColor((n: { isActive?: boolean }) => (n.isActive ? "#6b8cff" : "#5c5c66"))
+      .linkColor(() => "#2a2a2f")
       .onNodeClick((n: { id: string }) => openNode(n.id))
       .graphData({ nodes: [], links: [] });
   });

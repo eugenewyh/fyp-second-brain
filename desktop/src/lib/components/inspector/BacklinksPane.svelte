@@ -112,11 +112,12 @@
   }
 
   h4 {
-    font-size: 0.75rem;
-    color: var(--accent);
+    font-size: 0.65rem;
+    color: var(--text-faint);
     margin-bottom: 0.5rem;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.05em;
+    font-weight: 600;
   }
 
   h4:not(:first-child) {

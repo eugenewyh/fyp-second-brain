@@ -9,7 +9,7 @@ load_dotenv(PROJECT_ROOT / ".env")
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
-LLM_MODEL = os.getenv("LLM_MODEL", "llama3.2:3b")
+LLM_MODEL = os.getenv("LLM_MODEL", "qwen3:8b")
 CHROMA_PATH = Path(os.getenv("CHROMA_PATH", PROJECT_ROOT / "data" / "chroma"))
 COLLECTION_NAME = os.getenv("COLLECTION_NAME", "personal_knowledge")
 DOCUMENTS_DIR = PROJECT_ROOT / "data" / "documents"

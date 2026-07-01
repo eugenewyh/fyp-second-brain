@@ -3,6 +3,9 @@
   import { api } from "$lib/api";
   import { connection } from "$lib/stores/connection.svelte";
   import { workspace } from "$lib/stores/workspace.svelte";
+  import Panel from "$lib/ui/Panel.svelte";
+  import Button from "$lib/ui/Button.svelte";
+  import { FolderOpen } from "@lucide/svelte";
 
   let ingestPath = $state("");
   let ingestLoading = $state(false);
@@ -21,7 +24,7 @@
     ingestMessage = "";
     try {
       const result = await api.ingest(ingestPath.trim());
-      ingestMessage = `Ingested ${result.ingested_chunks} chunks. Total: ${result.collection_total}`;
+      ingestMessage = `Ingested ${result.ingested_chunks} chunks · ${result.collection_total} total`;
       await connection.refreshStatus();
       workspace.requestVaultRefresh();
     } catch (e) {
@@ -32,68 +35,75 @@
   }
 </script>
 
-<section class="panel">
-  <h2>Ingest Documents</h2>
-  <p class="hint">Add PDF, TXT, or MD files from a folder into your knowledge base</p>
-
-  <div class="input-row folder-row">
-    <input bind:value={ingestPath} placeholder="/path/to/your/documents" />
-    <button class="btn-secondary" onclick={pickFolder}>Browse</button>
+<Panel title="Ingest" description="Add PDF, TXT, or MD files to your knowledge base">
+  <div class="drop-zone">
+    <FolderOpen size={24} strokeWidth={1.5} />
+    <p>Select a folder to index into Chroma</p>
+    <div class="folder-row">
+      <input bind:value={ingestPath} placeholder="Path to documents…" />
+      <Button variant="secondary" onclick={pickFolder}>Browse</Button>
+    </div>
+    <Button
+      variant="primary"
+      onclick={runIngest}
+      disabled={ingestLoading || !connection.connected}
+    >
+      {ingestLoading ? "Ingesting…" : "Ingest folder"}
+    </Button>
   </div>
-  <button class="btn-primary" onclick={runIngest} disabled={ingestLoading || !connection.connected}>
-    {ingestLoading ? "Ingesting…" : "Ingest Folder"}
-  </button>
 
   {#if ingestMessage}
     <p class="message">{ingestMessage}</p>
   {/if}
 
-  <div class="info-card">
-    <p>Default folder: <code>data/documents/</code> in project root</p>
-    <p>Supported: .pdf, .txt, .md</p>
-  </div>
-</section>
+  <p class="meta">Default: <code>data/documents/</code> · Supports .pdf .txt .md</p>
+</Panel>
 
 <style>
-  .panel h2 {
-    font-size: 1.4rem;
-    margin-bottom: 0.25rem;
+  .drop-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 1.25rem;
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 0.75rem;
   }
 
-  .hint {
+  .drop-zone :global(svg) {
     color: var(--text-muted);
-    font-size: 0.85rem;
-    margin-bottom: 1.25rem;
-  }
-
-  .input-row {
-    margin-bottom: 0.75rem;
   }
 
   .folder-row {
     display: flex;
     gap: 0.5rem;
+    width: 100%;
+    max-width: 420px;
   }
 
   .folder-row input {
     flex: 1;
+    text-align: left;
   }
 
   .message {
-    margin-top: 1rem;
+    margin-top: 0.75rem;
+    font-size: 0.75rem;
     color: var(--success);
   }
 
-  .info-card {
-    margin-top: 1.5rem;
-    padding: 1rem;
-    background: var(--surface);
-    border-radius: var(--radius);
-    font-size: 0.85rem;
-    color: var(--text-muted);
+  .meta {
+    margin-top: 0.75rem;
+    font-size: 0.7rem;
+    color: var(--text-faint);
+    font-family: var(--font-mono);
   }
 
-  .info-card code {
-    color: var(--accent);
+  .meta code {
+    color: var(--text-muted);
   }
 </style>

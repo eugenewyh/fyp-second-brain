@@ -57,11 +57,12 @@
 
   .report {
     background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.5rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 1rem 1.15rem;
     line-height: 1.6;
     max-height: 65vh;
     overflow-y: auto;
+    font-size: 0.875rem;
   }
 </style>

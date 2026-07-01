@@ -2,6 +2,8 @@
   import { onMount } from "svelte";
   import { readNote } from "$lib/vault/load";
   import { workspace } from "$lib/stores/workspace.svelte";
+  import Panel from "$lib/ui/Panel.svelte";
+
   interface Props {
     path: string;
   }
@@ -30,51 +32,33 @@
   }
 </script>
 
-<section class="panel" role="region" aria-label="Note preview" onmouseup={onSelect}>
-  <h2>{path.split("/").pop()}</h2>
-  <p class="hint path-hint">{path}</p>
-
+<Panel title={path.split("/").pop() ?? "File"} flush>
   {#if loading}
-    <div class="loading">Loading note…</div>
+    <p class="ui-empty">Loading…</p>
   {:else if error}
     <p class="error">{error}</p>
   {:else}
-    <pre class="raw-content">{content.slice(0, 8000)}{content.length > 8000 ? "\n…" : ""}</pre>
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <pre class="raw-content" onmouseup={onSelect}>{content.slice(0, 8000)}{content.length > 8000 ? "\n…" : ""}</pre>
   {/if}
-</section>
+</Panel>
 
 <style>
-  .panel h2 {
-    font-size: 1.2rem;
-    margin-bottom: 0.2rem;
-  }
-
-  .path-hint {
-    font-size: 0.75rem;
-    margin-bottom: 1rem;
-    word-break: break-all;
-  }
-
   .raw-content {
     background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
     padding: 1rem;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
     white-space: pre-wrap;
     max-height: 70vh;
     overflow-y: auto;
     color: var(--text-muted);
   }
 
-  .loading {
-    color: var(--warning);
-    padding: 1rem;
-    background: var(--surface);
-    border-radius: var(--radius);
-  }
-
   .error {
     color: var(--error);
+    font-size: 0.75rem;
   }
 </style>

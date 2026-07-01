@@ -18,6 +18,8 @@
     type EditorViewMode,
   } from "$lib/workspace/editor-prefs";
   import PaneResizer from "$lib/components/workspace/PaneResizer.svelte";
+  import SegmentedControl from "$lib/ui/SegmentedControl.svelte";
+  import Button from "$lib/ui/Button.svelte";
   import { workspace } from "$lib/stores/workspace.svelte";
   import { tabs } from "$lib/stores/tabs.svelte";
 
@@ -170,21 +172,22 @@
   });
 </script>
 
-<section class="panel">
+<section class="note-editor">
   <div class="toolbar">
-    <div>
-      <h2>{path.split("/").pop()}</h2>
-      <p class="hint path-hint">{path}</p>
-    </div>
+    <span class="title">{path.split("/").pop()}</span>
     <div class="toolbar-actions">
-      <div class="view-toggle" role="group" aria-label="Editor view mode">
-        <button class:active={viewMode === "edit"} onclick={() => setViewMode("edit")}>Edit</button>
-        <button class:active={viewMode === "split"} onclick={() => setViewMode("split")}>Split</button>
-        <button class:active={viewMode === "preview"} onclick={() => setViewMode("preview")}>Preview</button>
-      </div>
-      <button class="btn-primary" onclick={saveNote} disabled={saving || loading || !!error}>
+      <SegmentedControl
+        options={[
+          { value: "edit", label: "Edit" },
+          { value: "split", label: "Split" },
+          { value: "preview", label: "Preview" },
+        ]}
+        bind:value={viewMode}
+        onchange={(v) => setViewMode(v as EditorViewMode)}
+      />
+      <Button variant="primary" onclick={saveNote} disabled={saving || loading || !!error}>
         {saving ? "Saving…" : "Save"}
-      </button>
+      </Button>
     </div>
   </div>
 
@@ -222,58 +225,47 @@
   {#if saveMessage}
     <p class="save-msg">{saveMessage}</p>
   {/if}
-  {#if !loading && !error}
-    <p class="wikilink-hint">
-      Type <code>[[Note Name]]</code> or <code>[[Target|alias]]</code> for wikilinks.
-    </p>
-  {/if}
 </section>
 
 <style>
-  .panel h2 {
-    font-size: 1.2rem;
-    margin-bottom: 0.2rem;
+  .note-editor {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    flex: 1;
+    min-height: 0;
   }
 
   .toolbar {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 0.75rem;
-    gap: 1rem;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border-subtle);
+    gap: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  .title {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .toolbar-actions {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-  }
-
-  .view-toggle {
-    display: flex;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-  }
-
-  .view-toggle button {
-    font-size: 0.7rem;
-    padding: 0.35rem 0.55rem;
-    background: var(--surface);
-    color: var(--text-muted);
-    border: none;
-    border-radius: 0;
-  }
-
-  .view-toggle button.active {
-    background: var(--accent);
-    color: white;
+    flex-shrink: 0;
   }
 
   .editor-layout {
     display: flex;
-    min-height: 50vh;
-    max-height: 70vh;
+    flex: 1;
+    min-height: 0;
     gap: 0;
   }
 
@@ -281,93 +273,46 @@
     display: none;
   }
 
-  .editor-layout.preview-only .preview-wrap {
-    flex: 1;
-  }
-
-  .path-hint {
-    font-size: 0.75rem;
-    word-break: break-all;
-    color: var(--text-muted);
-  }
-
   .editor-wrap,
   .preview-wrap {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
+    background: var(--bg-elevated);
     overflow-y: auto;
     padding: 1rem 1.25rem;
-    min-height: 50vh;
-  }
-
-  .editor-wrap {
     flex: 1;
+    min-height: 0;
   }
 
   .preview-wrap {
-    flex: 1;
     line-height: 1.6;
+    font-size: 0.875rem;
   }
 
   .preview-wrap :global(a.wikilink) {
     color: var(--accent);
-    text-decoration: underline;
+    text-decoration: none;
     cursor: pointer;
   }
 
-  :global(.tiptap-surface) {
-    outline: none;
-    line-height: 1.6;
-    min-height: 45vh;
-  }
-
-  :global(.tiptap-surface h1) {
-    font-size: 1.35rem;
-    margin: 0.75rem 0 0.5rem;
-  }
-
-  :global(.tiptap-surface h2) {
-    font-size: 1.1rem;
-    color: var(--accent);
-    margin: 0.75rem 0 0.4rem;
-  }
-
-  :global(.tiptap-surface ul) {
-    padding-left: 1.2rem;
-    margin: 0.5rem 0;
-  }
-
-  :global(.tiptap-surface a.wikilink) {
-    color: var(--accent);
+  .preview-wrap :global(a.wikilink:hover) {
     text-decoration: underline;
-    cursor: pointer;
   }
 
   .save-msg {
-    margin-top: 0.5rem;
-    font-size: 0.8rem;
-    color: var(--success);
-  }
-
-  .wikilink-hint {
-    margin-top: 0.5rem;
+    padding: 0.35rem 0.75rem;
     font-size: 0.7rem;
-    color: var(--text-muted);
-  }
-
-  .wikilink-hint code {
-    color: var(--accent);
+    color: var(--success);
+    border-top: 1px solid var(--border-subtle);
   }
 
   .loading {
-    color: var(--warning);
     padding: 1rem;
-    background: var(--surface);
-    border-radius: var(--radius);
+    font-size: 0.75rem;
+    color: var(--text-faint);
   }
 
   .error {
+    padding: 0.75rem;
+    font-size: 0.75rem;
     color: var(--error);
   }
 </style>
