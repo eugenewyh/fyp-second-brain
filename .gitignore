@@ -27,3 +27,5 @@ evaluation/results/*.json
 evaluation/results/*.md
 !evaluation/results/.gitkeep
 
+
+node_modules/
