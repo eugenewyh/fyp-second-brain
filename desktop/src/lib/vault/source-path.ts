@@ -1,16 +1,16 @@
 import type { VaultFileRef } from "./flatten";
 import { resolveSemanticSourcePath } from "./search-dispatch";
 
+/**
+ * Map a citation / retrieval label to a real vault file.
+ * Never invent `{vaultRoot}/{label}` — that opens a path that does not exist
+ * when the label is `Personal — notes.md`.
+ */
 export function resolveSourcePath(
   source: string,
-  vaultRoot: string | null,
+  _vaultRoot: string | null,
   vaultFiles: VaultFileRef[] = [],
 ): string | null {
-  if (vaultFiles.length) {
-    const resolved = resolveSemanticSourcePath(source, vaultFiles);
-    if (resolved) return resolved;
-  }
-  if (!vaultRoot) return null;
-  const base = source.split("/").pop() ?? source;
-  return `${vaultRoot}/${base}`;
+  if (!source.trim() || !vaultFiles.length) return null;
+  return resolveSemanticSourcePath(source, vaultFiles);
 }

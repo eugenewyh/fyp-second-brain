@@ -78,3 +78,60 @@ def test_arxiv_search_live():
     assert len(docs) == 1
     assert docs[0].metadata["source_type"] == "arxiv"
     assert "Abstract" in docs[0].page_content
+
+
+def _mcp_doc() -> Document:
+    return Document(
+        page_content="Title: Meeting notes\nHello from Notion",
+        metadata={
+            "source": "Meeting notes",
+            "source_path": "https://www.notion.so/aaaaaaaa",
+            "source_type": "mcp",
+            "origin": "notion",
+        },
+    )
+
+
+@patch("second_brain.agents.hybrid_retriever.search_mcp")
+@patch("second_brain.agents.hybrid_retriever.is_mcp_available", return_value=True)
+def test_hybrid_retrieve_mcp_when_enabled(mock_available, mock_search):
+    mock_search.return_value = [_mcp_doc()]
+    with (
+        patch("second_brain.agents.hybrid_retriever.ENABLE_WEB_SEARCH", False),
+        patch("second_brain.agents.hybrid_retriever.ENABLE_ARXIV", False),
+    ):
+        docs, stats, log = hybrid_retrieve(
+            [],
+            main_query="meeting notes",
+            retrieval_scope="hybrid",
+        )
+    mock_search.assert_called_once_with("meeting notes")
+    assert stats.get("mcp", 0) == 1
+    assert docs[-1].metadata["source_type"] == "mcp"
+    assert any("[mcp:notion]" in entry for entry in log)
+
+
+@patch("second_brain.agents.hybrid_retriever.search_mcp")
+@patch("second_brain.agents.hybrid_retriever.is_mcp_available", return_value=True)
+def test_hybrid_skips_mcp_on_local(mock_available, mock_search):
+    hybrid_retrieve(
+        [],
+        main_query="meeting notes",
+        retrieval_scope="local",
+    )
+    mock_search.assert_not_called()
+
+
+@patch("second_brain.agents.hybrid_retriever.search_mcp")
+@patch("second_brain.agents.hybrid_retriever.is_mcp_available", return_value=False)
+def test_hybrid_skips_mcp_when_disabled(mock_available, mock_search):
+    with (
+        patch("second_brain.agents.hybrid_retriever.ENABLE_WEB_SEARCH", False),
+        patch("second_brain.agents.hybrid_retriever.ENABLE_ARXIV", False),
+    ):
+        hybrid_retrieve(
+            [],
+            main_query="meeting notes",
+            retrieval_scope="hybrid",
+        )
+    mock_search.assert_not_called()

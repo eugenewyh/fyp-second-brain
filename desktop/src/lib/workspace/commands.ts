@@ -1,9 +1,10 @@
-import { connection } from "$lib/stores/connection.svelte";
-import { research } from "$lib/stores/research.svelte";
-import { tabs } from "$lib/stores/tabs.svelte";
+import { app } from "$lib/stores/app.svelte";
+import { assistant } from "$lib/stores/assistant.svelte";
 import { workspace } from "$lib/stores/workspace.svelte";
 
-export type CommandCategory = "navigation" | "research" | "vault";
+import { setThemePreference } from "$lib/theme/init-theme";
+
+export type CommandCategory = "navigation" | "research" | "vault" | "preferences";
 
 export interface CommandAction {
   id: string;
@@ -16,73 +17,121 @@ export interface CommandAction {
 export function getCommands(): CommandAction[] {
   return [
     {
+      id: "home",
+      label: "Open Home",
+      category: "navigation",
+      run: () => app.openHome(),
+    },
+    {
+      id: "watch",
+      label: "Open Watch",
+      category: "navigation",
+      run: () => app.openWatch(),
+    },
+    {
+      id: "memory",
+      label: "Open Memory graph",
+      category: "navigation",
+      shortcut: "⌘G",
+      run: () => workspace.toggleMemoryPanel(),
+    },
+    {
+      id: "capabilities",
+      label: "Open Capabilities",
+      category: "navigation",
+      run: () => app.openCapabilities(),
+    },
+    {
+      id: "artifacts",
+      label: "Open Artifacts",
+      category: "navigation",
+      run: () => app.openArtifacts(),
+    },
+    {
+      id: "library",
+      label: "Open library",
+      category: "navigation",
+      shortcut: "⌘L",
+      run: () => workspace.openLibrary(),
+    },
+    {
       id: "research",
-      label: "Run Research",
+      label: "Single-pass research",
       category: "research",
-      shortcut: "Research tab",
       run: () => {
-        tabs.openResearchTab();
+        assistant.setComposerMode("research");
+        app.openHome();
+        const q = assistant.input.trim() || workspace.selectedText.trim();
+        if (q) void assistant.runResearch(workspace.activeNotePath, q);
       },
     },
     {
-      id: "query",
-      label: "Quick Query",
+      id: "quick-answer",
+      label: "Ask library",
       category: "research",
       run: () => {
-        tabs.openQueryTab();
+        assistant.setComposerMode("quick");
+        app.openHome();
+      },
+    },
+    {
+      id: "run-goal",
+      label: "Run agent goal",
+      category: "research",
+      run: () => {
+        assistant.setComposerMode("goal");
+        app.openHome();
+        const q = assistant.input.trim() || workspace.selectedText.trim();
+        if (q) void assistant.runGoal(q);
+      },
+    },
+    {
+      id: "remember-topic",
+      label: "Remember notes in this topic",
+      category: "vault",
+      run: () => {
+        app.openHome();
+        void assistant.rememberTopicNotes();
+      },
+    },
+    {
+      id: "edit-workspace",
+      label: "Edit workspace",
+      category: "vault",
+      run: () => {
+        const path = workspace.activeTopicPath;
+        if (path) app.openEditProject(path);
       },
     },
     {
       id: "ingest",
-      label: "Ingest Documents",
+      label: "Add documents",
       category: "vault",
-      run: () => {
-        tabs.openIngestTab();
-      },
+      run: () => app.openSheet("ingest"),
     },
     {
       id: "settings",
-      label: "Open Settings",
+      label: "Open settings",
       category: "navigation",
-      run: () => {
-        tabs.openSettingsTab();
-      },
+      run: () => app.openSheet("settings"),
     },
     {
-      id: "toggle-left",
-      label: "Toggle Vault Sidebar",
-      category: "navigation",
-      run: () => workspace.toggleLeft(),
+      id: "theme-light",
+      label: "Color Theme: Light",
+      category: "preferences",
+      run: () => setThemePreference("light"),
     },
     {
-      id: "toggle-right",
-      label: "Toggle Inspector Panel",
-      category: "navigation",
-      run: () => workspace.toggleRight(),
+      id: "theme-dark",
+      label: "Color Theme: Dark",
+      category: "preferences",
+      run: () => setThemePreference("dark"),
     },
     {
-      id: "focus-vault",
-      label: "Focus Vault Search",
-      category: "vault",
-      run: () => {
-        const el = document.querySelector<HTMLInputElement>("[data-vault-search]");
-        el?.focus();
-      },
-    },
-    {
-      id: "retry-connection",
-      label: "Retry Sidecar Connection",
-      category: "navigation",
-      run: () => connection.connect(),
-    },
-    {
-      id: "research-deeply",
-      label: "Research This Deeply",
-      category: "research",
-      run: () => {
-        const q = workspace.selectedText.trim() || workspace.activeNotePath?.split("/").pop() || "";
-        if (q) research.runResearch(q);
-      },
+      id: "theme-system",
+      label: "Color Theme: System",
+      category: "preferences",
+      run: () => setThemePreference("system"),
     },
   ];
 }

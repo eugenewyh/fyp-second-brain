@@ -13,23 +13,59 @@
     "fs:default",
     {
       "identifier": "fs:allow-read-dir",
-      "allow": [{ "path": "$HOME/**/data/documents/**" }]
+      "allow": [
+        { "path": "$HOME/**/data/documents" },
+        { "path": "$HOME/**/data/documents/**" }
+      ]
     },
     {
       "identifier": "fs:allow-read-text-file",
-      "allow": [{ "path": "$HOME/**/data/documents/**" }]
+      "allow": [
+        { "path": "$HOME/**/data/documents" },
+        { "path": "$HOME/**/data/documents/**" }
+      ]
     },
     {
       "identifier": "fs:allow-write-text-file",
-      "allow": [{ "path": "$HOME/**/data/documents/**" }]
+      "allow": [
+        { "path": "$HOME/**/data/documents" },
+        { "path": "$HOME/**/data/documents/**" }
+      ]
     },
     {
       "identifier": "fs:allow-mkdir",
-      "allow": [{ "path": "$HOME/**/data/documents/**" }]
+      "allow": [
+        { "path": "$HOME/**/data/documents" },
+        { "path": "$HOME/**/data/documents/**" }
+      ]
     },
     {
       "identifier": "fs:allow-exists",
-      "allow": [{ "path": "$HOME/**/data/documents/**" }]
+      "allow": [
+        { "path": "$HOME/**/data/documents" },
+        { "path": "$HOME/**/data/documents/**" }
+      ]
+    },
+    {
+      "identifier": "fs:allow-read-file",
+      "allow": [
+        { "path": "$HOME/**/data/documents" },
+        { "path": "$HOME/**/data/documents/**" }
+      ]
+    },
+    {
+      "identifier": "fs:allow-rename",
+      "allow": [
+        { "path": "$HOME/**/data/documents" },
+        { "path": "$HOME/**/data/documents/**" }
+      ]
+    },
+    {
+      "identifier": "fs:allow-remove",
+      "allow": [
+        { "path": "$HOME/**/data/documents" },
+        { "path": "$HOME/**/data/documents/**" }
+      ]
     }
   ]
 }

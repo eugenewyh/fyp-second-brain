@@ -10,7 +10,7 @@
   let { nodes, filter = "" }: Props = $props();
 </script>
 
-<div class="tree-root">
+<div class="tree-root" data-testid="vault-tree" data-vault-root="data/documents/">
   {#each nodes as node (node.path)}
     <VaultTreeNode {node} {filter} />
   {/each}

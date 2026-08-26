@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+import logging
+import shutil
 from datetime import datetime, timezone
 
 import chromadb
 from langchain_core.documents import Document
 
 from second_brain.config import CHROMA_PATH, COLLECTION_NAME
-from second_brain.memory.embeddings import get_embeddings
+from second_brain.memory.embeddings import FINGERPRINT_PATH, get_embeddings, write_fingerprint
+from second_brain.memory.locks import chroma_write_lock
+
+logger = logging.getLogger(__name__)
 
 _client: chromadb.PersistentClient | None = None
 
@@ -17,6 +22,12 @@ def get_client() -> chromadb.PersistentClient:
         CHROMA_PATH.mkdir(parents=True, exist_ok=True)
         _client = chromadb.PersistentClient(path=str(CHROMA_PATH))
     return _client
+
+
+def reset_client() -> None:
+    """Drop in-memory client so the next call re-opens from disk."""
+    global _client
+    _client = None
 
 
 def get_collection():
@@ -31,6 +42,60 @@ def collection_count() -> int:
     return get_collection().count()
 
 
+def is_hnsw_corruption_error(err: BaseException) -> bool:
+    text = str(err).lower()
+    return (
+        "nothing found on disk" in text
+        or "hnsw segment" in text
+        or "error creating hnsw" in text
+        or "segment reader" in text
+    )
+
+
+def reset_vector_store(*, wipe_files: bool = True) -> None:
+    """Delete the Chroma collection / on-disk index (fixes corrupt HNSW).
+
+    Call before a full re-ingest when query fails with
+    "Nothing found on disk" or similar segment-reader errors.
+    """
+    global _client
+    with chroma_write_lock:
+        _reset_vector_store_unlocked(wipe_files=wipe_files)
+
+
+def _reset_vector_store_unlocked(*, wipe_files: bool = True) -> None:
+    global _client
+    try:
+        client = get_client()
+        try:
+            client.delete_collection(COLLECTION_NAME)
+        except Exception as e:
+            logger.warning("delete_collection failed (will wipe files): %s", e)
+    finally:
+        _client = None
+
+    if wipe_files and CHROMA_PATH.exists():
+        for child in CHROMA_PATH.iterdir():
+            try:
+                if child.is_dir():
+                    shutil.rmtree(child)
+                elif child.name != ".gitkeep":
+                    child.unlink(missing_ok=True)
+            except OSError as e:
+                logger.warning("Could not remove %s: %s", child, e)
+
+    if FINGERPRINT_PATH.exists():
+        try:
+            FINGERPRINT_PATH.unlink()
+        except OSError:
+            pass
+
+    reset_client()
+    CHROMA_PATH.mkdir(parents=True, exist_ok=True)
+    get_collection()  # recreate empty collection
+    logger.info("Vector store reset at %s", CHROMA_PATH)
+
+
 def upsert_documents(documents: list[Document]) -> int:
     if not documents:
         return 0
@@ -40,6 +105,8 @@ def upsert_documents(documents: list[Document]) -> int:
 
     texts = [doc.page_content for doc in documents]
     embeddings = embeddings_model.embed_documents(texts)
+    if embeddings:
+        write_fingerprint(dims=len(embeddings[0]))
 
     ids = []
     metadatas = []
@@ -59,12 +126,18 @@ def upsert_documents(documents: list[Document]) -> int:
                 datetime.now(timezone.utc).isoformat(),
             ),
         }
+        # Optional type tags for agent memory recall boosting
+        for key in ("doc_type", "type", "source_type"):
+            val = doc.metadata.get(key)
+            if val is not None and str(val).strip():
+                metadata[key] = str(val)[:64]
         metadatas.append(metadata)
 
-    collection.upsert(
-        ids=ids,
-        documents=texts,
-        embeddings=embeddings,
-        metadatas=metadatas,
-    )
+    with chroma_write_lock:
+        collection.upsert(
+            ids=ids,
+            documents=texts,
+            embeddings=embeddings,
+            metadatas=metadatas,
+        )
     return len(documents)

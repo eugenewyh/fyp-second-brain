@@ -7,11 +7,12 @@ export interface LayoutState {
 
 const STORAGE_KEY = "sb-workspace-layout";
 
+/** Agent-first defaults: full-width conversation; drawers open on demand. */
 export const LAYOUT_DEFAULTS: LayoutState = {
   leftWidth: 280,
   rightWidth: 340,
-  leftCollapsed: false,
-  rightCollapsed: false,
+  leftCollapsed: true,
+  rightCollapsed: true,
 };
 
 export const LAYOUT_LIMITS = {

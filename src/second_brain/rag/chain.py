@@ -2,8 +2,10 @@ from dataclasses import dataclass, field
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
+from second_brain.agent.supervisor import REFUSE_MESSAGE
 from second_brain.config import RETRIEVAL_TOP_K
-from second_brain.memory.llm import get_llm
+from second_brain.memory.llm import invoke_llm
+from second_brain.memory.recall import memory_is_useful, recall_for_query
 from second_brain.memory.retriever import retrieve
 from second_brain.rag.prompts import (
     CHAT_CONTEXT_BLOCK,
@@ -13,6 +15,9 @@ from second_brain.rag.prompts import (
     RAG_USER_TEMPLATE,
     format_context,
 )
+
+
+THIN_MEMORY_ANSWER = REFUSE_MESSAGE
 
 
 @dataclass
@@ -29,6 +34,8 @@ class RAGResponse:
     question: str
     answer: str
     sources: list[SourceCitation] = field(default_factory=list)
+    thin_memory: bool = False
+    contested_claims: list[dict] = field(default_factory=list)
 
 
 def _build_citations(documents) -> list[SourceCitation]:
@@ -60,7 +67,6 @@ def ask(question: str, top_k: int = RETRIEVAL_TOP_K) -> RAGResponse:
         )
 
     context = format_context(documents)
-    llm = get_llm()
 
     messages = [
         SystemMessage(content=RAG_SYSTEM_PROMPT),
@@ -70,7 +76,7 @@ def ask(question: str, top_k: int = RETRIEVAL_TOP_K) -> RAGResponse:
         )),
     ]
 
-    response = llm.invoke(messages)
+    response = invoke_llm(messages, role="fast")
     answer = response.content if isinstance(response.content, str) else str(response.content)
 
     return RAGResponse(question=question, answer=answer, sources=citations)
@@ -134,10 +140,22 @@ def _history_messages(messages: list[ChatMessage]) -> list[HumanMessage | AIMess
     return history
 
 
+def _has_ephemeral_context(context: ChatContext | None) -> bool:
+    if not context:
+        return False
+    return bool(
+        (context.selected_text and context.selected_text.strip())
+        or (context.note_excerpt and context.note_excerpt.strip())
+    )
+
+
 def chat_with_context(
     messages: list[ChatMessage],
     context: ChatContext | None = None,
     top_k: int = RETRIEVAL_TOP_K,
+    project_path: str | None = None,
+    session_id: str | None = None,
+    also_project_paths: list[str] | None = None,
 ) -> RAGResponse:
     question = _last_user_message(messages)
     if not question:
@@ -147,11 +165,48 @@ def chat_with_context(
             sources=[],
         )
 
-    documents = retrieve(question, top_k=top_k)
+    ephemeral = _has_ephemeral_context(context)
+    memory = recall_for_query(
+        question,
+        project_path=project_path,
+        session_id=session_id,
+        top_k=top_k,
+        also_project_paths=also_project_paths,
+    )
+    on_topic: bool | None = None
+    if project_path and not ephemeral:
+        try:
+            from second_brain.memory.relevance import should_file_research
+
+            ok, _reason = should_file_research(
+                question,
+                project_path,
+                llm_fn=lambda *_a, **_k: None,
+            )
+            on_topic = ok
+        except Exception:
+            on_topic = None
+    if not memory_is_useful(memory, has_ephemeral=ephemeral, on_topic=on_topic):
+        return RAGResponse(
+            question=question,
+            answer=THIN_MEMORY_ANSWER,
+            sources=[],
+            thin_memory=True,
+        )
+
+    try:
+        documents = retrieve(
+            question,
+            top_k=top_k,
+            project_path=project_path,
+            also_project_paths=also_project_paths,
+        )
+    except Exception:
+        documents = []
     citations = _build_citations(documents)
     context_text = format_context(documents)
+    memory_text = memory.text or "(none)"
 
-    llm = get_llm()
     llm_messages: list[SystemMessage | HumanMessage | AIMessage] = [
         SystemMessage(content=build_chat_system_content(context)),
     ]
@@ -162,12 +217,18 @@ def chat_with_context(
     llm_messages.append(
         HumanMessage(
             content=CHAT_USER_WITH_CONTEXT.format(
+                memory=memory_text,
                 context=context_text,
-                message=question,
+                question=question,
             )
         )
     )
 
-    response = llm.invoke(llm_messages)
+    response = invoke_llm(llm_messages, role="fast")
     answer = response.content if isinstance(response.content, str) else str(response.content)
-    return RAGResponse(question=question, answer=answer, sources=citations)
+    return RAGResponse(
+        question=question,
+        answer=answer,
+        sources=citations,
+        contested_claims=list(memory.contested_claims or []),
+    )

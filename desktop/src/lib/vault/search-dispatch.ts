@@ -4,6 +4,7 @@ import type { VaultNode } from "./types";
 import type { VaultSearchResult } from "$lib/api";
 import type { VaultFileRef } from "./flatten";
 import { normalizeNoteName } from "./wikilinks";
+import { sourceLookupName } from "./source-origin";
 
 export type VaultSearchMode = "fuzzy" | "semantic";
 
@@ -20,10 +21,11 @@ export function resolveSemanticSourcePath(
   source: string,
   vaultFiles: VaultFileRef[],
 ): string | null {
-  const exact = vaultFiles.find((f) => f.path === source);
+  const lookup = sourceLookupName(source);
+  const exact = vaultFiles.find((f) => f.path === source || f.path === lookup);
   if (exact) return exact.path;
 
-  const basename = source.split("/").pop() ?? source;
+  const basename = lookup.split(/[\\/]/).pop() ?? lookup;
   const byName = vaultFiles.find((f) => f.name === basename);
   if (byName) return byName.path;
 

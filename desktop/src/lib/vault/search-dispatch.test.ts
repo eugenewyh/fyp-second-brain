@@ -37,10 +37,19 @@ describe("search-dispatch", () => {
     expect(hits[0].path).toBe("/vault/research/servlets.md");
   });
 
-  it("resolves bare API filename to full vault path", () => {
-    expect(resolveSemanticSourcePath("servlets.md", mdVaultFiles)).toBe(
-      "/home/user/data/documents/research/servlets.md",
-    );
+  it("resolves report bibliography labels (Personal — filename.md)", () => {
+    expect(
+      resolveSemanticSourcePath(
+        "Personal — servlets.md",
+        mdVaultFiles,
+      ),
+    ).toBe("/home/user/data/documents/research/servlets.md");
+  });
+
+  it("strips page suffixes from bibliography labels", () => {
+    expect(
+      resolveSemanticSourcePath("Personal — servlets.md, p.12", mdVaultFiles),
+    ).toBe("/home/user/data/documents/research/servlets.md");
   });
 
   it("returns null for unresolvable bare PDF (real API shape)", () => {

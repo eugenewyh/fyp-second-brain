@@ -1,0 +1,64 @@
+export type TurnIntent = "teach" | "explain" | "lookup";
+
+const LOOKUP_RE =
+  /\b(look\s*up|looking\s*up|find\s+papers?|arxiv|search\s+the\s+web|what'?s\s+new|latest)\b/i;
+
+const SYNTHESIS_RE =
+  /\b(synthesi[sz]e|synthesis|stance\s+on|write[- ]?up|literature\s+review|report\s+on|multi[- ]?part)\b/i;
+
+const NOTES_RE =
+  /\b(according to my notes|in my notes|from my notes|my notes say|based on my notes|from my library|cite my notes)\b/i;
+
+const QUESTION_START =
+  /^(what|why|how|when|where|who|which|does|do|did|is|are|can|could|should|would|explain|summarise|summarize|synthesi[sz]e|compare)\b/i;
+
+export function hasLookupVerbs(text: string): boolean {
+  return LOOKUP_RE.test(text.trim());
+}
+
+export function hasSynthesisIntent(text: string): boolean {
+  return SYNTHESIS_RE.test(text.trim());
+}
+
+export function hasNotesIntent(text: string): boolean {
+  return NOTES_RE.test(text.trim());
+}
+
+export function isQuestion(text: string): boolean {
+  const t = text.trim();
+  if (!t) return false;
+  if (t.includes("?")) return true;
+  return QUESTION_START.test(t);
+}
+
+/** Long note-like paste with no question — teach. Short accidental paste is not a dump. */
+export function isNoteDump(text: string): boolean {
+  const t = text.trim();
+  if (!t) return false;
+  if (hasLookupVerbs(t) || isQuestion(t) || hasSynthesisIntent(t)) return false;
+  const paragraphs = t.split(/\n\s*\n/).filter((p) => p.trim().length > 40);
+  return t.length >= 800 || paragraphs.length >= 3;
+}
+
+export function classifyIntent(opts: {
+  text: string;
+  hasAttachments?: boolean;
+}): TurnIntent {
+  if (opts.hasAttachments) return "teach";
+  const text = opts.text.trim();
+  if (isNoteDump(text)) return "teach";
+  // Synthesis over notes → research (lookup), not plain explain
+  if (hasSynthesisIntent(text)) return "lookup";
+  if (hasNotesIntent(text)) return "explain";
+  if (hasLookupVerbs(text)) return "lookup";
+  return "explain";
+}
+
+/** After filing attachments/dumps, optionally continue with a question. */
+export function leftoverQuestionAfterTeach(text: string): string | null {
+  const t = text.trim();
+  if (!t) return null;
+  if (isNoteDump(t) && !isQuestion(t) && !hasLookupVerbs(t)) return null;
+  if (isQuestion(t) || hasLookupVerbs(t) || hasSynthesisIntent(t)) return t;
+  return null;
+}

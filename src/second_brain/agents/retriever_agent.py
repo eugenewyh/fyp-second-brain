@@ -11,7 +11,16 @@ logger = logging.getLogger(__name__)
 
 def retriever_node(state: GraphState) -> dict:
     queries = state.get("retrieval_queries") or [state["query"]]
-    documents, stats, retrieval_log = hybrid_retrieve(queries, main_query=state["query"])
+    scope = state.get("retrieval_scope") or "hybrid"
+    project_path = state.get("project_path")
+    also_project_paths = state.get("also_project_paths") or []
+    documents, stats, retrieval_log = hybrid_retrieve(
+        queries,
+        main_query=state["query"],
+        retrieval_scope=scope,
+        project_path=project_path,
+        also_project_paths=also_project_paths or None,
+    )
 
     stats_summary = ", ".join(f"{k}={v}" for k, v in stats.items() if v > 0)
     logger.info(

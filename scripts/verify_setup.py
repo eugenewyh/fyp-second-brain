@@ -7,7 +7,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from second_brain.config import EMBEDDING_MODEL, OLLAMA_BASE_URL
+from second_brain.config import EMBEDDING_MODEL, LLM_PROVIDER, OLLAMA_BASE_URL
+from second_brain.memory.llm import get_llm
 from second_brain.graph import build_graph
 from second_brain.ingestion.pipeline import ingest_file
 from second_brain.memory.chroma_store import collection_count
@@ -27,7 +28,20 @@ def main() -> int:
     print("Second Brain — Phase 0 Setup Verification\n")
     results = []
 
-    # 1. Ollama connectivity + embedding model
+    # 1. LLM provider (Groq or Ollama)
+    try:
+        llm = get_llm()
+        reply = llm.invoke("Reply with exactly: ok")
+        content = getattr(reply, "content", str(reply))
+        results.append(check(
+            f"LLM ({LLM_PROVIDER})",
+            bool(content),
+            f"model responded ({len(str(content))} chars)",
+        ))
+    except Exception as e:
+        results.append(check(f"LLM ({LLM_PROVIDER})", False, str(e)))
+
+    # 2. Ollama connectivity + embedding model
     try:
         embeddings = get_embeddings()
         vector = embeddings.embed_query("test connectivity")
@@ -39,14 +53,14 @@ def main() -> int:
     except Exception as e:
         results.append(check("Ollama embeddings", False, str(e)))
 
-    # 2. Chroma persistence
+    # 3. Chroma persistence
     try:
         before = collection_count()
         results.append(check("Chroma store", True, f"collection count={before}"))
     except Exception as e:
         results.append(check("Chroma store", False, str(e)))
 
-    # 3. Ingest a test file
+    # 4. Ingest a test file
     try:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write(
@@ -66,7 +80,7 @@ def main() -> int:
     except Exception as e:
         results.append(check("Document ingestion", False, str(e)))
 
-    # 4. LangGraph multi-agent workflow
+    # 5. LangGraph multi-agent workflow
     try:
         graph = build_graph()
         result = graph.invoke({

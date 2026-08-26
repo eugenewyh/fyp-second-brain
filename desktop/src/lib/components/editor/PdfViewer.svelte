@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import * as pdfjs from "pdfjs-dist";
-  import { readPdfBytes } from "$lib/vault/pdf";
+  import { tick } from "svelte";
+  import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
+  import { readPdfBytes, resolveBarePdf } from "$lib/vault/pdf";
   import { workspace } from "$lib/stores/workspace.svelte";
 
   interface Props {
@@ -16,42 +16,83 @@
   let zoom = $state(1.2);
   let loading = $state(true);
   let error = $state("");
-  let pdfDoc: pdfjs.PDFDocumentProxy | null = null;
+  let pdfDoc: any = null;
+  let loadGeneration = 0;
 
-  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    "pdfjs-dist/build/pdf.worker.min.mjs",
-    import.meta.url,
-  ).toString();
+  // Force main-thread parsing (no worker script headaches in Tauri webview)
+  (pdfjsLib as any).GlobalWorkerOptions.workerSrc = "";
 
   async function renderPage() {
     if (!pdfDoc || !canvasEl) return;
-    const page = await pdfDoc.getPage(pageNum);
-    const viewport = page.getViewport({ scale: zoom });
-    const ctx = canvasEl.getContext("2d");
-    if (!ctx) return;
-    canvasEl.width = viewport.width;
-    canvasEl.height = viewport.height;
-    await page.render({ canvasContext: ctx, viewport, canvas: canvasEl }).promise;
+    try {
+      const page = await pdfDoc.getPage(pageNum);
+      const viewport = page.getViewport({ scale: zoom });
+      const ctx = canvasEl.getContext("2d", { alpha: false });
+      if (!ctx) return;
+      canvasEl.width = Math.floor(viewport.width);
+      canvasEl.height = Math.floor(viewport.height);
+      await page.render({ canvasContext: ctx, viewport, canvas: canvasEl }).promise;
+    } catch (e) {
+      console.error("[PDF] render error", e);
+    }
   }
 
-  async function loadPdf() {
+  async function loadPdf(signal: { cancelled: boolean }) {
+    const gen = ++loadGeneration;
     loading = true;
     error = "";
-    workspace.setActiveNote(path);
+    pdfDoc = null;
+    pageCount = 0;
+
+    let bytes: Uint8Array | null = null;
+    const tried = await resolveBarePdf(path);
     try {
-      const bytes = await readPdfBytes(path);
-      pdfDoc = await pdfjs.getDocument({ data: bytes }).promise;
-      pageCount = pdfDoc.numPages;
+      bytes = await readPdfBytes(tried);
+      if (signal.cancelled || gen !== loadGeneration) return;
+      if (!bytes || bytes.length < 4) {
+        throw new Error(`Read 0 bytes for "${tried}" (file not found or empty on disk)`);
+      }
+
+      const head = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
+      if (head !== "%PDF") {
+        throw new Error(`Not a valid PDF for "${tried}" (magic="${head}", len=${bytes.length})`);
+      }
+
+      const data = new Uint8Array(bytes);
+
+      // Main-thread parse (no worker)
+      const task = (pdfjsLib as any).getDocument({
+        data,
+        disableWorker: true,
+        useSystemFonts: true,
+      });
+      pdfDoc = await task.promise;
+
+      if (signal.cancelled || gen !== loadGeneration) return;
+
+      pageCount = pdfDoc.numPages || 0;
+      if (pageCount === 0) {
+        throw new Error(`PDF parsed but reported 0 pages (len=${bytes.length})`);
+      }
+
       if (workspace.pdfJumpPage && workspace.pdfJumpPage <= pageCount) {
         pageNum = workspace.pdfJumpPage;
         workspace.pdfJumpPage = null;
       } else {
         pageNum = 1;
       }
+
+      loading = false;
+      await tick();
       await renderPage();
-    } catch (e) {
-      error = e instanceof Error ? e.message : "Failed to load PDF";
-    } finally {
+    } catch (e: any) {
+      if (signal.cancelled || gen !== loadGeneration) return;
+      console.error("[PDF] load failed for", path, e);
+      const msg =
+        (e && (e.message || e.toString?.())) ||
+        (typeof e === "string" ? e : JSON.stringify(e)) ||
+        "Failed to load PDF";
+      error = msg;
       loading = false;
     }
   }
@@ -81,8 +122,36 @@
   }
 
   $effect(() => {
+    const signal = { cancelled: false };
     void path;
-    void loadPdf();
+    void loadPdf(signal);
+    return () => {
+      signal.cancelled = true;
+    };
+  });
+
+  // If a bare filename like "Lec03.pdf" was passed (from recent/sources),
+  // upgrade it to a real path so the file can be opened again later.
+  $effect(() => {
+    const p = path;
+    if (!p || p.includes("/") || p.includes("\\")) return;
+    if (!p.toLowerCase().endsWith(".pdf")) return;
+    (async () => {
+      try {
+        const resolved = await resolveBarePdf(p);
+        if (resolved !== p) {
+          const { tabs } = await import("$lib/stores/tabs.svelte");
+          tabs.openNoteTab(resolved, resolved.split("/").pop() ?? resolved);
+          workspace.setActiveNote(resolved);
+        }
+      } catch {}
+    })();
+  });
+
+  $effect(() => {
+    void pageNum;
+    void zoom;
+    if (!loading && pdfDoc) void renderPage();
   });
 </script>
 
@@ -93,28 +162,46 @@
       <p class="hint path-hint">{path}</p>
     </div>
     <div class="controls">
-      <button onclick={prevPage} disabled={pageNum <= 1}>Prev</button>
+      <button type="button" onclick={prevPage} disabled={pageNum <= 1 || loading}>Prev</button>
       <span class="page-label">{pageNum} / {pageCount || "—"}</span>
-      <button onclick={nextPage} disabled={pageNum >= pageCount}>Next</button>
-      <button onclick={zoomOut}>−</button>
-      <button onclick={zoomIn}>+</button>
+      <button type="button" onclick={nextPage} disabled={pageNum >= pageCount || loading}>Next</button>
+      <button type="button" onclick={zoomOut} disabled={loading || !pageCount}>−</button>
+      <button type="button" onclick={zoomIn} disabled={loading || !pageCount}>+</button>
     </div>
   </div>
 
-  {#if loading}
-    <div class="loading">Loading PDF…</div>
-  {:else if error}
-    <p class="error">{error}</p>
-  {:else}
-    <div class="canvas-wrap">
-      <canvas bind:this={canvasEl}></canvas>
+  {#if error}
+    <div class="error-box">
+      <p class="error-title">Couldn't open this PDF</p>
+      <p class="error-body">
+        It may have been moved or removed. Try adding the document again from Library.
+      </p>
+      <button
+        type="button"
+        class="btn-secondary"
+        onclick={() => workspace.openUtilityPanel("ingest")}
+      >
+        Add documents
+      </button>
+      <details class="tech">
+        <summary>Technical details</summary>
+        <p class="detail">{path}</p>
+        <p class="detail">{error}</p>
+      </details>
     </div>
   {/if}
+
+  <div class="canvas-wrap">
+    {#if loading}
+      <div class="loading-overlay">Loading PDF…</div>
+    {/if}
+    <canvas bind:this={canvasEl}></canvas>
+  </div>
 </section>
 
 <style>
   .panel h2 {
-    font-size: 1.2rem;
+    font-size: var(--text-xl);
     margin-bottom: 0.2rem;
   }
 
@@ -134,27 +221,29 @@
   }
 
   .controls button {
-    font-size: 0.75rem;
+    font-size: var(--text-sm);
     padding: 0.35rem 0.55rem;
   }
 
   .page-label {
-    font-size: 0.75rem;
+    font-size: var(--text-sm);
     color: var(--text-muted);
     min-width: 4rem;
     text-align: center;
   }
 
   .path-hint {
-    font-size: 0.75rem;
+    font-size: var(--text-sm);
     word-break: break-all;
     color: var(--text-muted);
   }
 
   .canvas-wrap {
+    position: relative;
     overflow: auto;
     max-height: 75vh;
-    background: var(--surface);
+    min-height: 200px;
+    background: var(--paper);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 0.5rem;
@@ -163,14 +252,53 @@
   canvas {
     display: block;
     margin: 0 auto;
+    max-width: 100%;
   }
 
-  .loading {
+  .loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--bg-elevated) 85%, transparent);
     color: var(--warning);
-    padding: 1rem;
+    z-index: 1;
+    pointer-events: none;
   }
 
-  .error {
-    color: var(--error);
+  .error-box {
+    margin: 1.5rem;
+    padding: 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    max-width: 28rem;
+  }
+
+  .error-title {
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    color: var(--text);
+    margin-bottom: 0.35rem;
+  }
+
+  .error-body {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 0.75rem;
+  }
+
+  .error-box .tech {
+    margin-top: 0.75rem;
+    font-size: var(--text-xs);
+    color: var(--text-faint);
+  }
+
+  .error-box .detail {
+    font-family: var(--font-mono);
+    word-break: break-all;
+    margin-top: 0.25rem;
   }
 </style>

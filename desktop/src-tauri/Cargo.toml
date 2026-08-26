@@ -1,7 +1,7 @@
 [package]
 name = "desktop"
 version = "0.1.0"
-description = "A Tauri App"
+description = "Nous — personal knowledge and autonomous research"
 authors = ["you"]
 edition = "2021"
 
@@ -26,4 +26,5 @@ tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-shell = "2"
 notify = "8"
+base64 = "0.22"
 

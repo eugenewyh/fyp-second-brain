@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy, tick } from "svelte";
+  import { onDestroy, tick } from "svelte";
   import type { Editor } from "@tiptap/core";
   import { readNote, writeNote, loadVaultTree, getVaultRoot } from "$lib/vault/load";
   import { splitFrontmatter } from "$lib/vault/markdown";
@@ -17,6 +17,7 @@
     saveSplitRatio,
     type EditorViewMode,
   } from "$lib/workspace/editor-prefs";
+  import { parsePeekMeta, stripLiftedPeekMeta } from "$lib/vault/graph-peek";
   import PaneResizer from "$lib/components/workspace/PaneResizer.svelte";
   import SegmentedControl from "$lib/ui/SegmentedControl.svelte";
   import Button from "$lib/ui/Button.svelte";
@@ -25,9 +26,10 @@
 
   interface Props {
     path: string;
+    compact?: boolean;
   }
 
-  let { path }: Props = $props();
+  let { path, compact = false }: Props = $props();
   let editorEl: HTMLDivElement | undefined = $state();
   let previewEl: HTMLDivElement | undefined = $state();
   let editor: Editor | null = null;
@@ -43,6 +45,16 @@
   let frontmatter = $state("");
   let vaultFiles = $state<{ path: string; name: string }[]>([]);
   let lastVaultNonce = 0;
+  let loadedPath = "";
+
+  function formatError(e: unknown): string {
+    if (e instanceof Error) return e.message;
+    if (typeof e === "string") return e;
+    if (e && typeof e === "object" && "message" in e) {
+      return String((e as { message: unknown }).message);
+    }
+    return "Failed to load note";
+  }
 
   async function refreshVaultFiles(): Promise<void> {
     vaultReady = false;
@@ -54,21 +66,32 @@
     vaultReady = true;
   }
 
-  function handleWikilinkClick(event: MouseEvent) {
-    if (!vaultReady) return;
-    const el = (event.target as HTMLElement).closest("a[data-wikilink]");
-    if (!el) return;
-    const inEditor = editorEl?.contains(el);
-    const inPreview = previewEl?.contains(el);
-    if (!inEditor && !inPreview) return;
-    event.preventDefault();
-    const target = el.getAttribute("data-wikilink");
-    if (!target) return;
-    const resolved = activateWikilink(target, vaultFiles);
-    if (resolved) {
-      tabs.openNoteTab(resolved);
-      workspace.setActiveNote(resolved);
+  function handlePreviewClick(event: MouseEvent) {
+    const el = event.target as HTMLElement | null;
+    const wiki = el?.closest?.("a[data-wikilink]");
+    if (wiki) {
+      if (!vaultReady) return;
+      const inEditor = editorEl?.contains(wiki);
+      const inPreview = previewEl?.contains(wiki);
+      if (!inEditor && !inPreview) return;
+      event.preventDefault();
+      const target = wiki.getAttribute("data-wikilink");
+      if (!target) return;
+      const resolved = activateWikilink(target, vaultFiles);
+      if (resolved) {
+        tabs.openNoteTab(resolved);
+        workspace.setActiveNote(resolved);
+      }
+      return;
     }
+    const hrefEl = el?.closest?.("a[href]");
+    if (!hrefEl) return;
+    const href = hrefEl.getAttribute("href");
+    if (!href || !/^https?:\/\//i.test(href)) return;
+    const inPreview = previewEl?.contains(hrefEl);
+    if (!inPreview) return;
+    event.preventDefault();
+    window.open(href, "_blank", "noopener");
   }
 
   function schedulePreviewUpdate() {
@@ -83,7 +106,14 @@
   function setViewMode(mode: EditorViewMode) {
     viewMode = mode;
     saveEditorViewMode(mode);
-    schedulePreviewUpdate();
+    if (mode === "preview") {
+      editor?.destroy();
+      editor = null;
+    } else if (!editor && !loading && !error) {
+      void initEditorForPath(path);
+    } else {
+      schedulePreviewUpdate();
+    }
   }
 
   function onSplitResize(delta: number) {
@@ -94,23 +124,36 @@
     saveSplitRatio(splitRatio);
   }
 
-  async function initEditor() {
+  async function initEditorForPath(notePath: string) {
     loading = true;
     error = "";
     saveMessage = "";
-    workspace.setActiveNote(path);
+    workspace.setActiveNote(notePath);
     editor?.destroy();
     editor = null;
+    previewHtml = "";
 
     try {
-      await tick();
-      if (!editorEl) throw new Error("Editor surface not ready");
-
       await refreshVaultFiles();
 
-      const raw = await readNote(path);
+      const raw = await readNote(notePath);
       const parts = splitFrontmatter(raw);
       frontmatter = parts.frontmatter;
+      let previewBody = parts.body;
+      if (compact) {
+        const meta = parsePeekMeta(raw, notePath.split(/[\\/]/).pop() ?? notePath);
+        previewBody = stripLiftedPeekMeta(parts.body, meta);
+      }
+      previewHtml = markdownBodyToHtml(previewBody);
+
+      if (compact || viewMode === "preview") {
+        return;
+      }
+
+      await tick();
+      if (!editorEl) {
+        throw new Error("Editor surface not ready — try switching to Edit view");
+      }
 
       editor = createEditorFromMarkdown(parts.body, editorEl, {
         editorProps: {
@@ -124,9 +167,8 @@
           }
         },
       });
-      previewHtml = markdownBodyToHtml(parts.body);
     } catch (e) {
-      error = e instanceof Error ? e.message : "Failed to load note";
+      error = formatError(e);
     } finally {
       loading = false;
     }
@@ -157,22 +199,32 @@
     }
   });
 
-  onMount(() => {
-    initEditor();
-    editorEl?.addEventListener("click", handleWikilinkClick);
-    previewEl?.addEventListener("click", handleWikilinkClick);
+  $effect(() => {
+    if (path === loadedPath) return;
+    loadedPath = path;
+    void initEditorForPath(path);
+  });
+
+  $effect(() => {
+    const editor = editorEl;
+    const preview = previewEl;
+    editor?.addEventListener("click", handlePreviewClick);
+    preview?.addEventListener("click", handlePreviewClick);
+    return () => {
+      editor?.removeEventListener("click", handlePreviewClick);
+      preview?.removeEventListener("click", handlePreviewClick);
+    };
   });
 
   onDestroy(() => {
     if (previewTimer) clearTimeout(previewTimer);
-    editorEl?.removeEventListener("click", handleWikilinkClick);
-    previewEl?.removeEventListener("click", handleWikilinkClick);
     editor?.destroy();
     editor = null;
   });
 </script>
 
-<section class="note-editor">
+<section class="note-editor" class:compact>
+  {#if !compact}
   <div class="toolbar">
     <span class="title">{path.split("/").pop()}</span>
     <div class="toolbar-actions">
@@ -190,6 +242,7 @@
       </Button>
     </div>
   </div>
+  {/if}
 
   {#if loading}
     <div class="loading">Loading note…</div>
@@ -201,17 +254,18 @@
 
   <div
     class="editor-layout"
-    class:split={viewMode === "split"}
-    class:preview-only={viewMode === "preview"}
-    class:hidden={loading || !!error}
+    class:split={!compact && viewMode === "split"}
+    class:preview-only={compact || viewMode === "preview"}
+    class:dimmed={loading}
+    class:hidden={!!error}
   >
-    {#if viewMode !== "preview"}
+    {#if !compact && viewMode !== "preview"}
       <div class="editor-wrap" style={viewMode === "split" ? `flex: ${splitRatio}` : ""} bind:this={editorEl}></div>
     {/if}
-    {#if viewMode === "split"}
+    {#if !compact && viewMode === "split"}
       <PaneResizer onResize={onSplitResize} />
     {/if}
-    {#if viewMode !== "edit"}
+    {#if compact || viewMode !== "edit"}
       <div
         class="preview-wrap"
         style={viewMode === "split" ? `flex: ${1 - splitRatio}` : ""}
@@ -222,8 +276,8 @@
     {/if}
   </div>
 
-  {#if saveMessage}
-    <p class="save-msg">{saveMessage}</p>
+  {#if saveMessage && !compact}
+    <p class="save-msg" class:error={saveMessage !== "Saved"}>{saveMessage}</p>
   {/if}
 </section>
 
@@ -247,8 +301,8 @@
   }
 
   .title {
-    font-size: 0.8125rem;
-    font-weight: 500;
+    font-size: var(--text-base);
+    font-weight: var(--font-medium);
     color: var(--text);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -273,18 +327,104 @@
     display: none;
   }
 
+  .editor-layout.dimmed {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+
   .editor-wrap,
   .preview-wrap {
     background: var(--bg-elevated);
     overflow-y: auto;
-    padding: 1rem 1.25rem;
+    padding: 2.25rem 2.75rem 3.25rem;
     flex: 1;
     min-height: 0;
   }
 
-  .preview-wrap {
-    line-height: 1.6;
-    font-size: 0.875rem;
+  .note-editor.compact .preview-wrap {
+    padding: 0.85rem 1rem 1.4rem;
+    background: transparent;
+    font-size: var(--text-base);
+    line-height: 1.65;
+    color: var(--text);
+  }
+
+  .note-editor.compact .preview-wrap :global(h1) {
+    font-size: var(--text-lg);
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+    margin: 0 0 0.7rem;
+    color: var(--text);
+  }
+
+  .note-editor.compact .preview-wrap :global(h2),
+  .note-editor.compact .preview-wrap :global(h3) {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    margin: 1rem 0 0.4rem;
+    color: var(--text);
+  }
+
+  .note-editor.compact .preview-wrap :global(p) {
+    margin: 0 0 0.75rem;
+    color: var(--text);
+  }
+
+  .note-editor.compact .preview-wrap :global(ul),
+  .note-editor.compact .preview-wrap :global(ol) {
+    padding-left: 1.2rem;
+    margin: 0 0 0.75rem;
+  }
+
+  .note-editor.compact .preview-wrap :global(li) {
+    margin-bottom: 0.35rem;
+    color: var(--text);
+  }
+
+  .note-editor.compact .preview-wrap :global(blockquote) {
+    margin: 0 0 0.85rem;
+    padding: 0.55rem 0.7rem;
+    border-left: 2px solid var(--border-active);
+    background: var(--control-fill);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  .note-editor.compact .preview-wrap :global(blockquote p) {
+    margin: 0;
+    color: var(--text-muted);
+  }
+
+  .note-editor.compact .preview-wrap :global(em) {
+    color: var(--text-muted);
+  }
+
+  .note-editor.compact .preview-wrap :global(a:not(.wikilink)) {
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 0 0.75rem;
+    color: var(--accent-link);
+    font-size: var(--text-sm);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .note-editor.compact .preview-wrap :global(a:not(.wikilink):hover) {
+    color: var(--text);
+  }
+
+  .preview-wrap :global(> *:first-child) {
+    margin-top: 0;
+  }
+
+  .preview-wrap :global(> *:last-child) {
+    margin-bottom: 0;
   }
 
   .preview-wrap :global(a.wikilink) {
@@ -299,20 +439,24 @@
 
   .save-msg {
     padding: 0.35rem 0.75rem;
-    font-size: 0.7rem;
+    font-size: var(--text-xs);
     color: var(--success);
     border-top: 1px solid var(--border-subtle);
   }
 
+  .save-msg.error {
+    color: var(--error);
+  }
+
   .loading {
     padding: 1rem;
-    font-size: 0.75rem;
+    font-size: var(--text-sm);
     color: var(--text-faint);
   }
 
   .error {
     padding: 0.75rem;
-    font-size: 0.75rem;
+    font-size: var(--text-sm);
     color: var(--error);
   }
 </style>

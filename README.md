@@ -1,24 +1,34 @@
-# Second Brain — FYP (TP068819)
+# Nous — FYP (TP068819)
 
-Graph-based multi-agent AI system for autonomous research and lifelong personal knowledge management.
+**Nous** (mind / intellect) — graph-based multi-agent AI system for autonomous research and lifelong personal knowledge management.
 
 **Student:** Wong Yan Hao  
 **Programme:** B.Sc. (Hons) Computer Science (Artificial Intelligence)
 
 ## Current Phase
 
-**Phase 5** — Evaluation, baselines, UAT, and release packaging.
+**Agent layer + Mission Control** — Hermes-like memory & goal loops around the LangGraph research engine; live agent monitor UI. See [`docs/AGENT_LAYER.md`](docs/AGENT_LAYER.md).
 
 ## Prerequisites
 
 - Python 3.12+
-- [Ollama](https://ollama.com/) running locally
-- Models: `nomic-embed-text`, `llama3.2:3b`
+- **Groq API key** (default LLM — fast cloud inference): [console.groq.com](https://console.groq.com/keys)
+- [Ollama](https://ollama.com/) running locally **for embeddings only**
+- Model: `nomic-embed-text`
 
 ```bash
 ollama pull nomic-embed-text
-ollama pull llama3.2:3b
 ```
+
+Set in `.env`:
+```bash
+LLM_PROVIDER=groq
+GROQ_API_KEY=gsk_your_key_here
+LLM_MODEL=openai/gpt-oss-120b
+GROQ_FALLBACK_MODEL=qwen/qwen3-32b
+```
+
+To use local Ollama for the LLM instead, set `LLM_PROVIDER=ollama` and `LLM_MODEL=qwen3:8b` (or another Ollama model).
 
 ## Setup
 
@@ -112,29 +122,28 @@ Desktop features:
 
 ### Evaluation (Phase 5)
 
-52 benchmark queries in [`evaluation/benchmarks.json`](evaluation/benchmarks.json):
+20 queries grounded in the **dlm vault** ([`evaluation/benchmarks.json`](evaluation/benchmarks.json)). The old Java 52-query set was retired (those lectures are not ingested).
 
 ```bash
-# Preview all 52 queries
+# Preview
 python scripts/run_evaluation.py --dry-run
 
-# Run a quick subset (2 queries)
-python scripts/run_evaluation.py --limit 2
+# Smoke (Ask + honest gap)
+python scripts/run_evaluation.py --ids PV01,PV03,EG01 --sleep 8
 
-# Run full suite (~60–90 min for all 52 research+query)
-python scripts/run_evaluation.py
+# Full suite (pace the API)
+python scripts/run_evaluation.py --sleep 15 -o evaluation/results/nous_dlm.json
 
-# Resume interrupted run
-python scripts/run_evaluation.py --resume evaluation/results/run_YYYYMMDD_HHMMSS.json
+# Resume
+python scripts/run_evaluation.py --sleep 15 --resume evaluation/results/nous_dlm.json -o evaluation/results/nous_dlm.json
 
-# Generate markdown report
-python scripts/generate_eval_report.py evaluation/results/run_YYYYMMDD_HHMMSS.json
+python scripts/generate_eval_report.py evaluation/results/nous_dlm.json
 ```
 
-**Baseline comparison:** Run the same queries through Claude and Grok manually, score 1–5 in [`evaluation/baseline_template.csv`](evaluation/baseline_template.csv), then:
+**Baseline comparison:** Same questions in Claude/Grok **chat** (no vault), score 1–5 in a copy of [`evaluation/baseline_template.csv`](evaluation/baseline_template.csv):
 
 ```bash
-python scripts/compare_baselines.py evaluation/results/run_*.json evaluation/baseline_scores.csv
+python scripts/compare_baselines.py evaluation/results/nous_dlm.json evaluation/baselines_scored.csv
 ```
 
 **UAT:** Use [`evaluation/uat_questionnaire.md`](evaluation/uat_questionnaire.md) with 5–8 participants.
@@ -151,7 +160,7 @@ python scripts/compare_baselines.py evaluation/results/run_*.json evaluation/bas
 src/second_brain/     Core package (config, memory, ingestion, graph)
 sidecar/              FastAPI HTTP server for desktop app
 desktop/              Tauri 2.0 + Svelte frontend
-evaluation/           52 benchmark queries, UAT template, results
+evaluation/           20-query DLM benchmark, UAT template, results
 scripts/              CLI entry points + evaluation runners
 data/documents/       User document drop folder
 data/chroma/          Persistent vector database (gitignored)

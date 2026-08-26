@@ -9,7 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from second_brain.ingestion.pipeline import ingest_directory
-from second_brain.memory.chroma_store import collection_count
+from second_brain.memory.chroma_store import collection_count, reset_vector_store
 
 logging.basicConfig(
     level=logging.INFO,
@@ -25,11 +25,20 @@ def main():
         required=True,
         help="Directory containing PDF/txt/md files to ingest",
     )
+    parser.add_argument(
+        "--reset",
+        action="store_true",
+        help="Wipe the Chroma index first (fixes corrupt HNSW / embedding switches)",
+    )
     args = parser.parse_args()
 
     if not args.input.is_dir():
         print(f"Error: {args.input} is not a directory", file=sys.stderr)
         sys.exit(1)
+
+    if args.reset:
+        print("Resetting vector store…")
+        reset_vector_store()
 
     print(f"Ingesting documents from: {args.input}")
     count = ingest_directory(args.input)

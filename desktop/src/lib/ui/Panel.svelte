@@ -45,15 +45,15 @@
   }
 
   .panel-header h2 {
-    font-size: 1.05rem;
-    font-weight: 600;
+    font-size: var(--text-lg);
+    font-weight: var(--font-medium);
     color: var(--text);
     line-height: 1.3;
   }
 
   .desc {
     margin-top: 0.2rem;
-    font-size: 0.75rem;
+    font-size: var(--text-sm);
     color: var(--text-faint);
   }
 

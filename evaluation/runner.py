@@ -9,6 +9,7 @@ import sys
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
+from second_brain.config import ENABLE_SELF_CRITIQUE  # noqa: E402
 from second_brain.graph import run_research  # noqa: E402
 from second_brain.rag.chain import ask  # noqa: E402
 
@@ -42,6 +43,7 @@ def run_single(benchmark: dict) -> tuple[dict, QueryMetrics]:
                 query_id, category, mode, latency, True,
                 answer=response.answer,
                 sources=result["sources"],
+                expect=benchmark.get("expect"),
             )
         else:
             state = run_research(query)
@@ -60,6 +62,7 @@ def run_single(benchmark: dict) -> tuple[dict, QueryMetrics]:
                 answer=result["report"],
                 retrieval_stats=result["retrieval_stats"],
                 revision_count=result["revision_count"],
+                expect=benchmark.get("expect"),
             )
         return result, metrics
     except Exception as e:
@@ -74,6 +77,8 @@ def run_evaluation(
     benchmarks: list[dict],
     output_path: Path,
     resume_from: dict | None = None,
+    *,
+    sleep_seconds: float = 0.0,
 ) -> dict:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -88,12 +93,17 @@ def run_evaluation(
         ]
         completed_ids = {r["id"] for r in results}
 
+    ran_any = False
     for benchmark in benchmarks:
         if benchmark["id"] in completed_ids:
             continue
 
+        if sleep_seconds > 0 and ran_any:
+            time.sleep(sleep_seconds)
+
         print(f"  [{benchmark['id']}] {benchmark['mode']}: {benchmark['query'][:60]}…")
         result, metrics = run_single(benchmark)
+        ran_any = True
         entry = {
             "id": benchmark["id"],
             "category": benchmark["category"],
@@ -117,6 +127,7 @@ def _build_report(benchmarks: list[dict], results: list[dict], metrics_list: lis
         "run_at": datetime.now(timezone.utc).isoformat(),
         "benchmark_count": len(benchmarks),
         "completed_count": len(results),
+        "enable_self_critique": ENABLE_SELF_CRITIQUE,
         "summary": asdict(summary),
         "metrics": [asdict(m) for m in metrics_list],
         "results": results,

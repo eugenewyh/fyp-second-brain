@@ -33,32 +33,31 @@
 
 <style>
   .segmented {
-    display: flex;
-    gap: 2px;
-    padding: 2px;
-    background: var(--bg);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-sm);
+    display: inline-flex;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--control-fill);
   }
 
   .seg-btn {
-    flex: 1;
-    padding: 0.3rem 0.4rem;
-    font-size: 0.65rem;
-    font-weight: 500;
+    min-height: 28px;
+    padding: 0.3rem 0.75rem;
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
     background: transparent;
     color: var(--text-faint);
-    border-radius: 3px;
+    border-radius: 0;
+    border: none;
   }
 
   .seg-btn:hover {
     color: var(--text-muted);
-    background: var(--surface-hover);
+    background: color-mix(in srgb, var(--surface-hover) 70%, transparent);
   }
 
   .seg-btn.active {
-    background: var(--surface-hover);
-    color: var(--text);
-    box-shadow: inset 0 -1px 0 var(--accent);
+    background: var(--accent-live-dim);
+    color: var(--accent-link);
   }
 </style>

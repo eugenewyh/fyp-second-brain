@@ -69,13 +69,24 @@ Check for:
 - Incorrect citations or misinterpretations
 - Logical gaps
 
-Output EXACTLY in one of these formats:
+Prefer a single JSON object (no markdown prose outside JSON) with this shape:
+{
+  "verdict": "approved" | "revise",
+  "summary": "brief free-text for the analyst",
+  "issues": [
+    {
+      "code": "hallucination" | "missing_evidence" | "citation_error" | "logical_gap" | "academic_mislabel" | "invalid_citation" | "other",
+      "severity": "info" | "minor" | "major" | "blocking",
+      "message": "specific actionable issue",
+      "citation_indices": [1, 2]
+    }
+  ]
+}
 
-If the analysis is acceptable:
+If JSON is impractical, fall back to EXACTLY:
 VERDICT: APPROVED
 FEEDBACK: Brief confirmation of quality.
-
-If the analysis needs revision:
+— or —
 VERDICT: REVISE
 FEEDBACK: Specific, actionable issues the analyst must fix."""
 
@@ -87,24 +98,26 @@ Source documents:
 Analysis to verify:
 {analysis}
 
-Evaluate the analysis:"""
+Evaluate the analysis and return JSON (preferred) or VERDICT/FEEDBACK:"""
 
 SYNTHESIZER_SYSTEM = """You are a Report Synthesizer Agent. Produce a polished, well-structured research report from the approved analysis.
 
+Write for a smart non-expert. Use short, plain sentences. If you must use a technical term, define it in the same sentence. Never mention retrieval, RAG, embeddings, verifiers, hybrid search, or other pipeline jargon.
+
 Format the report with these sections:
-## Executive Summary
-## Key Findings
-## Detailed Analysis
-## Identified Gaps
+## In short
+## What we found
+## The details
+## What's missing
 
 Do NOT include a Sources section — it will be appended automatically.
 
 Rules:
 - Preserve all inline citations [1], [2], etc.
-- Executive summary: 2-3 sentences
-- Key findings: bullet points
-- Identified Gaps MUST list: (a) topics not covered by any source, (b) source types that returned zero results
-- If arXiv returned nothing, state that explicitly in Identified Gaps
+- In short: 2-3 sentences
+- What we found: bullet points
+- What's missing MUST list: (a) topics not covered by any source, (b) source types that returned zero results
+- If arXiv returned nothing, state that explicitly in What's missing
 - Never say "no gaps found" if any limitations exist
 - Never call a Web or Personal source an academic paper"""
 
@@ -123,4 +136,4 @@ Source documents:
 
 Generate the final report (without a Sources section):"""
 
-FORCED_SYNTHESIS_NOTE = "Note: Analysis reached maximum revision attempts. Synthesize the best available analysis and note all limitations in Identified Gaps."
+FORCED_SYNTHESIS_NOTE = "Note: Analysis reached maximum revision attempts. Synthesize the best available analysis and note all limitations in What's missing."

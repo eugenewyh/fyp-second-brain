@@ -5,15 +5,25 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+# Secrets / local env (keep .env.example)
 .env
+.env.*
+!.env.example
+*.pem
+credentials.json
+**/secrets/
 data/chroma/
+data/documents/
 .DS_Store
 *.log
 desktop/node_modules/
 desktop/build/
 desktop/.svelte-kit/
 desktop/src-tauri/target/
+desktop/Nous.dev.app/
+desktop/*.app
 .verify-scratch/
 evaluation/results/*.json
 evaluation/results/*.md
 !evaluation/results/.gitkeep
+

@@ -2,9 +2,10 @@
   interface Props {
     onResize: (delta: number) => void;
     onResizeEnd?: () => void;
+    testId?: string;
   }
 
-  let { onResize, onResizeEnd }: Props = $props();
+  let { onResize, onResizeEnd, testId = "splitter-left" }: Props = $props();
   let dragging = $state(false);
 
   function onPointerDown(e: PointerEvent) {
@@ -27,6 +28,7 @@
 
 <div
   class="pane-resizer"
+  data-testid={testId}
   class:dragging
   role="separator"
   aria-orientation="vertical"
@@ -38,15 +40,30 @@
 
 <style>
   .pane-resizer {
-    width: 2px;
+    position: relative;
+    width: 5px;
+    margin: 0 -2px;
     cursor: col-resize;
     background: transparent;
     flex-shrink: 0;
+    z-index: 6;
+    touch-action: none;
+  }
+
+  .pane-resizer::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1px;
+    transform: translateX(-50%);
+    background: transparent;
     transition: background 0.15s;
   }
 
-  .pane-resizer:hover,
-  .pane-resizer.dragging {
+  .pane-resizer:hover::after,
+  .pane-resizer.dragging::after {
     background: var(--resizer-hover, var(--accent));
   }
 </style>

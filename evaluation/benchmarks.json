@@ -1,64 +1,213 @@
 {
-  "version": "1.0",
-  "description": "52 benchmark queries for Second Brain FYP evaluation (TP068819)",
+  "version": "2.0",
+  "description": "20-query suite for the live dlm vault (diffusion language model notes). Replaces the Semester 1 Java-lecture set, which is no longer ingested.",
+  "corpus": "data/documents/dlm — stance note, DiffusionGemma / Nemotron-Labs-Diffusion / Flexibility Trap / constrained-decoding dumps, plus claim cards.",
   "categories": {
-    "personal_java": "Questions answerable from ingested Java lecture PDFs",
-    "hybrid": "Questions benefiting from personal docs + web search",
-    "research": "Multi-step research requiring full agent pipeline",
-    "edge_gaps": "Questions testing honest gap identification"
+    "personal_vault": "Ask/library questions answerable from ingested DLM notes (no web required)",
+    "hybrid": "Research questions that should use personal notes plus web and/or arXiv",
+    "research": "Multi-step synthesis over the library (full agent graph)",
+    "edge_gaps": "Questions the vault cannot answer — must refuse, not invent"
   },
   "queries": [
-    {"id": "PJ01", "category": "personal_java", "mode": "query", "query": "What packages make up the Java Servlet architecture?"},
-    {"id": "PJ02", "category": "personal_java", "mode": "query", "query": "What are the five basic methods defined by javax.servlet.Servlet?"},
-    {"id": "PJ03", "category": "personal_java", "mode": "query", "query": "How does the HttpServlet service method dispatch requests?"},
-    {"id": "PJ04", "category": "personal_java", "mode": "query", "query": "What is the relationship between JSP pages and servlets?"},
-    {"id": "PJ05", "category": "personal_java", "mode": "query", "query": "What are scriptlets in JSP and where do they end up after translation?"},
-    {"id": "PJ06", "category": "personal_java", "mode": "query", "query": "What implicit objects are available to JSP page designers?"},
-    {"id": "PJ07", "category": "personal_java", "mode": "query", "query": "Explain the servlet life cycle methods init, service, and destroy."},
-    {"id": "PJ08", "category": "personal_java", "mode": "query", "query": "Should you override the service method in HttpServlet? Why or why not?"},
-    {"id": "PJ09", "category": "personal_java", "mode": "query", "query": "What is the purpose of doGet and doPost in a servlet?"},
-    {"id": "PJ10", "category": "personal_java", "mode": "query", "query": "How does a simple HelloServlet handle HTTP GET requests?"},
-    {"id": "PJ11", "category": "personal_java", "mode": "query", "query": "What is an Enterprise JavaBean (EJB)?"},
-    {"id": "PJ12", "category": "personal_java", "mode": "query", "query": "What interfaces are needed to implement an EJB?"},
-    {"id": "PJ13", "category": "personal_java", "mode": "query", "query": "What is a session bean and what is its purpose?"},
-    {"id": "PJ14", "category": "personal_java", "mode": "query", "query": "Describe the ejbCreate and ejbRemove lifecycle methods."},
-    {"id": "PJ15", "category": "personal_java", "mode": "query", "query": "What is a JavaBean and what are its conventions?"},
-    {"id": "PJ16", "category": "personal_java", "mode": "query", "query": "What are bound properties in JavaBeans?"},
-    {"id": "PJ17", "category": "personal_java", "mode": "query", "query": "What is a PropertyChangeEvent in JavaBeans?"},
-    {"id": "PJ18", "category": "personal_java", "mode": "query", "query": "What properties does javax.swing.JButton expose?"},
-    {"id": "PJ19", "category": "personal_java", "mode": "query", "query": "What is distributed Java technology?"},
-    {"id": "PJ20", "category": "personal_java", "mode": "query", "query": "What learning outcomes are covered in the Java distributed technology lectures?"},
-    {"id": "PJ21", "category": "personal_java", "mode": "query", "query": "How are JSP pages translated into servlet code?"},
-    {"id": "PJ22", "category": "personal_java", "mode": "query", "query": "What is the jspService method?"},
-    {"id": "HY01", "category": "hybrid", "mode": "research", "query": "What are servlets in Java and how do they compare to modern web frameworks?"},
-    {"id": "HY02", "category": "hybrid", "mode": "research", "query": "Compare JSP and servlet development approaches for web applications."},
-    {"id": "HY03", "category": "hybrid", "mode": "research", "query": "What are the security considerations when developing Java servlets?"},
-    {"id": "HY04", "category": "hybrid", "mode": "research", "query": "How does Jakarta EE relate to the original Java EE servlet specification?"},
-    {"id": "HY05", "category": "hybrid", "mode": "research", "query": "What are best practices for servlet session management?"},
-    {"id": "HY06", "category": "hybrid", "mode": "research", "query": "Explain the MVC pattern in the context of Java web development."},
-    {"id": "HY07", "category": "hybrid", "mode": "research", "query": "What is the role of the servlet container in a web application?"},
-    {"id": "HY08", "category": "hybrid", "mode": "research", "query": "How do servlets handle HTTP request and response objects?"},
-    {"id": "HY09", "category": "hybrid", "mode": "research", "query": "What are the advantages and disadvantages of using EJBs?"},
-    {"id": "HY10", "category": "hybrid", "mode": "research", "query": "How do JavaBeans support component-based GUI development?"},
-    {"id": "HY11", "category": "hybrid", "mode": "research", "query": "What tools can be used to develop JavaBeans besides text editors?"},
-    {"id": "HY12", "category": "hybrid", "mode": "research", "query": "What is the difference between stateless and stateful session beans?"},
-    {"id": "HY13", "category": "hybrid", "mode": "research", "query": "How does servlet filtering work in Java web applications?"},
-    {"id": "HY14", "category": "hybrid", "mode": "research", "query": "What academic research exists on web application server architecture?"},
-    {"id": "HY15", "category": "hybrid", "mode": "research", "query": "Summarize servlet deployment and configuration in web servers."},
-    {"id": "RS01", "category": "research", "mode": "research", "query": "Provide a comprehensive overview of Java web application architecture covering servlets, JSP, and EJB."},
-    {"id": "RS02", "category": "research", "mode": "research", "query": "How does the servlet request-response lifecycle work from initialization to destruction?"},
-    {"id": "RS03", "category": "research", "mode": "research", "query": "Analyze the evolution from servlets to JSP to modern Java web frameworks."},
-    {"id": "RS04", "category": "research", "mode": "research", "query": "What are the key design patterns used in Java enterprise applications?"},
-    {"id": "RS05", "category": "research", "mode": "research", "query": "Explain component-based development using JavaBeans in enterprise systems."},
-    {"id": "RS06", "category": "research", "mode": "research", "query": "What is the role of event-driven programming in JavaBeans property changes?"},
-    {"id": "RS07", "category": "research", "mode": "research", "query": "How do distributed Java technologies enable multi-tier applications?"},
-    {"id": "RS08", "category": "research", "mode": "research", "query": "Compare servlet-based web apps with REST API architectures."},
-    {"id": "RS09", "category": "research", "mode": "research", "query": "What are the trade-offs of using local LLMs versus cloud APIs for personal knowledge management?"},
-    {"id": "RS10", "category": "research", "mode": "research", "query": "How can multi-agent systems improve research quality over single LLM queries?"},
-    {"id": "EG01", "category": "edge_gaps", "mode": "research", "query": "What does my lecture material say about Python machine learning pipelines?"},
-    {"id": "EG02", "category": "edge_gaps", "mode": "research", "query": "Explain quantum computing algorithms based on my personal documents."},
-    {"id": "EG03", "category": "edge_gaps", "mode": "query", "query": "What is the capital of Mongolia according to my notes?"},
-    {"id": "EG04", "category": "edge_gaps", "mode": "research", "query": "Summarize my documents on blockchain smart contract development."},
-    {"id": "EG05", "category": "edge_gaps", "mode": "research", "query": "What does my knowledge base contain about mobile iOS Swift development?"}
+    {
+      "id": "PV01",
+      "category": "personal_vault",
+      "mode": "query",
+      "query": "According to my notes, what do I care about in diffusion language models besides raw generation speed?",
+      "expect": {
+        "kind": "grounded",
+        "any_of": ["structured", "json", "schema", "constrained"]
+      }
+    },
+    {
+      "id": "PV02",
+      "category": "personal_vault",
+      "mode": "query",
+      "query": "Do my notes say I care about image or video diffusion?",
+      "expect": {
+        "kind": "grounded",
+        "any_of": ["do not", "don't", "not care", "ignore"]
+      }
+    },
+    {
+      "id": "PV03",
+      "category": "personal_vault",
+      "mode": "query",
+      "query": "How does DiffusionGemma generate text compared to a normal autoregressive LLM, according to my notes?",
+      "expect": {
+        "kind": "grounded",
+        "any_of": ["256", "parallel", "block"]
+      }
+    },
+    {
+      "id": "PV04",
+      "category": "personal_vault",
+      "mode": "query",
+      "query": "What starting model is DiffusionGemma fine-tuned from in my notes?",
+      "expect": {
+        "kind": "grounded",
+        "any_of": ["gemma"]
+      }
+    },
+    {
+      "id": "PV05",
+      "category": "personal_vault",
+      "mode": "query",
+      "query": "According to my Nemotron-Labs-Diffusion notes, are autoregressive and diffusion objectives complementary? How?",
+      "expect": {
+        "kind": "grounded",
+        "any_of": ["complementary", "lookahead", "priors"]
+      }
+    },
+    {
+      "id": "PV06",
+      "category": "personal_vault",
+      "mode": "query",
+      "query": "What is JustGRPO according to my notes on The Flexibility Trap?",
+      "expect": {
+        "kind": "grounded",
+        "any_of": ["justgrpo", "left-to-right", "rollout"]
+      }
+    },
+    {
+      "id": "PV07",
+      "category": "personal_vault",
+      "mode": "query",
+      "query": "Why is constrained decoding hard for diffusion language models according to my notes?",
+      "expect": {
+        "kind": "grounded",
+        "any_of": ["left-to-right", "canvas", "schema", "serving"]
+      }
+    },
+    {
+      "id": "PV08",
+      "category": "personal_vault",
+      "mode": "query",
+      "query": "What speed comparison between Nemotron-Labs-Diffusion-8B and Qwen3-8B is written in my notes?",
+      "expect": {
+        "kind": "grounded",
+        "any_of": ["6", "4×", "4x", "gb200", "speed-bench"]
+      }
+    },
+    {
+      "id": "HY01",
+      "category": "hybrid",
+      "mode": "research",
+      "query": "Based on my notes, constrained decoding for diffusion LMs is still an open systems problem. What have papers or open engines (vLLM, SGLang) shipped since then?",
+      "expect": {
+        "kind": "hybrid",
+        "any_of": ["constrained", "schema", "diffusion"]
+      }
+    },
+    {
+      "id": "HY02",
+      "category": "hybrid",
+      "mode": "research",
+      "query": "My notes say DiffusionGemma is fine-tuned from Gemma 4 MoE and can still do AR generation. How does that hybrid path compare to other AR-diffusion checkpoints in recent literature?",
+      "expect": {
+        "kind": "hybrid",
+        "any_of": ["diffusiongemma", "gemma", "hybrid", "autoregressive"]
+      }
+    },
+    {
+      "id": "HY03",
+      "category": "hybrid",
+      "mode": "research",
+      "query": "Explain JustGRPO from my Flexibility Trap notes and how it relates to confidence-based any-order unmasking in diffusion LMs.",
+      "expect": {
+        "kind": "hybrid",
+        "any_of": ["justgrpo", "unmask", "left-to-right", "fork"]
+      }
+    },
+    {
+      "id": "HY04",
+      "category": "hybrid",
+      "mode": "research",
+      "query": "Nemotron-Labs-Diffusion claims AR and diffusion are complementary. What does my library say, and what do external sources add about tri-mode or self-speculation decoding?",
+      "expect": {
+        "kind": "hybrid",
+        "any_of": ["complementary", "speculation", "nemotron"]
+      }
+    },
+    {
+      "id": "RS01",
+      "category": "research",
+      "mode": "research",
+      "query": "Synthesise my stance on diffusion language models: structured output vs speed, any-order generation, and hybrid AR+diffusion checkpoints. Cite my notes.",
+      "expect": {
+        "kind": "grounded",
+        "any_of": ["structured", "hybrid", "order"]
+      }
+    },
+    {
+      "id": "RS02",
+      "category": "research",
+      "mode": "research",
+      "query": "Compare DiffusionGemma and Nemotron-Labs-Diffusion using my notes. What do I still not know (hardware, JSON/tool constraints)?",
+      "expect": {
+        "kind": "grounded",
+        "any_of": ["diffusiongemma", "nemotron", "gap", "unknown", "not"]
+      }
+    },
+    {
+      "id": "RS03",
+      "category": "research",
+      "mode": "research",
+      "query": "What open questions remain in my library about DLM samplers, schema-constrained decoding, and tool/JSON calls?",
+      "expect": {
+        "kind": "grounded",
+        "any_of": ["sampler", "schema", "constrained", "open"]
+      }
+    },
+    {
+      "id": "RS04",
+      "category": "research",
+      "mode": "research",
+      "query": "How do my notes treat any-order generation for reasoning, and how should later papers become contested claims rather than overwriting my stance?",
+      "expect": {
+        "kind": "grounded",
+        "any_of": ["contested", "any-order", "overrated", "fork"]
+      }
+    },
+    {
+      "id": "EG01",
+      "category": "edge_gaps",
+      "mode": "query",
+      "query": "What is the capital of Mongolia according to my notes?",
+      "expect": {
+        "kind": "gap",
+        "none_of": ["ulaanbaatar", "ulan bator", "ulan-bator"]
+      }
+    },
+    {
+      "id": "EG02",
+      "category": "edge_gaps",
+      "mode": "query",
+      "query": "What packages make up the Java Servlet architecture according to my lecture notes?",
+      "expect": {
+        "kind": "gap",
+        "none_of": ["javax.servlet", "jakarta.servlet"]
+      }
+    },
+    {
+      "id": "EG03",
+      "category": "edge_gaps",
+      "mode": "research",
+      "query": "What does my personal library say about iOS Swift development?",
+      "expect": {
+        "kind": "gap",
+        "none_of": ["uikit", "swiftui"]
+      }
+    },
+    {
+      "id": "EG04",
+      "category": "edge_gaps",
+      "mode": "research",
+      "query": "Explain quantum computing algorithms based only on my personal documents.",
+      "expect": {
+        "kind": "gap",
+        "none_of": ["shor", "grover", "qubit"]
+      }
+    }
   ]
 }

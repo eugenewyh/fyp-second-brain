@@ -1,7 +1,7 @@
 {
-  "name": "desktop",
+  "name": "nous",
   "version": "0.1.0",
-  "description": "",
+  "description": "Nous — personal knowledge and autonomous research",
   "type": "module",
   "scripts": {
     "dev": "vite dev",
@@ -10,10 +10,14 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "test": "vitest run",
+    "icons:generate": "python3 scripts/generate_macos_icon.py && ./node_modules/.bin/tauri icon app-icon.png -o src-tauri/icons",
+    "sync:macos-app": "bash scripts/sync_macos_app_bundle.sh",
     "tauri": "tauri"
   },
   "license": "MIT",
   "dependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
     "@lucide/svelte": "^1.22.0",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-dialog": "^2.7.1",

@@ -22,6 +22,21 @@ def test_format_bibliography_compact():
     assert "slide text" not in bib
 
 
+def test_format_bibliography_notion():
+    docs = [
+        Document(
+            page_content="hello",
+            metadata={
+                "source": "Meeting notes",
+                "source_path": "https://www.notion.so/aaaaaaaa",
+                "source_type": "mcp",
+            },
+        ),
+    ]
+    bib = format_bibliography(docs)
+    assert "[1] Notion — Meeting notes (https://www.notion.so/aaaaaaaa)" in bib
+
+
 def test_strip_sources_section():
     report = "## Executive Summary\nSummary here.\n\n## Sources\n\n[1] Long dump..."
     stripped = strip_sources_section(report)

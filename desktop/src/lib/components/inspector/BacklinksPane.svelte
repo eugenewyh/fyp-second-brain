@@ -68,7 +68,7 @@
   });
 </script>
 
-<div class="backlinks">
+<div class="backlinks" data-testid="backlinks-section">
   <h4>Wikilink backlinks</h4>
   {#if loading}
     <p class="hint">Scanning vault…</p>
@@ -84,9 +84,9 @@
     <p class="hint">No notes link here yet</p>
   {/if}
 
-  <h4>Embedding-related</h4>
+  <h4>Similar notes</h4>
   {#if loading}
-    <p class="hint">Searching embeddings…</p>
+    <p class="hint">Finding related notes…</p>
   {:else if related.length}
     <ul>
       {#each related as item}
@@ -99,25 +99,25 @@
       {/each}
     </ul>
   {:else}
-    <p class="hint">Select a note to see Chroma-related chunks</p>
+    <p class="hint">Open a note to see similar notes in your library</p>
   {/if}
 </div>
 
 <style>
   .backlinks {
     padding: 0.75rem;
-    font-size: 0.8rem;
+    font-size: var(--text-sm);
     overflow-y: auto;
     height: 100%;
   }
 
   h4 {
-    font-size: 0.65rem;
+    font-size: var(--text-2xs);
     color: var(--text-faint);
     margin-bottom: 0.5rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-weight: 600;
+    letter-spacing: var(--type-caption-tracking);
+    font-weight: var(--font-semibold);
   }
 
   h4:not(:first-child) {
@@ -136,7 +136,7 @@
     background: transparent;
     color: var(--text);
     padding: 0;
-    font-size: 0.85rem;
+    font-size: var(--text-md);
     text-align: left;
   }
 
@@ -145,13 +145,13 @@
   }
 
   .excerpt {
-    font-size: 0.7rem;
+    font-size: var(--text-xs);
     color: var(--text-muted);
     margin-top: 0.2rem;
   }
 
   .hint {
     color: var(--text-muted);
-    font-size: 0.75rem;
+    font-size: var(--text-sm);
   }
 </style>

@@ -5,5 +5,6 @@ describe("pdf", () => {
   it("detects pdf paths", () => {
     expect(isPdfPath("/vault/Lec03.pdf")).toBe(true);
     expect(isPdfPath("/vault/note.md")).toBe(false);
+    expect(isPdfPath("Lec03.pdf")).toBe(true);
   });
 });

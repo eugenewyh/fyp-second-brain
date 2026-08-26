@@ -19,6 +19,11 @@ def main():
     summary = data["summary"]
     metrics = data.get("metrics", [])
 
+    gold = summary.get("gold_hit_rate")
+    honest = summary.get("honest_gap_rate")
+    gold_s = f"{gold:.0%}" if gold is not None else "—"
+    honest_s = f"{honest:.0%}" if honest is not None else "—"
+
     lines = [
         "# Second Brain — Evaluation Report",
         "",
@@ -34,6 +39,9 @@ def main():
         f"| Avg latency | {summary['avg_latency_seconds']}s |",
         f"| Citation rate | {summary['citation_rate']:.0%} |",
         f"| Gaps section rate | {summary['gaps_section_rate']:.0%} |",
+        f"| Gold-hit rate | {gold_s} |",
+        f"| Honest-gap rate | {honest_s} |",
+        f"| Invented-fact rate | {summary.get('invented_rate', 0):.0%} |",
         "",
         "## By Category",
         "",

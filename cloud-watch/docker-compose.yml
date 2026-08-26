@@ -1,0 +1,22 @@
+services:
+  cloud-watch:
+    build:
+      context: ..
+      dockerfile: cloud-watch/Dockerfile
+    ports:
+      - "8787:8787"
+    env_file:
+      - ../.env
+    environment:
+      CLOUD_WATCH_CRON_TOKEN: ${CLOUD_WATCH_CRON_TOKEN:?set CLOUD_WATCH_CRON_TOKEN}
+      CLOUD_WATCH_SECRET: ${CLOUD_WATCH_SECRET:?set CLOUD_WATCH_SECRET}
+      CLOUD_WATCH_DATA: /data
+      ENABLE_WEB_SEARCH: ${ENABLE_WEB_SEARCH:-true}
+      ENABLE_ARXIV: ${ENABLE_ARXIV:-true}
+      WATCH_MAX_PASSES: ${WATCH_MAX_PASSES:-1}
+    volumes:
+      - cloud_watch_data:/data
+    restart: unless-stopped
+
+volumes:
+  cloud_watch_data:
