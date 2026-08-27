@@ -136,7 +136,8 @@ def test_espresso_policy_denies_greedy_research(no_recall):
     decision = decide_act(ESPRESSO, project_path="/vault/dlm", choose_fn=lambda *_a: "research")
     assert decision.job == "refuse"
     assert decision.refuse_message == REFUSE_MESSAGE
-    assert "no notes" in (decision.refuse_message or "").lower()
+    assert "teach" in (decision.refuse_message or "").lower()
+    assert "remembered" in (decision.refuse_message or "").lower()
 
 
 def test_in_topic_question_answers_from_notes(matching_recall):

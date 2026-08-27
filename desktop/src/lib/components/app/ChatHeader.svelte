@@ -1,5 +1,6 @@
 <script lang="ts">
   import { DEFAULT_SESSION_TITLE } from "$lib/stores/session-title";
+  import { app } from "$lib/stores/app.svelte";
 
   interface Props {
     chatTitle?: string | null;
@@ -27,7 +28,15 @@
 
   {#if remembered > 0}
     <div class="header-actions" data-tauri-drag-region="false">
-      <span class="remember-chip">Remembers {remembered}</span>
+      <button
+        type="button"
+        class="remember-chip"
+        title="Open Memory for this topic"
+        data-testid="header-memory"
+        onclick={() => app.openMemory()}
+      >
+        Remembers {remembered}
+      </button>
     </div>
   {/if}
 </header>
@@ -82,11 +91,22 @@
   }
 
   .remember-chip {
-    font-size: var(--text-sm);
-    font-weight: var(--font-medium);
-    padding: 0.15rem 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    height: 26px;
+    padding: 0 0.6rem;
+    border: 1px solid color-mix(in srgb, var(--warning) 35%, var(--border));
     border-radius: var(--radius-full);
-    border: 1px solid var(--border-subtle);
-    color: var(--text-muted);
+    background: var(--warning-dim);
+    color: var(--text);
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+    cursor: pointer;
+    min-height: auto;
+  }
+
+  .remember-chip:hover {
+    border-color: color-mix(in srgb, var(--warning) 55%, var(--border));
+    background: color-mix(in srgb, var(--warning) 18%, transparent);
   }
 </style>

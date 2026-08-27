@@ -357,23 +357,24 @@ class AssistantStore {
   /** Quiet thread status for inferred routing (not a mode tab). */
   routeStatus = $state<"teach" | "explain" | "lookup" | null>(null);
   /**
-   * Force next Manager job (Shift+Tab / plus menu). null = Auto.
-   * Maps: Ask→answer, Research→research, Teach→file.
+   * Force next Manager job (skill chips / Shift+Tab). null = Auto.
+   * Maps: Ask→answer, Research→research, Teach→file, Watch→watch.
    */
-  forcedJob = $state<"answer" | "research" | "file" | null>(null);
+  forcedJob = $state<"answer" | "research" | "file" | "watch" | null>(null);
 
   cycleForcedJob(): void {
-    const order: Array<"answer" | "research" | "file" | null> = [
+    const order: Array<"answer" | "research" | "file" | "watch" | null> = [
       null,
       "answer",
       "research",
       "file",
+      "watch",
     ];
     const i = order.indexOf(this.forcedJob);
     this.forcedJob = order[(i + 1) % order.length];
   }
 
-  setForcedJob(job: "answer" | "research" | "file" | null): void {
+  setForcedJob(job: "answer" | "research" | "file" | "watch" | null): void {
     this.forcedJob = job;
   }
 
@@ -381,6 +382,7 @@ class AssistantStore {
     if (this.forcedJob === "answer") return "Ask";
     if (this.forcedJob === "research") return "Research";
     if (this.forcedJob === "file") return "Teach";
+    if (this.forcedJob === "watch") return "Watch";
     return "Auto";
   }
 

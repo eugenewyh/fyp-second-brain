@@ -11,6 +11,7 @@
     shortModelLabel,
   } from "$lib/llm/models";
   import {
+    CalendarClock,
     Plus,
     ArrowUp,
     ChevronDown,
@@ -31,15 +32,20 @@
     filterAttachablePaths,
     registerComposerDropTarget,
   } from "$lib/assistant/composer-dnd";
+  import {
+    COMPOSER_SKILLS,
+    skillPlaceholder,
+    type ForcedJob,
+  } from "$lib/assistant/composer-skills";
 
-  type ModeAction = "ask" | "research" | "teach" | "auto";
+  type ModeAction = "ask" | "research" | "teach" | "watch" | "auto";
 
   const MODE_ITEMS: Array<{
     action: ModeAction;
     label: string;
     desc: string;
-    job: "answer" | "research" | "file" | null;
-    tone: "ask" | "research" | "teach" | "auto";
+    job: "answer" | "research" | "file" | "watch" | null;
+    tone: "ask" | "research" | "teach" | "watch" | "auto";
   }> = [
     {
       action: "ask",
@@ -61,6 +67,13 @@
       desc: "Save notes or files into long-term memory",
       job: "file",
       tone: "teach",
+    },
+    {
+      action: "watch",
+      label: "Watch",
+      desc: "Schedule recurring research briefs for this topic",
+      job: "watch",
+      tone: "watch",
     },
     {
       action: "auto",
@@ -157,9 +170,7 @@
 
   const placeholder = $derived(
     placeholderOverride ??
-      (variant === "center"
-        ? "Teach, ask from memory, or start research…"
-        : "Message this workspace…"),
+      skillPlaceholder(assistant.forcedJob as ForcedJob),
   );
 
   function closeMenus() {
@@ -174,7 +185,7 @@
   }
 
   function runPlusAction(
-    action: "ingest" | "attach" | "ask" | "research" | "teach" | "auto",
+    action: "ingest" | "attach" | "ask" | "research" | "teach" | "watch" | "auto",
   ) {
     plusOpen = false;
     if (action === "ask") {
@@ -192,6 +203,11 @@
       assistant.composerFocusNonce += 1;
       return;
     }
+    if (action === "watch") {
+      assistant.setForcedJob("watch");
+      assistant.composerFocusNonce += 1;
+      return;
+    }
     if (action === "auto") {
       assistant.setForcedJob(null);
       return;
@@ -201,6 +217,13 @@
       return;
     }
     void pickAttachFiles();
+  }
+
+  function selectSkill(job: ForcedJob) {
+    assistant.setForcedJob(job);
+    plusOpen = false;
+    modelOpen = false;
+    assistant.composerFocusNonce += 1;
   }
 
   const ATTACH_EXT = /\.(md|txt|pdf)$/i;
@@ -360,16 +383,36 @@
   });
 </script>
 
-{#snippet modeIcon(tone: "ask" | "research" | "teach" | "auto")}
+{#snippet modeIcon(tone: "ask" | "research" | "teach" | "watch" | "auto")}
   {#if tone === "ask"}
     <MessageCircleQuestion size={16} strokeWidth={2} />
   {:else if tone === "research"}
     <ScanSearch size={16} strokeWidth={2} />
   {:else if tone === "teach"}
     <BookMarked size={16} strokeWidth={2} />
+  {:else if tone === "watch"}
+    <CalendarClock size={16} strokeWidth={2} />
   {:else}
     <WandSparkles size={16} strokeWidth={2} />
   {/if}
+{/snippet}
+
+{#snippet skillChips()}
+  <div class="skill-row" role="group" aria-label="Message skill" data-testid="composer-skills">
+    {#each COMPOSER_SKILLS as skill (skill.id)}
+      <button
+        type="button"
+        class="skill-chip"
+        class:on={assistant.forcedJob === skill.job}
+        class:tone-{skill.id}
+        title={skill.hint}
+        data-testid={`skill-${skill.id}`}
+        onclick={() => selectSkill(skill.job)}
+      >
+        {skill.label}
+      </button>
+    {/each}
+  </div>
 {/snippet}
 
 {#snippet plusTrigger()}
@@ -445,7 +488,7 @@
           <span class="plus-kbd">⌘U</span>
         </button>
       </div>
-      <p class="plus-foot">⇧Tab cycles Auto → Ask → Research → Teach</p>
+      <p class="plus-foot">⇧Tab cycles Auto → Ask → Research → Teach → Watch</p>
     </div>
   {/if}
 {/snippet}
@@ -640,16 +683,7 @@
       <div class="pill-bar">
         <div class="bar-left">
           {@render plusTrigger()}
-          {#if assistant.forcedJob}
-            <button
-              type="button"
-              class="force-chip"
-              title="Shift+Tab to cycle · click to clear"
-              onclick={() => assistant.setForcedJob(null)}
-            >
-              {assistant.forcedJobLabel()}
-            </button>
-          {/if}
+          {@render skillChips()}
           {@render modelPicker()}
         </div>
         <div class="bar-right">
@@ -683,16 +717,7 @@
       <div class="pill-bar pill-bar-dock">
         <div class="bar-left">
           {@render plusTrigger()}
-          {#if assistant.forcedJob}
-            <button
-              type="button"
-              class="force-chip"
-              title="Shift+Tab to cycle · click to clear"
-              onclick={() => assistant.setForcedJob(null)}
-            >
-              {assistant.forcedJobLabel()}
-            </button>
-          {/if}
+          {@render skillChips()}
           {@render modelPicker()}
         </div>
       </div>
@@ -1132,15 +1157,74 @@
   }
 
   .mode-research {
-    color: #6b8cae;
+    color: var(--accent-live);
   }
 
   .mode-teach {
     color: var(--warning);
   }
 
+  .mode-watch {
+    color: var(--info);
+  }
+
   .mode-auto {
-    color: #7a8794;
+    color: var(--text-faint);
+  }
+
+  .skill-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.28rem;
+    min-width: 0;
+  }
+
+  .skill-chip {
+    display: inline-flex;
+    align-items: center;
+    height: 28px;
+    padding: 0 0.55rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+    cursor: pointer;
+    min-height: auto;
+    transition:
+      background 0.12s ease,
+      border-color 0.12s ease,
+      color 0.12s ease;
+  }
+
+  .skill-chip:hover {
+    background: var(--chrome-action-hover);
+    color: var(--text);
+    border-color: var(--border);
+  }
+
+  .skill-chip.on {
+    background: var(--accent-live-dim);
+    border-color: color-mix(in srgb, var(--accent-live) 35%, var(--border));
+    color: var(--text);
+  }
+
+  .skill-chip.on.tone-teach {
+    background: var(--warning-dim);
+    border-color: color-mix(in srgb, var(--warning) 40%, var(--border));
+  }
+
+  .skill-chip.on.tone-ask {
+    background: var(--success-dim);
+    border-color: color-mix(in srgb, var(--success) 40%, var(--border));
+  }
+
+  .skill-chip.on.tone-research,
+  .skill-chip.on.tone-watch {
+    background: var(--accent-live-dim);
+    border-color: color-mix(in srgb, var(--accent-live) 40%, var(--border));
   }
 
   .mode-copy {

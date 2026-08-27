@@ -84,9 +84,9 @@ describe("landingPhase", () => {
 });
 
 describe("visibleStarterIds", () => {
-  it("hides starters until memory exists", () => {
+  it("leads empty topics with Teach; full set when ready", () => {
     expect(visibleStarterIds("bootstrap")).toEqual([]);
-    expect(visibleStarterIds("seed")).toEqual([]);
+    expect(visibleStarterIds("seed")).toEqual(["teach"]);
     expect(visibleStarterIds("ready")).toEqual(["teach", "ask", "research", "watch"]);
   });
 });
@@ -94,6 +94,11 @@ describe("visibleStarterIds", () => {
 describe("landingHero", () => {
   it("explains setup before chat on bootstrap", () => {
     expect(landingHero("bootstrap").title).toContain("Set up");
+  });
+
+  it("teaches the Teach → Ask loop on seed", () => {
+    expect(landingHero("seed").title).toContain("Teach");
+    expect(landingHero("seed").sub.toLowerCase()).toContain("memory");
   });
 });
 

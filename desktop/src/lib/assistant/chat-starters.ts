@@ -86,19 +86,19 @@ export function landingHero(phase: LandingPhase): LandingHero {
       return {
         kicker: "Get started",
         title: "Set up your second brain",
-        sub: "Create a workspace, connect AI, and add documents. Nous needs something to remember before recall or research are useful.",
+        sub: "Create a topic workspace, connect AI, then Teach something to remember. Ask and Research only work after memory exists.",
       };
     case "seed":
       return {
-        kicker: "Second brain",
-        title: "Give Nous something to remember",
-        sub: "This workspace is empty — no notes filed as claims yet. Import folders with notes, or teach a dump in chat.",
+        kicker: "How Nous works",
+        title: "Teach → Ask → Research",
+        sub: "This topic has nothing in memory yet. Files in the library are a shelf — Teach turns them into claims you can Ask about.",
       };
     case "ready":
       return {
-        kicker: "Second brain",
-        title: "Long-term memory with autonomous agents",
-        sub: "Nous recalls what you've taught it, runs multi-agent research when needed, and writes back — so the next session isn't a cold start.",
+        kicker: "Topic memory",
+        title: "Talk in this topic",
+        sub: "Teach to remember. Ask from claims. Research looks outside and can write back. Watch briefs you on a schedule.",
       };
   }
 }
@@ -108,8 +108,8 @@ export function visibleStarterIds(phase: LandingPhase): ChatStarterId[] {
     case "bootstrap":
       return [];
     case "seed":
-      // Empty workspace: Import notes + composer dump — no separate Teach card.
-      return [];
+      // Empty topic: lead with Teach so the core loop is obvious.
+      return ["teach"];
     case "ready":
       return ["teach", "ask", "research", "watch"];
   }
@@ -120,9 +120,9 @@ export function composerPlaceholder(phase: LandingPhase): string {
     case "bootstrap":
       return "Complete setup to start…";
     case "seed":
-      return "Teach Nous something about this workspace…";
+      return "Paste notes or attach files to Teach this topic…";
     case "ready":
-      return "Teach, ask from memory, or start research…";
+      return "Teach, ask from memory, research, or schedule a watch…";
   }
 }
 

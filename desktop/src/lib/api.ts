@@ -639,7 +639,7 @@ export const api = {
     clarifyCount?: number;
     history?: { role: string; content: string }[];
     topics?: { name: string; path: string }[];
-    forcedJob?: "answer" | "research" | "file" | null;
+    forcedJob?: "answer" | "research" | "file" | "watch" | null;
   }) =>
     apiFetch<ManagerTurn>("/api/manager/turn", {
       method: "POST",

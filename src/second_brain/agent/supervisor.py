@@ -23,8 +23,10 @@ from second_brain.agent.policy import (
 logger = logging.getLogger(__name__)
 
 REFUSE_MESSAGE = (
-    "This topic has no notes on that yet.\n\n"
-    "Dump a note into this project, or look it up if you want sources from the library and the web."
+    "Nothing remembered for this topic yet — files in the library don't count "
+    "until you Teach them.\n\n"
+    "Paste notes or attach a file with Teach, or look it up if you want sources "
+    "from the web."
 )
 
 SUPERVISOR_SYSTEM = """You are the Auto router for Nous, a personal knowledge agent.

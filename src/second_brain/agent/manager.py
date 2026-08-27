@@ -313,7 +313,7 @@ def take_turn(
     """One router turn. Dispatch when clear; ask at most twice when vague.
 
     ``workspace_empty`` / ``agent`` are accepted for API compat and ignored.
-    ``forced_job`` (answer/research/file) skips propose; policy still clamps.
+    ``forced_job`` (answer/research/file/watch) skips propose; policy still clamps.
     """
     _ = workspace_empty, agent
     text = (message or "").strip()
@@ -332,6 +332,22 @@ def take_turn(
     also_topics = list(op.also_topics) if op and op.kind == "also" else []
     also_paths = list(op.also_paths) if op and op.kind == "also" else []
     routed = (op.remainder if op and op.kind == "also" and op.remainder else None) or instruction or text
+
+    if raw_force == "watch":
+        create = _create_topic(text, project_path)
+        line = "I'll set a watch on that."
+        if create:
+            line = f"I'll keep this under {create}. {line}"
+        return ManagerTurn(
+            kind="dispatch",
+            text=line,
+            job="watch",
+            instruction=text or instruction,
+            retrieval_scope="hybrid",
+            reason="forced watch",
+            topic=create,
+            create_topic=create,
+        )
 
     if force is not None:
         return _dispatch_from_act(

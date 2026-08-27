@@ -385,7 +385,7 @@
         assistant.presentRefuse(
           text,
           refuseMessage ||
-            "This topic has no notes on that yet.\n\nDump a note into this project, or look it up if you want sources from the library and the web.",
+            "Nothing remembered for this topic yet — files in the library don't count until you Teach them.\n\nPaste notes or attach a file with Teach, or look it up if you want sources from the web.",
           { skipUserTurn: true, sessionId },
         );
         return;
@@ -461,7 +461,14 @@
     assistant.ensureManagerOpener(true);
   });
 
-  function applyStarter(prompt: string, _id: ChatStarterId) {
+  function applyStarter(prompt: string, id: ChatStarterId) {
+    const jobs = {
+      teach: "file",
+      ask: "answer",
+      research: "research",
+      watch: "watch",
+    } as const;
+    assistant.setForcedJob(jobs[id]);
     assistant.input = prompt;
     assistant.composerFocusNonce += 1;
   }
@@ -569,45 +576,6 @@
               header={workspacePicker}
               onSubmit={submit}
             />
-            <div class="new-chat-chips" role="group" aria-label="Quick actions">
-              <button
-                type="button"
-                class="action-chip"
-                class:on={assistant.forcedJob === null}
-                title="Shift+Tab to cycle"
-                onclick={() => assistant.setForcedJob(null)}
-              >
-                Auto
-              </button>
-              <button
-                type="button"
-                class="action-chip"
-                class:on={assistant.forcedJob === "answer"}
-                title="Force Ask · Shift+Tab"
-                onclick={() => assistant.setForcedJob("answer")}
-              >
-                Ask
-                <kbd>⇧Tab</kbd>
-              </button>
-              <button
-                type="button"
-                class="action-chip"
-                class:on={assistant.forcedJob === "research"}
-                title="Force Research"
-                onclick={() => assistant.setForcedJob("research")}
-              >
-                Research
-              </button>
-              <button
-                type="button"
-                class="action-chip"
-                class:on={assistant.forcedJob === "file"}
-                title="Force Teach"
-                onclick={() => assistant.setForcedJob("file")}
-              >
-                Teach
-              </button>
-            </div>
           </div>
         {/if}
       </div>
@@ -623,6 +591,12 @@
           onCancel={() => assistant.cancelResearch()}
           onLookup={(query) => void lookupInResearch(query)}
           onRetryAsk={(id) => void retryAsk(id)}
+          onTeach={() => {
+            assistant.setForcedJob("file");
+            assistant.input = "";
+            assistant.composerFocusNonce += 1;
+          }}
+          onViewMemory={() => app.openMemory()}
         />
       </div>
 
@@ -744,54 +718,5 @@
     flex-direction: column;
     gap: 0.75rem;
     width: 100%;
-  }
-
-  .new-chat-chips {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0 0.15rem;
-  }
-
-  .action-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.35rem 0.7rem;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-full);
-    background: transparent;
-    color: var(--text-muted);
-    font-size: var(--text-sm);
-    font-weight: var(--font-medium);
-    cursor: pointer;
-    min-height: auto;
-    transition:
-      background var(--dur-control) var(--ease-out),
-      border-color var(--dur-control) var(--ease-out),
-      color var(--dur-control) var(--ease-out);
-  }
-
-  .action-chip:hover {
-    background: var(--chrome-action-hover);
-    color: var(--text);
-    border-color: var(--border);
-  }
-
-  .action-chip.on {
-    background: var(--selection-bg);
-    color: var(--text);
-    border-color: var(--border);
-  }
-
-  .action-chip kbd {
-    font-family: var(--font-mono);
-    font-size: 0.85em;
-    font-weight: var(--font-normal);
-    color: var(--text-faint);
-    padding: 0;
-    border: none;
-    background: none;
   }
 </style>

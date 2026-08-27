@@ -182,6 +182,18 @@ def test_forced_job_research_overrides_notes_ask(no_llm, monkeypatch: pytest.Mon
     assert turn.reason == "forced"
 
 
+def test_forced_job_watch_dispatches(no_recall, no_llm):
+    turn = take_turn(
+        "diffusion language models",
+        project_path="/vault/dlm",
+        clarify_count=0,
+        forced_job="watch",
+    )
+    assert turn.kind == "dispatch"
+    assert turn.job == "watch"
+    assert turn.reason == "forced watch"
+
+
 def test_forced_job_still_clamped_by_policy(no_recall, no_llm):
     """Force research off-topic with zero claims → refuse."""
     turn = take_turn(

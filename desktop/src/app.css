@@ -33,9 +33,10 @@
   --accent-muted: color-mix(in srgb, var(--accent) 10%, transparent);
   --accent-contrast: #ffffff;
 
-  --accent-live: var(--text);
-  --accent-live-dim: var(--selection-bg);
-  --accent-link: var(--text);
+  /* Live / skill accent — slate-cyan (not purple) */
+  --accent-live: #2f6f8f;
+  --accent-live-dim: color-mix(in srgb, var(--accent-live) 14%, transparent);
+  --accent-link: var(--accent-live);
 
   --focus-ring: color-mix(in srgb, var(--text) 28%, transparent);
 
@@ -240,10 +241,10 @@
   --accent-muted: color-mix(in srgb, var(--accent) 14%, transparent);
   --accent-contrast: #1f1f1f;
 
-  --accent-live: var(--text);
-  --accent-live-dim: var(--selection-bg);
-  --accent-link: var(--text);
-  --focus-ring: color-mix(in srgb, var(--text) 32%, transparent);
+  --accent-live: #5eb3d4;
+  --accent-live-dim: color-mix(in srgb, var(--accent-live) 16%, transparent);
+  --accent-link: var(--accent-live);
+  --focus-ring: color-mix(in srgb, var(--accent-live) 40%, transparent);
 
   --success: #3fa266;
   --success-dim: color-mix(in srgb, var(--success) 14%, transparent);
