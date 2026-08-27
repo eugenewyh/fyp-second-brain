@@ -1,10 +1,8 @@
 const STORAGE_KEY = "second-brain-auto-ingest";
 
+/** Always on — vault files are indexed for search without a Settings toggle. */
 export function loadAutoIngestEnabled(): boolean {
-  if (typeof localStorage === "undefined") return true;
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (raw === null) return true;
-  return raw === "true";
+  return true;
 }
 
 export function saveAutoIngestEnabled(enabled: boolean): void {

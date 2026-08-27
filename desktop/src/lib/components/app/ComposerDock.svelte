@@ -303,12 +303,12 @@
     if (e.key === "Escape") closeMenus();
   }
 
-  /** Grow/shrink the center textarea with the draft (no manual resize handle). */
-  function autosizeCenter() {
+  /** Grow/shrink the textarea with the draft (expands upward in the dock). */
+  function autosizeInput() {
     const el = inputEl;
-    if (!(el instanceof HTMLTextAreaElement) || variant !== "center") return;
+    if (!(el instanceof HTMLTextAreaElement)) return;
     el.style.height = "auto";
-    const max = 12 * 16; // ~12rem
+    const max = variant === "center" ? 12 * 16 : 8 * 16;
     el.style.height = `${Math.min(el.scrollHeight, max)}px`;
   }
 
@@ -338,7 +338,7 @@
   $effect(() => {
     void assistant.input;
     void variant;
-    requestAnimationFrame(() => autosizeCenter());
+    requestAnimationFrame(() => autosizeInput());
   });
 
   onMount(() => {
@@ -631,6 +631,7 @@
               : placeholder}
           rows={3}
           onkeydown={handleKeydown}
+          oninput={() => autosizeInput()}
           disabled={assistant.isLoading || offline}
           aria-disabled={assistant.isLoading || offline}
         ></textarea>
@@ -660,7 +661,7 @@
       <!-- Compact dock: chips + input + toolbar -->
       {@render attachChips()}
       <div class="dock-input-row">
-        <input
+        <textarea
           bind:this={inputEl}
           class="input input-dock"
           data-testid="research-query"
@@ -670,10 +671,12 @@
             : offline
               ? "Backend offline — reconnect to send…"
               : placeholder}
+          rows={1}
           onkeydown={handleKeydown}
+          oninput={() => autosizeInput()}
           disabled={assistant.isLoading || offline}
           aria-disabled={assistant.isLoading || offline}
-        />
+        ></textarea>
         {@render sendButton()}
       </div>
 
@@ -701,27 +704,47 @@
     <p class="privacy warn" role="status">Backend offline — reconnect to send</p>
   {:else if variant === "dock"}
     {#if connection.memorySearchBlocked}
-      <p class="privacy warn">
-        {connection.reindexRequired
-          ? "Re-ingest vault — embedding model changed"
-          : connection.embeddingsError || "Embeddings unavailable — check Settings"}
+      <p class="privacy warn" role="status">
+        {#if connection.reindexBusy || connection.reindexRequired}
+          Rebuilding search index…
+        {:else if connection.reindexError}
+          {connection.reindexError}
+          <button type="button" class="linkish" onclick={() => void connection.retryReindex()}>
+            Retry
+          </button>
+        {:else}
+          {connection.embeddingsError || "Vault search unavailable"}
+          <button type="button" class="linkish" onclick={() => void connection.retryReindex()}>
+            Retry
+          </button>
+        {/if}
       </p>
     {:else if assistant.isLoading}
       <p class="privacy quiet live" role="status">
         <span class="status-dot" aria-hidden="true"></span>
-        Working…
+        {assistant.routeStatus === "teach" ? "Filing into memory…" : "Working…"}
       </p>
     {/if}
   {:else if connection.memorySearchBlocked}
-    <p class="privacy warn">
-      {connection.reindexRequired
-        ? "Re-ingest vault — embedding model changed"
-        : connection.embeddingsError || "Embeddings unavailable — check Settings"}
+    <p class="privacy warn" role="status">
+      {#if connection.reindexBusy || connection.reindexRequired}
+        Rebuilding search index…
+      {:else if connection.reindexError}
+        {connection.reindexError}
+        <button type="button" class="linkish" onclick={() => void connection.retryReindex()}>
+          Retry
+        </button>
+      {:else}
+        {connection.embeddingsError || "Vault search unavailable"}
+        <button type="button" class="linkish" onclick={() => void connection.retryReindex()}>
+          Retry
+        </button>
+      {/if}
     </p>
   {:else if assistant.isLoading}
     <p class="privacy quiet live" role="status">
       <span class="status-dot" aria-hidden="true"></span>
-      Working…
+      {assistant.routeStatus === "teach" ? "Filing into memory…" : "Working…"}
     </p>
   {/if}
 </div>
@@ -801,7 +824,7 @@
 
   .dock-input-row {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     gap: 0.45rem;
     padding: 0.45rem 0.55rem 0.35rem 0.9rem;
     min-width: 0;
@@ -812,9 +835,14 @@
     min-width: 0;
     height: auto;
     min-height: 2.25rem;
-    padding: 0.35rem 0.15rem;
+    max-height: 8rem;
+    padding: 0.45rem 0.15rem;
     border: none;
     background: transparent;
+    resize: none;
+    overflow-y: auto;
+    line-height: 1.45;
+    field-sizing: content;
   }
 
   .pill-bar-dock {
@@ -1499,8 +1527,15 @@
     padding: 0.55rem 0.4rem;
     font-size: var(--text-md);
     color: var(--text);
-    height: 40px;
     box-shadow: none;
+  }
+
+  input.input {
+    height: 40px;
+  }
+
+  textarea.input {
+    height: auto;
   }
 
   .input:focus {
@@ -1541,6 +1576,16 @@
 
   .privacy.warn {
     color: var(--warning, #b45309);
+  }
+
+  .privacy .linkish {
+    background: none;
+    border: none;
+    color: inherit;
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
   }
 
   .status-dot {

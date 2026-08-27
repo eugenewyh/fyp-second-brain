@@ -18,6 +18,7 @@
     aiConfigured?: boolean;
     hasWorkspace?: boolean;
     libraryReady?: boolean;
+    channelEmpty?: boolean;
     memoryBlocked?: boolean;
     disabled?: boolean;
     compose?: Snippet;
@@ -33,6 +34,7 @@
     aiConfigured = true,
     hasWorkspace = true,
     libraryReady = true,
+    channelEmpty = false,
     memoryBlocked = false,
     disabled = false,
     compose,
@@ -52,6 +54,7 @@
       aiConfigured,
       hasWorkspace,
       libraryReady,
+      channelEmpty,
       memoryBlocked,
     }),
   );
@@ -78,33 +81,27 @@
   <header class="hero">
     <p class="kicker">{hero.kicker}</p>
     <h1 class="title">{hero.title}</h1>
-    <p class="sub">{hero.sub}</p>
-  </header>
-
-  {#if showSetup}
-    <section class="setup" aria-label="Setup">
-      <span class="setup-label">Setup</span>
-      <div class="setup-row">
-        {#each setupItems as item (item.id)}
+    <p class="sub">
+      {hero.sub}
+      {#if showSetup}
+        {#each setupItems as item, i (item.id)}
+          {#if i === 0}<span class="setup-sep" aria-hidden="true"> </span>{/if}
           {#if item.action}
             <button
               type="button"
-              class="setup-chip"
+              class="setup-link"
               onclick={() => runSetup(item.action)}
             >
-              <span class="setup-dot" aria-hidden="true"></span>
               {item.label}
             </button>
           {:else}
-            <span class="setup-chip static" role="status">
-              <span class="setup-dot" aria-hidden="true"></span>
-              {item.label}
-            </span>
+            <span class="setup-status" role="status">{item.label}</span>
           {/if}
+          {#if i < setupItems.length - 1}<span class="setup-sep"> · </span>{/if}
         {/each}
-      </div>
-    </section>
-  {/if}
+      {/if}
+    </p>
+  </header>
 
   {#if phase === "bootstrap" && !hasWorkspace}
     <button type="button" class="primary-cta" onclick={() => onNewWorkspace?.()}>
@@ -146,11 +143,11 @@
     {#if offline}
       Backend offline — reconnect to send.
     {:else if memoryBlocked}
-      Memory search blocked — fix embeddings, then re-ingest.
+      Rebuilding search index when needed — wait a moment, or retry from the banner.
     {:else if phase === "bootstrap"}
       Setup first — chat needs a workspace and something to remember.
     {:else if phase === "seed"}
-      <kbd>⌘K</kbd> commands · ingest or attach files · then ask and research unlock
+      <kbd>⌘K</kbd> commands · import folders or type a dump in the composer
     {:else}
       <kbd>⌘K</kbd> commands · autonomous agents write back to memory
     {/if}
@@ -197,62 +194,33 @@
     color: var(--text-muted);
   }
 
-  .setup {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.45rem 0.65rem;
-    padding: 0.55rem 0.65rem;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
-    background: var(--control-fill);
+  .setup-sep {
+    color: var(--text-muted);
   }
 
-  .setup-label {
-    font-size: var(--text-2xs);
-    font-weight: var(--font-semibold);
-    letter-spacing: var(--type-caption-tracking);
-    text-transform: uppercase;
-    color: var(--text-faint);
-  }
-
-  .setup-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-  }
-
-  .setup-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.2rem 0.55rem;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-full);
-    background: var(--bg-elevated);
+  .setup-link {
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: none;
     color: var(--text);
-    font-size: var(--text-xs);
+    font: inherit;
     font-weight: var(--font-medium);
+    line-height: inherit;
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+    text-decoration-color: color-mix(in srgb, var(--text) 35%, transparent);
     cursor: pointer;
     min-height: auto;
   }
 
-  .setup-chip.static {
-    cursor: default;
+  .setup-link:hover {
+    text-decoration-color: var(--text);
+  }
+
+  .setup-status {
+    font: inherit;
     color: var(--text-muted);
-  }
-
-  .setup-chip:hover:not(.static) {
-    border-color: var(--border);
-    color: var(--text);
-  }
-
-  .setup-dot {
-    width: 0.4rem;
-    height: 0.4rem;
-    border-radius: 50%;
-    background: var(--warning);
-    flex-shrink: 0;
   }
 
   .primary-cta {

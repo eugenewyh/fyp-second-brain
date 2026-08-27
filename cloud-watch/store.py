@@ -1,4 +1,4 @@
-"""SQLite store — multi-tenant users, sessions, watches, briefs."""
+"""SQLite store — BYOK per auth user_id + watches/briefs (no local passwords)."""
 
 from __future__ import annotations
 
@@ -16,19 +16,6 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def hash_password(password: str, *, salt: str | None = None) -> str:
-    salt = salt or secrets.token_hex(16)
-    dk = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 120_000)
-    return f"{salt}${dk.hex()}"
-
-
-def verify_password(password: str, stored: str) -> bool:
-    if "$" not in stored:
-        return False
-    salt, _hex = stored.split("$", 1)
-    return hmac.compare_digest(hash_password(password, salt=salt), stored)
-
-
 def encrypt_secret(plaintext: str, master: str) -> str:
     """Fernet-like seal using stdlib only (HMAC + XOR keystream)."""
     if not plaintext:
@@ -38,7 +25,6 @@ def encrypt_secret(plaintext: str, master: str) -> str:
     nonce = secrets.token_bytes(16)
     key = hashlib.sha256(master.encode("utf-8") + nonce).digest()
     data = plaintext.encode("utf-8")
-    # stretch keystream
     stream = b""
     counter = 0
     while len(stream) < len(data):
@@ -74,10 +60,9 @@ def decrypt_secret(blob: str, master: str) -> str:
 
 
 @dataclass
-class UserRow:
-    id: str
-    email: str
-    password_hash: str
+class UserLlmRow:
+    user_id: str
+    email: str = ""
     llm_provider: str = "groq"
     llm_api_key_enc: str = ""
     llm_model: str = ""
@@ -85,7 +70,7 @@ class UserRow:
 
     def to_public(self) -> dict[str, Any]:
         return {
-            "id": self.id,
+            "id": self.user_id,
             "email": self.email,
             "llm_provider": self.llm_provider,
             "llm_model": self.llm_model,
@@ -144,18 +129,12 @@ class Store:
         with self._connect() as conn:
             conn.executescript(
                 """
-                CREATE TABLE IF NOT EXISTS users (
-                    id TEXT PRIMARY KEY,
-                    email TEXT NOT NULL UNIQUE,
-                    password_hash TEXT NOT NULL,
+                CREATE TABLE IF NOT EXISTS user_llm (
+                    user_id TEXT PRIMARY KEY,
+                    email TEXT NOT NULL DEFAULT '',
                     llm_provider TEXT NOT NULL DEFAULT 'groq',
                     llm_api_key_enc TEXT NOT NULL DEFAULT '',
                     llm_model TEXT NOT NULL DEFAULT '',
-                    created TEXT NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS sessions (
-                    token TEXT PRIMARY KEY,
-                    user_id TEXT NOT NULL,
                     created TEXT NOT NULL
                 );
                 CREATE TABLE IF NOT EXISTS watches (
@@ -187,96 +166,71 @@ class Store:
                 );
                 """
             )
-
-    # --- users / sessions ---
-
-    def create_user(self, email: str, password: str) -> UserRow:
-        email_n = email.strip().lower()
-        if not email_n or "@" not in email_n:
-            raise ValueError("Valid email required")
-        if len(password) < 8:
-            raise ValueError("Password must be at least 8 characters")
-        uid = secrets.token_hex(12)
-        row = UserRow(
-            id=uid,
-            email=email_n,
-            password_hash=hash_password(password),
-            created=_now(),
-        )
-        with self._connect() as conn:
-            try:
+            # Migrate from legacy password users table if present
+            cur = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='users'"
+            )
+            if cur.fetchone():
                 conn.execute(
                     """
-                    INSERT INTO users (id, email, password_hash, llm_provider, llm_api_key_enc, llm_model, created)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (row.id, row.email, row.password_hash, row.llm_provider, "", "", row.created),
+                    INSERT OR IGNORE INTO user_llm (user_id, email, llm_provider, llm_api_key_enc, llm_model, created)
+                    SELECT id, email, llm_provider, llm_api_key_enc, llm_model, created FROM users
+                    """
                 )
-            except sqlite3.IntegrityError as e:
-                raise ValueError("Email already registered") from e
-        return row
 
-    def get_user_by_email(self, email: str) -> UserRow | None:
-        with self._connect() as conn:
-            cur = conn.execute(
-                "SELECT * FROM users WHERE email = ?",
-                (email.strip().lower(),),
-            )
-            r = cur.fetchone()
-        return self._user_from_row(r) if r else None
-
-    def get_user(self, user_id: str) -> UserRow | None:
-        with self._connect() as conn:
-            cur = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,))
-            r = cur.fetchone()
-        return self._user_from_row(r) if r else None
-
-    def create_session(self, user_id: str) -> str:
-        token = secrets.token_urlsafe(32)
+    def ensure_user(self, user_id: str, email: str = "") -> UserLlmRow:
+        existing = self.get_user(user_id)
+        if existing:
+            if email and email != existing.email:
+                with self._connect() as conn:
+                    conn.execute(
+                        "UPDATE user_llm SET email = ? WHERE user_id = ?",
+                        (email.strip().lower(), user_id),
+                    )
+                return self.get_user(user_id) or existing
+            return existing
+        row = UserLlmRow(user_id=user_id, email=email.strip().lower(), created=_now())
         with self._connect() as conn:
             conn.execute(
-                "INSERT INTO sessions (token, user_id, created) VALUES (?, ?, ?)",
-                (token, user_id, _now()),
+                """
+                INSERT INTO user_llm (user_id, email, llm_provider, llm_api_key_enc, llm_model, created)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (row.user_id, row.email, row.llm_provider, "", "", row.created),
             )
-        return token
+        return row
 
-    def user_id_for_token(self, token: str) -> str | None:
+    def get_user(self, user_id: str) -> UserLlmRow | None:
         with self._connect() as conn:
-            cur = conn.execute("SELECT user_id FROM sessions WHERE token = ?", (token,))
+            cur = conn.execute("SELECT * FROM user_llm WHERE user_id = ?", (user_id,))
             r = cur.fetchone()
-        return str(r["user_id"]) if r else None
-
-    def delete_session(self, token: str) -> None:
-        with self._connect() as conn:
-            conn.execute("DELETE FROM sessions WHERE token = ?", (token,))
+        return self._user_from_row(r) if r else None
 
     def update_user_llm(
         self,
         user_id: str,
         *,
+        email: str | None = None,
         llm_provider: str | None = None,
         llm_api_key_enc: str | None = None,
         llm_model: str | None = None,
-    ) -> UserRow:
-        user = self.get_user(user_id)
-        if user is None:
-            raise ValueError("User not found")
+    ) -> UserLlmRow:
+        user = self.ensure_user(user_id, email or "")
         provider = llm_provider if llm_provider is not None else user.llm_provider
         key_enc = llm_api_key_enc if llm_api_key_enc is not None else user.llm_api_key_enc
         model = llm_model if llm_model is not None else user.llm_model
+        em = email.strip().lower() if email is not None else user.email
         with self._connect() as conn:
             conn.execute(
                 """
-                UPDATE users SET llm_provider = ?, llm_api_key_enc = ?, llm_model = ?
-                WHERE id = ?
+                UPDATE user_llm SET email = ?, llm_provider = ?, llm_api_key_enc = ?, llm_model = ?
+                WHERE user_id = ?
                 """,
-                (provider, key_enc, model, user_id),
+                (em, provider, key_enc, model, user_id),
             )
         out = self.get_user(user_id)
         assert out is not None
         return out
-
-    # --- watches ---
 
     def upsert_watch(self, row: WatchRow) -> WatchRow:
         with self._connect() as conn:
@@ -392,11 +346,10 @@ class Store:
             return cur.rowcount > 0
 
     @staticmethod
-    def _user_from_row(r: sqlite3.Row) -> UserRow:
-        return UserRow(
-            id=r["id"],
-            email=r["email"],
-            password_hash=r["password_hash"],
+    def _user_from_row(r: sqlite3.Row) -> UserLlmRow:
+        return UserLlmRow(
+            user_id=r["user_id"],
+            email=r["email"] or "",
             llm_provider=r["llm_provider"] or "groq",
             llm_api_key_enc=r["llm_api_key_enc"] or "",
             llm_model=r["llm_model"] or "",

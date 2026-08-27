@@ -10,9 +10,7 @@
   import ChatHome from "./ChatHome.svelte";
   import KnowledgePanel from "./KnowledgePanel.svelte";
   import AppSheet from "./AppSheet.svelte";
-  import StatusBar from "./StatusBar.svelte";
   import NewProjectModal from "./NewProjectModal.svelte";
-  import AuthGate from "./AuthGate.svelte";
   import CommandPalette from "$lib/components/workspace/CommandPalette.svelte";
   import PaneResizer from "$lib/components/workspace/PaneResizer.svelte";
   import { startVaultWatcher } from "$lib/vault/watcher";
@@ -21,23 +19,10 @@
     loadSidebarWidth,
     saveSidebarWidth,
   } from "$lib/workspace/layout-prefs";
-  import { loadContinueLocal } from "$lib/auth/auth-prefs";
+  import { authSession } from "$lib/auth/auth-session.svelte";
+  import { currentUser } from "$lib/auth/client";
 
   let sidebarWidth = $state(loadSidebarWidth());
-  let authDismissed = $state(loadContinueLocal());
-
-  const showAuthGate = $derived(
-    app.authGateOpen ||
-      (connection.connected &&
-        connection.cloudWatchAvailable &&
-        !connection.cloudWatchConfigured &&
-        !authDismissed),
-  );
-
-  function onAuthDone() {
-    app.closeAuthGate();
-    authDismissed = loadContinueLocal() || connection.cloudWatchConfigured;
-  }
 
   function onSidebarResize(delta: number) {
     sidebarWidth = clampSidebarWidth(sidebarWidth + delta);
@@ -48,6 +33,9 @@
   }
 
   onMount(() => {
+    authSession.hydrate();
+    void currentUser().catch(() => {});
+
     workspace.init();
     void connection.connect().then((ok) => {
       if (ok) void assistant.loadHarnessDefaults();
@@ -171,11 +159,7 @@
     {/if}
   </div>
 
-  <StatusBar />
   <NewProjectModal />
-  {#if showAuthGate}
-    <AuthGate onDone={onAuthDone} />
-  {/if}
 </div>
 
 <style>

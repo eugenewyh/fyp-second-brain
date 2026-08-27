@@ -2,7 +2,7 @@
 
 Use this when presenting or recording a demo. Speak the **Explain** lines; use **Show** as on-screen cues.
 
-**One-liner:** Nous is a local-first second brain. Each **channel** is a topic you own. You talk there; Teach, Ask, Research, and Watch share that topic’s memory — and research can write back into it.
+**One-liner:** Nous is a local-first second brain. Each **channel** is a topic you own. You talk there; Teach, Ask, Research, and Scheduled Research share that topic’s memory — and research can write back into it.
 
 **Tagline:** Research that remembers *you*.
 
@@ -14,7 +14,7 @@ Use this when presenting or recording a demo. Speak the **Explain** lines; use *
 |--------|---------|
 | **Channel** | A lifelong topic folder (e.g. `#Coffee`, `#FYP`) with its own vault memory |
 | **Chat** | One conversation thread bound to that channel |
-| **Manager** | Invisible router: turns your message into Teach / Ask / Research / Watch |
+| **Manager** | Invisible router: turns your message into Teach / Ask / Research / Scheduled Research |
 | **Memory** | Durable claims and notes for *that* channel only — not a global chat history |
 
 **Do not explain it as:** “ChatGPT with a sidebar,” separate agents you hire, or pipeline roles (Planner, Retriever…) as people in the UI. Those roles only appear as status lines *inside* Research.
@@ -75,14 +75,14 @@ Use this when presenting or recording a demo. Speak the **Explain** lines; use *
 
 ---
 
-## 5. Watch (standing briefs)
+## 5. Scheduled Research (standing briefs)
 
-**What it does:** A recurring watch on the channel topic. Produces briefs (while the app is open; optional cloud path when the Mac is asleep). Watch-origin claims can expire; they must not silently overwrite Teach dumps.
+**What it does:** Recurring research on the channel topic. Produces briefs (while the app is open; optional cloud path when the Mac is asleep via Settings → Account email sign-in). Schedule-origin claims can expire; they must not silently overwrite Teach dumps.
 
 **Explain:**
-> “Watch keeps an eye on this topic over time — a morning-style brief filed back into the same channel memory.”
+> “Scheduled Research keeps this topic current over time — a morning-style brief filed back into the same channel memory.”
 
-**Show:** Watch nav → create/edit focus → Run → brief ready / history.
+**Show:** Scheduled Research nav → create/edit focus → Run → brief ready / history.
 
 ---
 
@@ -125,7 +125,7 @@ Use one of these:
 2. Teach → Remembered  
 3. Ask from notes + sources  
 4. Research → status lines → report → write-back  
-5. (Optional) Watch brief  
+5. (Optional) Scheduled Research brief  
 6. Close with differentiation one-liner  
 
 **Avoid first:** Empty library + web-only question; IDE/file-manager tour; treating pipeline agents as sidebar “members.”

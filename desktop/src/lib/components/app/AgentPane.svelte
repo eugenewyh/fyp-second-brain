@@ -10,7 +10,7 @@
   import { splitFrontmatter } from "$lib/vault/markdown";
   import { tabs } from "$lib/stores/tabs.svelte";
   import type { ManagerJob } from "$lib/api";
-  import type { ChatStarterId } from "$lib/assistant/chat-starters";
+  import type { ChatStarterId, ChatSetupAction } from "$lib/assistant/chat-starters";
   import { composerPlaceholder, landingPhase } from "$lib/assistant/chat-starters";
   import { channelComposerPlaceholder } from "$lib/assistant/channel-agents";
   import ComposerDock from "./ComposerDock.svelte";
@@ -39,7 +39,7 @@
   const channelEmpty = $derived(workspace.channelEmpty);
   const bootstrap = $derived(offline || !aiConfigured || !hasWorkspace);
   const phase = $derived(
-    landingPhase({ offline, aiConfigured, hasWorkspace, libraryReady }),
+    landingPhase({ offline, aiConfigured, hasWorkspace, libraryReady, channelEmpty }),
   );
   const onboarding = $derived(!bootstrap && channelEmpty);
   const landingPlaceholder = $derived(composerPlaceholder(phase));
@@ -49,7 +49,7 @@
   const empty = $derived(isIdleSession({ turns: thread }));
   /** Idle chat → Cursor-style centered composer; after first send → dock. */
   const showNewChat = $derived(empty);
-  const showSetupLanding = $derived(bootstrap && empty);
+  const showSetupLanding = $derived(empty && phase !== "ready");
   const newChatPlaceholder = $derived(
     offline
       ? "Backend offline — reconnect to send…"
@@ -331,20 +331,23 @@
         const project =
           assistant.sessions[sessionId]?.projectPath ?? assistant.activeProjectPath();
         if (!project) {
-          assistant.appendManager("I need a topic folder before I can watch.", sessionId);
+          assistant.appendManager(
+            "I need a topic folder before I can start scheduled research.",
+            sessionId,
+          );
           return;
         }
         try {
           const created = await api.createWatch(project, {
-            name: instruction.slice(0, 48) || "Watch",
+            name: instruction.slice(0, 48) || "Scheduled Research",
             focus: instruction,
             enabled: true,
           });
           const status = created.enabled
             ? "It's Active — refine Exclude/Trusted sources or hit Run anytime."
-            : "Fill Focus and Include in Watch, then turn it Active.";
+            : "Fill Focus and Include in Scheduled Research, then turn it Active.";
           assistant.appendManager(
-            `Watch created — open Watch to refine or Run. ${status}`,
+            `Schedule created — open Scheduled Research to refine or Run. ${status}`,
             sessionId,
           );
           if (created.watch_id && created.enabled) {
@@ -353,7 +356,7 @@
           app.openWatch();
         } catch (e) {
           assistant.appendManager(
-            e instanceof Error ? e.message : "Couldn't start a watch.",
+            e instanceof Error ? e.message : "Couldn't start scheduled research.",
             sessionId,
           );
         }
@@ -463,8 +466,20 @@
     assistant.composerFocusNonce += 1;
   }
 
-  function openSetupAction(action: "settings" | "ingest") {
-    app.openSheet(action === "settings" ? "settings" : "ingest");
+  function openSetupAction(action: ChatSetupAction) {
+    if (action === "import" || action === "ingest") {
+      app.openSheet("ingest");
+      return;
+    }
+    if (action === "workspace") {
+      app.openNewProject();
+      return;
+    }
+    if (action === "reindex") {
+      void connection.retryReindex();
+      return;
+    }
+    app.openSheet("settings");
   }
 </script>
 
@@ -487,14 +502,23 @@
     </div>
   {:else if !showNewChat && connection.memorySearchBlocked}
     <div class="banner">
-      <span>
-        {connection.reindexRequired
-          ? "Vault search needs re-ingest after an embedding model change."
-          : connection.embeddingsError ||
-            "Embeddings unavailable. Bundled fastembed is the default — Ollama is optional."}
-      </span>
-      <button type="button" class="link" onclick={() => app.openSheet("ingest")}>Ingest</button>
-      <button type="button" class="link" onclick={() => app.openSheet("settings")}>Settings</button>
+      {#if connection.reindexBusy}
+        <span>Rebuilding search index…</span>
+      {:else if connection.reindexError}
+        <span>{connection.reindexError}</span>
+        <button type="button" class="link" onclick={() => void connection.retryReindex()}>
+          Retry
+        </button>
+      {:else if connection.reindexRequired}
+        <span>Updating search index…</span>
+      {:else}
+        <span>
+          {connection.embeddingsError || "Vault search is temporarily unavailable."}
+        </span>
+        <button type="button" class="link" onclick={() => void connection.retryReindex()}>
+          Retry
+        </button>
+      {/if}
     </div>
   {/if}
 
@@ -514,6 +538,7 @@
             {aiConfigured}
             {hasWorkspace}
             libraryReady={libraryReady}
+            {channelEmpty}
             memoryBlocked={connection.memorySearchBlocked}
             disabled={offline || assistant.isLoading}
             onStarter={applyStarter}

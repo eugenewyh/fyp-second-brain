@@ -57,7 +57,7 @@
       name: "Web search",
       category: "Research",
       description:
-        "Allow Agent goals and Watch to use the web. Off forces local vault-only retrieval.",
+        "Allow Agent goals and Scheduled Research to use the web. Off forces local vault-only retrieval.",
       enabled: webSearchEnabled,
       toggleable: true,
     },
@@ -66,7 +66,7 @@
       name: "Autonomous agent pipeline",
       category: "Agents",
       description:
-        "After you set a goal or an Active Watch, Nous runs the research graph inside these limits without asking again. Planner + synthesizer use the main model; Ask/verifier use the optional fast model.",
+        "After you set a goal or an active schedule, Nous runs the research graph inside these limits without asking again. Planner + synthesizer use the main model; Ask/verifier use the optional fast model.",
       enabled: connection.connected && llmOk,
     },
     {
@@ -90,7 +90,7 @@
       name: "Write memory",
       category: "Memory",
       description:
-        "Goals and Watch may write claims, learnings, and project.md after a run. Off still recalls existing notes.",
+        "Goals and Scheduled Research may write claims, learnings, and project.md after a run. Off still recalls existing notes.",
       enabled: autoMemory && connection.connected,
       toggleable: true,
     },
@@ -99,7 +99,7 @@
       name: "Daily autonomous review",
       category: "Memory",
       description:
-        "Scheduled review of new vault notes and Active Watches. Runs only while Nous is open; catch-up fires after the scheduled hour.",
+        "Scheduled review of new vault notes and active schedules. Runs only while Nous is open; catch-up fires after the scheduled hour.",
       enabled: dailyReviewEnabled && connection.connected,
       toggleable: true,
     },
@@ -298,7 +298,7 @@
             <dd>up to {maxGoalPasses}</dd>
           </div>
           <div>
-            <dt>Watch passes</dt>
+            <dt>Scheduled research passes</dt>
             <dd>up to {watchMaxPasses}</dd>
           </div>
         {/if}
@@ -316,7 +316,7 @@
             />
           </label>
           <label class="budget-field">
-            <span>Max Watch passes</span>
+            <span>Max scheduled research passes</span>
             <input
               class="budget-input"
               bind:value={watchMaxPasses}
@@ -374,7 +374,7 @@
       </div>
 
       <p class="footnote">
-        Plan review applies to single-pass research only. Agent goals and Watch run without that
+        Plan review applies to single-pass research only. Agent goals and Scheduled Research run without that
         interrupt, inside the allow-list and budget above.
       </p>
     {/if}

@@ -139,6 +139,7 @@
     error = "";
     try {
       const newFolders = folders.filter((f): f is ProjectFolderSpec => f.kind !== "existing");
+      const importedNotes = newFolders.some((f) => f.kind === "import");
       const editPath = app.editingProjectPath;
       if (editPath) {
         const newPath = await updateProjectFolder(editPath, {
@@ -154,7 +155,9 @@
         workspace.requestVaultRefresh();
         void workspace.syncProjectsFromDisk();
         close();
-        void assistant.rememberTopicNotes(newPath);
+        // Only file claims when folders with notes were imported — empty edit must not
+        // spawn a failed "Remember topic notes" chat.
+        if (importedNotes) void assistant.rememberTopicNotes(newPath);
         return;
       }
       const path = await createProjectFolder(name.trim(), {
@@ -166,7 +169,7 @@
       workspace.requestVaultRefresh();
       void workspace.syncProjectsFromDisk();
       close();
-      void assistant.rememberTopicNotes(path);
+      if (importedNotes) void assistant.rememberTopicNotes(path);
     } catch (e) {
       error = e instanceof Error ? e.message : isEdit ? "Could not save workspace" : "Could not create project";
     } finally {
@@ -437,6 +440,11 @@
     font-size: var(--text-md);
   }
 
+  .name-input::placeholder {
+    color: var(--text-muted);
+    opacity: 1;
+  }
+
   .name-input:focus {
     outline: none;
     border-color: var(--accent-live);
@@ -535,7 +543,7 @@
     border-radius: var(--radius-xs);
     border: 1.5px solid var(--border);
     background: transparent;
-    color: #fff;
+    color: var(--accent-contrast);
     flex-shrink: 0;
     transition:
       background var(--dur-control) var(--ease-out),
@@ -581,7 +589,7 @@
   .muted {
     margin: 0 0 0.4rem;
     font-size: var(--text-sm);
-    color: var(--text-faint);
+    color: var(--text-muted);
   }
 
   .folder-list {
@@ -600,7 +608,7 @@
     padding: 0.4rem 0.45rem;
     border-radius: var(--radius-md);
     background: var(--control-fill);
-    color: var(--text-muted);
+    color: var(--text);
     font-size: var(--text-sm);
   }
 
@@ -698,11 +706,17 @@
   .btn-text {
     background: transparent;
     border: none;
-    color: var(--accent-live);
+    color: var(--text);
     font-size: var(--text-sm);
     font-weight: var(--font-semibold);
     min-height: 34px;
     cursor: pointer;
+  }
+
+  .btn-text:hover:not(:disabled) {
+    color: var(--text);
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
   }
 
   .idea {
@@ -716,6 +730,11 @@
     font-size: var(--text-sm);
     line-height: 1.5;
     resize: vertical;
+  }
+
+  .idea::placeholder {
+    color: var(--text-muted);
+    opacity: 1;
   }
 
   .idea:focus {
@@ -733,9 +752,9 @@
 
   .chip {
     background: var(--control-fill);
-    border: 1px solid var(--border-subtle);
+    border: 1px solid var(--border);
     border-radius: var(--radius-full);
-    color: var(--text-muted);
+    color: var(--text);
     font-size: var(--text-xs);
     font-weight: var(--font-medium);
     min-height: 28px;
@@ -744,9 +763,9 @@
   }
 
   .chip:hover {
-    background: var(--accent-live-dim);
-    color: var(--accent-live);
-    border-color: color-mix(in srgb, var(--accent-live) 25%, var(--border));
+    background: var(--selection-hover);
+    color: var(--text);
+    border-color: var(--border-active);
   }
 
   .err {
@@ -785,12 +804,12 @@
   }
 
   .btn.primary {
-    background: var(--accent-live);
-    color: #fff;
+    background: var(--accent);
+    color: var(--accent-contrast);
   }
 
   .btn.primary:hover:not(:disabled) {
-    filter: brightness(1.05);
+    background: var(--accent-hover);
   }
 
   .btn.primary:disabled {

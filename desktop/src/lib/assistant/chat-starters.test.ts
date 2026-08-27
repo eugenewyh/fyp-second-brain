@@ -59,6 +59,18 @@ describe("landingPhase", () => {
     ).toBe("seed");
   });
 
+  it("seeds when this workspace is empty even if the library has content", () => {
+    expect(
+      landingPhase({
+        offline: false,
+        aiConfigured: true,
+        hasWorkspace: true,
+        libraryReady: true,
+        channelEmpty: true,
+      }),
+    ).toBe("seed");
+  });
+
   it("is ready when workspace, AI, and library exist", () => {
     expect(
       landingPhase({
@@ -74,7 +86,7 @@ describe("landingPhase", () => {
 describe("visibleStarterIds", () => {
   it("hides starters until memory exists", () => {
     expect(visibleStarterIds("bootstrap")).toEqual([]);
-    expect(visibleStarterIds("seed")).toEqual(["teach"]);
+    expect(visibleStarterIds("seed")).toEqual([]);
     expect(visibleStarterIds("ready")).toEqual(["teach", "ask", "research", "watch"]);
   });
 });
@@ -90,7 +102,7 @@ describe("chatStarterPrompt", () => {
     expect(chatStarterPrompt("ask", "FYP")).toContain("FYP");
     expect(chatStarterPrompt("research", "FYP")).toContain("file a report");
     expect(chatStarterPrompt("teach", "FYP")).toContain("Here are my notes");
-    expect(chatStarterPrompt("watch", "FYP")).toContain("Watch FYP");
+    expect(chatStarterPrompt("watch", "FYP")).toContain("Schedule research on FYP");
   });
 });
 
@@ -116,6 +128,19 @@ describe("chatSetupItems", () => {
       memoryBlocked: false,
     });
     expect(items.map((i) => i.id)).toEqual(["workspace", "ai"]);
+  });
+
+  it("offers Import notes when this workspace is empty", () => {
+    const items = chatSetupItems({
+      offline: false,
+      aiConfigured: true,
+      hasWorkspace: true,
+      libraryReady: true,
+      channelEmpty: true,
+      memoryBlocked: false,
+    });
+    expect(items.map((i) => i.id)).toEqual(["import"]);
+    expect(items[0]?.action).toBe("import");
   });
 });
 

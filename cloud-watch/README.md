@@ -1,56 +1,41 @@
-# Nous Cloud Watch — multi-user v1
+# Nous Cloud Watch — Better Auth sessions + BYOK
 
-Hosted morning briefs for **any Nous user**. You run one Droplet; they sign up in the app and bring their own LLM key (BYOK). Vault stays on their Mac.
+Hosted morning briefs. Identity lives on **Nous Auth** (`auth/` — Better Auth + Postgres email OTP). This service stores watches, briefs, and encrypted LLM keys only.
 
 ## User experience
 
-1. Open Nous → **Sign in** / **Create account** (welcome gate when Cloud Watch is enabled on this build)  
-2. Or **Continue without account** for local-only use  
-3. Settings → **Models** — add your Groq/OpenRouter key once (same key as Research). Sign-in and Models saves sync it to Cloud Watch automatically.  
-4. Activate Watches — briefs run ~9am on the server and sync when they open Nous   
+1. Open Nous → vault works immediately (no gate)
+2. Settings → **Account** → email → 6-digit code (same flow for new and returning users)
+3. Settings → **Models** — add Groq/OpenRouter key; signed-in clients sync it to Cloud Watch
+4. Activate Watches — briefs run ~9am on the server and sync when they open Nous
 
-Users never see a service URL, Docker, or crontab.
+## Operator
 
-## Operator: enable sign-in for shipped builds
-
-On each desktop install’s sidecar `.env` (or bake into the release):
+### Desktop / sidecar `.env`
 
 ```bash
 CLOUD_WATCH_URL=https://watch.your-domain.com
+# No CLOUD_WATCH_USER_TOKEN — session is Better Auth Bearer from the app
 ```
 
-That URL is **hidden from Settings**. Empty URL → no sign-in gate; local catch-up only.
+### Auth service
 
-## Operator deploy (you, once)
-
-### Env on the Droplet
+See [`auth/README.md`](../auth/README.md). Set the same `AUTH_INTERNAL_SECRET` here:
 
 ```bash
-# Cron-only (keep secret — never give to users)
+AUTH_URL=https://auth.your-domain.com
+AUTH_INTERNAL_SECRET=...
 CLOUD_WATCH_CRON_TOKEN=$(openssl rand -hex 24)
-# Encrypts user BYOK keys at rest
 CLOUD_WATCH_SECRET=$(openssl rand -hex 32)
-
-# Optional defaults for non-BYOK tooling; users override via BYOK
-ENABLE_WEB_SEARCH=true
-ENABLE_ARXIV=true
-WATCH_MAX_PASSES=1
-TAVILY_API_KEY=...   # if web search needs it globally
 ```
 
-Also put the same values in the repo `.env` that Compose loads, or export them before `docker compose up`.
-
-### Start
-
-From repo root:
+### Start Cloud Watch
 
 ```bash
 cd cloud-watch && docker compose up --build -d
 ```
 
-Put HTTPS in front (Caddy/nginx) → `https://watch.your-domain.com`.
-
-### Cron (server local time = user default Asia/Singapore unless you change droplet TZ)
+### Cron
 
 ```bash
 0 9 * * 1-5 curl -fsS -X POST \
@@ -62,21 +47,13 @@ Put HTTPS in front (Caddy/nginx) → `https://watch.your-domain.com`.
 
 | Method | Path | Auth |
 |--------|------|------|
-| POST | `/v1/auth/register` | none |
-| POST | `/v1/auth/login` | none |
-| GET | `/v1/me` | user session |
-| PUT | `/v1/me/llm` | user session (BYOK) |
-| PUT | `/v1/watches/{id}` | user session |
-| GET | `/v1/briefs/pending` | user session |
-| POST | `/v1/briefs/{id}/ack` | user session |
+| GET | `/v1/me` | Better Auth Bearer (resolved via AUTH_URL) |
+| PUT | `/v1/me/llm` | Bearer (BYOK) |
+| PUT | `/v1/watches/{id}` | Bearer |
+| GET | `/v1/briefs/pending` | Bearer |
+| POST | `/v1/briefs/{id}/ack` | Bearer |
 | POST | `/internal/run-due` | cron token |
 
 ## Local catch-up
 
 If a user never signs in, Nous still runs Watch catch-up **while the app is open**. Cloud is additive.
-
-## Notes
-
-- SQLite under `/data` — fine for FYP / small user counts.  
-- One Watch ≈ several LLM calls; free Groq tiers are per-user when they BYOK.  
-- Do not put your personal free-tier key as the only server key for all users.

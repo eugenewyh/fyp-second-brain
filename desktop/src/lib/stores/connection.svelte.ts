@@ -1,4 +1,5 @@
 import { api, resetSidecarUrlCache, waitForSidecar, WATCHES_API_VERSION } from "$lib/api";
+import { getVaultRoot } from "$lib/vault/load";
 
 class ConnectionStore {
   connected = $state(false);
@@ -10,6 +11,10 @@ class ConnectionStore {
   embeddingsError = $state("");
   embeddingsProvider = $state("fastembed");
   embeddingsModel = $state("");
+  /** Auto vault re-index in progress. */
+  reindexBusy = $state(false);
+  /** Last auto-reindex failure (cleared on success / manual retry). */
+  reindexError = $state("");
   /** From GET /health. Below WATCHES_API_VERSION means Watch routes are stale. */
   watchesApi = $state(0);
   /** Last Watch planner failure from GET /api/review/status. */
@@ -23,6 +28,9 @@ class ConnectionStore {
   cloudWatchEmail = $state("");
   cloudWatchHasKey = $state(false);
 
+  /** Avoid retry loops for the same reindex fingerprint until forced. */
+  #healKey = "";
+
   get watchesApiStale(): boolean {
     return this.connected && this.watchesApi < WATCHES_API_VERSION;
   }
@@ -33,10 +41,10 @@ class ConnectionStore {
 
   /** True when Ask/Agent vault search should be blocked. */
   get memorySearchBlocked() {
-    return this.connected && (!this.embeddingsOk || this.reindexRequired);
+    return this.connected && (!this.embeddingsOk || this.reindexRequired || this.reindexBusy);
   }
 
-  async refreshStatus() {
+  async refreshStatus(opts?: { skipHeal?: boolean }) {
     try {
       const status = await api.status();
       this.collectionCount = status.collection_count;
@@ -78,7 +86,7 @@ class ConnectionStore {
               const again = await api.cloudWatchStatus();
               this.cloudWatchHasKey = !!again.user?.has_api_key;
             } catch {
-              /* Models key missing or sync failed — Connectors shows Sync */
+              /* Models key missing or sync failed */
             }
           }
           const pulled = await api.cloudWatchPull();
@@ -93,6 +101,7 @@ class ConnectionStore {
         this.cloudWatchEmail = "";
         this.cloudWatchHasKey = false;
       }
+      if (!opts?.skipHeal) void this.maybeAutoReindex();
     } catch (e) {
       this.connected = false;
       this.connectionError =
@@ -105,6 +114,40 @@ class ConnectionStore {
       this.cloudWatchEmail = "";
       this.cloudWatchHasKey = false;
     }
+  }
+
+  /** Rebuild the vault search index when the sidecar says re-ingest is required. */
+  async maybeAutoReindex(opts?: { force?: boolean }): Promise<boolean> {
+    if (!this.connected || this.reindexBusy) return false;
+    if (!this.reindexRequired && !opts?.force) return false;
+    const key = `${this.embeddingsProvider}:${this.embeddingsModel}:reindex`;
+    if (!opts?.force && this.#healKey === key) return false;
+    this.#healKey = key;
+    this.reindexBusy = true;
+    this.reindexError = "";
+    try {
+      const root = await getVaultRoot();
+      await api.ingest(root, { reset: true });
+      await this.refreshStatus({ skipHeal: true });
+      if (this.reindexRequired || !this.embeddingsOk) {
+        this.reindexError =
+          this.embeddingsError || "Search index still needs attention after rebuild.";
+        return false;
+      }
+      return true;
+    } catch (e) {
+      this.reindexError = e instanceof Error ? e.message : "Could not rebuild search index";
+      return false;
+    } finally {
+      this.reindexBusy = false;
+    }
+  }
+
+  /** Manual retry after auto-heal failed. */
+  async retryReindex(): Promise<boolean> {
+    this.#healKey = "";
+    this.reindexError = "";
+    return this.maybeAutoReindex({ force: true });
   }
 
   /** Restart the sidecar and reconnect. Use when Watch routes 404 on a running process. */

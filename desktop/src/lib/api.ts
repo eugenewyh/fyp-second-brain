@@ -60,6 +60,16 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   if (method !== "GET" && method !== "HEAD" && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
+  // Forward Better Auth session to Cloud Watch routes (no sidecar .env token).
+  if (path.startsWith("/api/cloud-watch/") && !headers.has("Authorization")) {
+    try {
+      const { getSessionToken } = await import("$lib/auth/session");
+      const token = getSessionToken();
+      if (token) headers.set("Authorization", `Bearer ${token}`);
+    } catch {
+      /* ignore */
+    }
+  }
   const res = await fetch(`${base}${path}`, { ...options, headers });
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { detail?: FastApiDetail };
@@ -651,7 +661,7 @@ export const api = {
     paths?: string[];
     projectPath?: string | null;
     sessionId?: string | null;
-  }) =>
+  }, signal?: AbortSignal) =>
     apiFetch<DigestResult>("/api/digest", {
       method: "POST",
       body: JSON.stringify({
@@ -662,6 +672,7 @@ export const api = {
         project_path: body.projectPath ?? null,
         session_id: body.sessionId ?? null,
       }),
+      signal,
     }),
   mergeMemory: (body: { sourceProjectPath: string; destProjectPath: string }) =>
     apiFetch<{
@@ -786,7 +797,9 @@ export const api = {
           body: JSON.stringify(payload),
         });
       } catch {
-        throw new Error("Could not save. Restart the app so Watch can reach the sidecar.");
+        throw new Error(
+          "Could not save. Restart the app so Scheduled Research can reach the sidecar.",
+        );
       }
     }
   },
@@ -1024,18 +1037,6 @@ export const api = {
       url: string;
       user?: { email?: string; has_api_key?: boolean; llm_provider?: string } | null;
     }>("/api/cloud-watch/status"),
-  cloudWatchRegister: (email: string, password: string) =>
-    apiFetch<{ ok: boolean; user?: Record<string, unknown>; token_saved?: boolean }>(
-      "/api/cloud-watch/register",
-      { method: "POST", body: JSON.stringify({ email, password }) },
-    ),
-  cloudWatchLogin: (email: string, password: string) =>
-    apiFetch<{ ok: boolean; user?: Record<string, unknown>; token_saved?: boolean }>(
-      "/api/cloud-watch/login",
-      { method: "POST", body: JSON.stringify({ email, password }) },
-    ),
-  cloudWatchLogout: () =>
-    apiFetch<{ ok: boolean }>("/api/cloud-watch/logout", { method: "POST" }),
   cloudWatchSaveLlm: (body: {
     llm_provider: string;
     llm_api_key: string;

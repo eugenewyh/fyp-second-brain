@@ -24,6 +24,18 @@ describe("isIdleSession", () => {
   it("keeps chats that have a user message", () => {
     expect(isIdleSession({ turns: withUser })).toBe(false);
   });
+
+  it("treats Remember / digest turns as real work, not New Chat", () => {
+    const digestOnly: AssistantTurn[] = [
+      {
+        id: "d1",
+        kind: "digest",
+        status: "running",
+        label: "Remember Collection.md, Light.md",
+      },
+    ];
+    expect(isIdleSession({ turns: digestOnly })).toBe(false);
+  });
 });
 
 describe("sessionHasDraft", () => {

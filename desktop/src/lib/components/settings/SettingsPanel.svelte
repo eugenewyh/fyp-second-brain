@@ -2,14 +2,11 @@
   import { api, type Settings } from "$lib/api";
   import { connection } from "$lib/stores/connection.svelte";
   import { assistant } from "$lib/stores/assistant.svelte";
-  import { loadAutoIngestEnabled, saveAutoIngestEnabled } from "$lib/vault/watcher-prefs";
   import Button from "$lib/ui/Button.svelte";
   import { app } from "$lib/stores/app.svelte";
   import ModelsPage from "./ModelsPage.svelte";
-  import KnowledgePage from "./KnowledgePage.svelte";
-  import ConnectorsPage from "./ConnectorsPage.svelte";
-  import ResearchPage from "./ResearchPage.svelte";
   import AppearancePage from "./AppearancePage.svelte";
+  import AccountPage from "./AccountPage.svelte";
   import "./settings.css";
 
   import {
@@ -24,14 +21,12 @@
     resolveModelForProvider,
   } from "$lib/llm/models";
 
-  type SettingsTab = "appearance" | "models" | "knowledge" | "connectors" | "research";
+  type SettingsTab = "appearance" | "models" | "account";
 
   const TABS: { id: SettingsTab; label: string }[] = [
     { id: "appearance", label: "Appearance" },
     { id: "models", label: "Models" },
-    { id: "knowledge", label: "Knowledge" },
-    { id: "connectors", label: "Connectors" },
-    { id: "research", label: "Research" },
+    { id: "account", label: "Account" },
   ];
 
   let settings = $state<Settings | null>(null);
@@ -39,8 +34,17 @@
   let settingsSaving = $state(false);
   let settingsMessage = $state("");
   let settingsError = $state(false);
-  let autoIngest = $state(loadAutoIngestEnabled());
-  let tab = $state<SettingsTab>("appearance");
+  let tab = $state<SettingsTab>(
+    app.settingsTab === "account" || app.settingsTab === "models" || app.settingsTab === "appearance"
+      ? app.settingsTab
+      : "appearance",
+  );
+
+  $effect(() => {
+    if (app.settingsTab === "account" || app.settingsTab === "models" || app.settingsTab === "appearance") {
+      tab = app.settingsTab;
+    }
+  });
   let reloading = $state(false);
 
   let modalOpen = $state(false);
@@ -125,6 +129,24 @@
     await assistant.loadHarnessDefaults();
     await loadSettings();
     await connection.refreshStatus();
+    const llmKeys = new Set([
+      "LLM_PROVIDER",
+      "LLM_API_KEY",
+      "LLM_MODEL",
+      "GROQ_API_KEY",
+      "OPENAI_API_KEY",
+      "OPENROUTER_API_KEY",
+      "XAI_API_KEY",
+      "CUSTOM_API_KEY",
+    ]);
+    if ([...Object.keys(partial)].some((k) => llmKeys.has(k)) && connection.cloudWatchConfigured) {
+      try {
+        await api.cloudWatchSyncLlm();
+        await connection.refreshStatus();
+      } catch {
+        /* Models saved; CW sync optional */
+      }
+    }
   }
 
   async function persistPartial(partial: Record<string, string>) {
@@ -134,8 +156,9 @@
     try {
       await persist(partial);
       settingsMessage = connection.reindexRequired
-        ? "Saved — re-ingest the vault to apply the new embedding model"
+        ? "Saved — rebuilding search index…"
         : "Saved";
+      if (connection.reindexRequired) void connection.retryReindex();
     } catch (e) {
       settingsMessage = e instanceof Error ? e.message : "Couldn't save";
       settingsError = true;
@@ -307,11 +330,6 @@
     }
   }
 
-  function setAutoIngest(enabled: boolean) {
-    autoIngest = enabled;
-    saveAutoIngestEnabled(enabled);
-  }
-
   async function retry() {
     settingsMessage = "";
     settingsError = false;
@@ -347,23 +365,7 @@
 </script>
 
 <div class="settings-root">
-  {#if connection.connecting}
-    <p class="st-offline">Connecting to AI service…</p>
-  {:else if !connection.connected}
-    <div class="st-offline">
-      <p>
-        {connection.connectionError ||
-          "Can't reach the AI service. Start the sidecar, then retry."}
-      </p>
-      <code class="cmd">./scripts/start_sidecar.sh</code>
-      <Button variant="secondary" onclick={() => void retry()}>Retry connection</Button>
-    </div>
-  {:else if !settings}
-    <div class="st-offline">
-      <p>Loading settings…</p>
-      <Button variant="secondary" onclick={() => void loadSettings()}>Reload</Button>
-    </div>
-  {:else}
+  {#if tab === "account" || (connection.connected && settings)}
     <div class="st-layout">
       <nav class="st-nav" aria-label="Settings">
         {#each TABS as t}
@@ -371,49 +373,35 @@
             type="button"
             class="st-nav-btn"
             class:active={tab === t.id}
-            onclick={() => (tab = t.id)}
+            onclick={() => {
+              tab = t.id;
+              app.settingsTab = t.id;
+            }}
           >
             {t.label}
           </button>
         {/each}
-        <div class="st-nav-sep" aria-hidden="true"></div>
-        <button
-          type="button"
-          class="st-nav-btn"
-          onclick={() => {
-            app.closeSheet();
-            app.openCapabilities();
-          }}
-        >
-          Capabilities
-        </button>
-        <button
-          type="button"
-          class="st-nav-btn"
-          onclick={() => {
-            app.closeSheet();
-            app.openArtifacts();
-          }}
-        >
-          Artifacts
-        </button>
-        <div class="st-nav-sep" aria-hidden="true"></div>
-        <button
-          type="button"
-          class="st-nav-btn"
-          disabled={reloading}
-          onclick={() => void reloadService()}
-        >
-          {reloading ? "Reloading…" : "Reload AI service"}
-        </button>
+        {#if connection.connected}
+          <div class="st-nav-sep" aria-hidden="true"></div>
+          <button
+            type="button"
+            class="st-nav-btn"
+            disabled={reloading}
+            onclick={() => void reloadService()}
+          >
+            {reloading ? "Reloading…" : "Reload AI service"}
+          </button>
+        {/if}
       </nav>
       <div class="st-main ui-scroll">
-        {#if settingsMessage}
+        {#if settingsMessage && tab !== "account"}
           <p class="st-msg" class:error={settingsError}>{settingsMessage}</p>
         {/if}
         {#if tab === "appearance"}
           <AppearancePage />
-        {:else if tab === "models"}
+        {:else if tab === "account"}
+          <AccountPage />
+        {:else}
           <ModelsPage
             {settingsForm}
             {activeId}
@@ -426,28 +414,38 @@
             onDisconnect={(id) => void disconnect(id)}
             onPersist={(p) => void persistPartial(p)}
           />
-        {:else if tab === "knowledge"}
-          <KnowledgePage
-            {settingsForm}
-            {autoIngest}
-            saving={settingsSaving}
-            onAutoIngest={setAutoIngest}
-            onPersist={(p) => void persistPartial(p)}
-          />
-        {:else if tab === "connectors"}
-          <ConnectorsPage
-            {settingsForm}
-            saving={settingsSaving}
-            onPersist={(p) => void persistPartial(p)}
-          />
-        {:else}
-          <ResearchPage
-            {settingsForm}
-            saving={settingsSaving}
-            onPersist={(p) => void persistPartial(p)}
-          />
         {/if}
       </div>
+    </div>
+  {:else if connection.connecting}
+    <p class="st-offline">Connecting to AI service…</p>
+  {:else if !connection.connected}
+    <div class="st-offline">
+      <p>
+        {connection.connectionError ||
+          "Can't reach the AI service. Start the sidecar, then retry."}
+      </p>
+      <code class="cmd">./scripts/start_sidecar.sh</code>
+      <Button variant="secondary" onclick={() => void retry()}>Retry connection</Button>
+      <p class="st-hint" style="margin-top: 0.85rem">
+        Or open Account to sign in without the sidecar:
+        <button
+          type="button"
+          class="st-nav-btn"
+          style="display: inline; margin-left: 0.35rem"
+          onclick={() => {
+            tab = "account";
+            app.settingsTab = "account";
+          }}
+        >
+          Account
+        </button>
+      </p>
+    </div>
+  {:else}
+    <div class="st-offline">
+      <p>Loading settings…</p>
+      <Button variant="secondary" onclick={() => void loadSettings()}>Reload</Button>
     </div>
   {/if}
 </div>

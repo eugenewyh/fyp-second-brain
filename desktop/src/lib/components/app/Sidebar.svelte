@@ -8,10 +8,10 @@
   import { groupSessionsByWorkspace } from "$lib/assistant/workspace-chats";
   import { deleteProjectFolder, updateProjectFolder } from "$lib/vault/load";
   import { pathsMatch } from "$lib/assistant/workspace-chats";
-  import { saveContinueLocal } from "$lib/auth/auth-prefs";
+  import { authSession } from "$lib/auth/auth-session.svelte";
   import WorkspaceChatTree from "./WorkspaceChatTree.svelte";
   import SectionLabel from "$lib/ui/SectionLabel.svelte";
-  import { Plus, Settings, Eye, Network, Send } from "@lucide/svelte";
+  import { Plus, Settings, CalendarClock, Network, Send } from "@lucide/svelte";
 
   let search = $state("");
 
@@ -39,12 +39,11 @@
   }
 
   function openSettings() {
-    app.openSheet("settings");
+    app.openSettings("appearance");
   }
 
   function openSignIn() {
-    saveContinueLocal(false);
-    app.openAuthGate();
+    app.openSettings("account");
   }
 
   function openWatch() {
@@ -52,16 +51,11 @@
     app.openWatch();
   }
 
-  const accountLabel = $derived(
-    connection.cloudWatchEmail?.trim() ||
-      (connection.cloudWatchConfigured ? "Signed in" : "Sign in"),
-  );
-  const accountInitial = $derived(
-    (connection.cloudWatchEmail?.trim()?.[0] || "?").toUpperCase(),
-  );
+  const accountLabel = $derived(authSession.label);
+  const accountInitial = $derived(authSession.initial);
+  const signedIn = $derived(authSession.signedIn);
 
   function openMemory() {
-    ensureTopic();
     app.openMemory();
   }
 
@@ -72,10 +66,6 @@
 
   function newWorkspace() {
     app.openNewProject();
-  }
-
-  function switchWorkspace(path: string) {
-    tabs.openWorkspace(path);
   }
 
   function openSession(sessionId: string) {
@@ -128,22 +118,26 @@
   }
 
   async function deleteWorkspace(path: string, name: string): Promise<boolean> {
+    const busy = assistant
+      .listChannelSessions()
+      .some((s) => pathsMatch(s.projectPath, path) && assistant.sessionBusy(s.id));
     const ok = window.confirm(
-      `Delete workspace “${name}”? This removes its folder and cannot be undone.`,
+      busy
+        ? `“${name}” is still filing notes into memory. Cancel that and delete the workspace? This cannot be undone.`
+        : `Delete workspace “${name}”? This removes its folder and cannot be undone.`,
     );
     if (!ok) return false;
     try {
       const wasActive = pathsMatch(workspace.activeTopicPath, path);
-      const sessions = assistant
-        .listChannelSessions()
-        .filter((s) => pathsMatch(s.projectPath, path));
 
-      await deleteProjectFolder(path);
+      // Stop Remember/Ask jobs first — otherwise they rewrite the folder and it “comes back”.
+      assistant.purgeProjectSessions(path);
       workspace.unpin(path);
 
-      for (const s of sessions) {
-        assistant.deleteSession(s.id);
-      }
+      await deleteProjectFolder(path);
+      // Race: in-flight server writes may recreate the dir after abort; sweep once more.
+      await new Promise((r) => setTimeout(r, 400));
+      await deleteProjectFolder(path);
 
       workspace.requestVaultRefresh();
       await workspace.syncProjectsFromDisk();
@@ -195,8 +189,8 @@
       class:active={app.isWatch}
       onclick={openWatch}
     >
-      <Eye size={iconSize} strokeWidth={iconStroke} />
-      Watch
+      <CalendarClock size={iconSize} strokeWidth={iconStroke} />
+      Scheduled Research
     </button>
   </nav>
 
@@ -243,7 +237,6 @@
         {search}
         activeWorkspacePath={workspace.activeTopicPath}
         activeSessionId={assistant.activeSessionId}
-        onOpenWorkspace={switchWorkspace}
         onOpenSession={openSession}
         onNewChat={newChatInWorkspace}
         onDeleteSession={deleteSession}
@@ -256,40 +249,28 @@
   </div>
 
   <div class="footer">
-    {#if connection.cloudWatchAvailable}
-      <div class="account-row">
-        {#if connection.cloudWatchConfigured}
-          <button type="button" class="account" onclick={openSettings} title={accountLabel}>
-            <span class="avatar" aria-hidden="true">{accountInitial}</span>
-            <span class="account-name">{accountLabel}</span>
-          </button>
-        {:else}
-          <button type="button" class="account sign-in" onclick={openSignIn}>
-            Sign in / Sign up
-          </button>
-        {/if}
-        <button
-          type="button"
-          class="settings-icon"
-          class:active={app.sheet === "settings"}
-          aria-label="Settings"
-          title="Settings"
-          onclick={openSettings}
-        >
-          <Settings size={iconSize} strokeWidth={iconStroke} />
+    <div class="account-row">
+      {#if signedIn}
+        <button type="button" class="account" onclick={openSignIn} title={accountLabel}>
+          <span class="avatar" aria-hidden="true">{accountInitial}</span>
+          <span class="account-name">{accountLabel}</span>
         </button>
-      </div>
-    {:else}
+      {:else}
+        <button type="button" class="account sign-in" onclick={openSignIn}>
+          Sign in
+        </button>
+      {/if}
       <button
         type="button"
-        class="nav-item"
+        class="settings-icon"
         class:active={app.sheet === "settings"}
+        aria-label="Settings"
+        title="Settings"
         onclick={openSettings}
       >
         <Settings size={iconSize} strokeWidth={iconStroke} />
-        Settings
       </button>
-    {/if}
+    </div>
   </div>
 </aside>
 

@@ -10,7 +10,7 @@ export type ChatStarter = {
   prompt: (topic: string) => string;
 };
 
-export type ChatSetupAction = "settings" | "ingest" | "workspace";
+export type ChatSetupAction = "settings" | "ingest" | "workspace" | "import" | "reindex";
 
 export type ChatSetupItem = {
   id: string;
@@ -34,7 +34,7 @@ export function topicForStarters(label: string): string {
   return t;
 }
 
-/** Empty-state starters aligned with capture → recall → autonomous research → watch. */
+/** Empty-state starters aligned with capture → recall → autonomous research → scheduled research. */
 export const CHAT_STARTERS: ChatStarter[] = [
   {
     id: "teach",
@@ -60,11 +60,11 @@ export const CHAT_STARTERS: ChatStarter[] = [
   },
   {
     id: "watch",
-    verb: "Watch",
+    verb: "Schedule",
     title: "Stay current",
-    blurb: "Autonomous briefs on a schedule — papers, launches, shifts",
+    blurb: "Recurring research briefs — papers, launches, shifts",
     prompt: (topic) =>
-      `Watch ${topic} for significant changes and brief me on weekday mornings`,
+      `Schedule research on ${topic} for significant changes and brief me on weekday mornings`,
   },
 ];
 
@@ -73,9 +73,10 @@ export function landingPhase(opts: {
   aiConfigured: boolean;
   hasWorkspace: boolean;
   libraryReady: boolean;
+  channelEmpty?: boolean;
 }): LandingPhase {
   if (opts.offline || !opts.aiConfigured || !opts.hasWorkspace) return "bootstrap";
-  if (!opts.libraryReady) return "seed";
+  if (!opts.libraryReady || opts.channelEmpty) return "seed";
   return "ready";
 }
 
@@ -91,7 +92,7 @@ export function landingHero(phase: LandingPhase): LandingHero {
       return {
         kicker: "Second brain",
         title: "Give Nous something to remember",
-        sub: "This workspace is empty — no indexed notes yet. Teach a dump, ingest files, or attach documents first.",
+        sub: "This workspace is empty — no notes filed as claims yet. Import folders with notes, or teach a dump in chat.",
       };
     case "ready":
       return {
@@ -107,7 +108,8 @@ export function visibleStarterIds(phase: LandingPhase): ChatStarterId[] {
     case "bootstrap":
       return [];
     case "seed":
-      return ["teach"];
+      // Empty workspace: Import notes + composer dump — no separate Teach card.
+      return [];
     case "ready":
       return ["teach", "ask", "research", "watch"];
   }
@@ -136,6 +138,7 @@ export function chatSetupItems(opts: {
   hasWorkspace: boolean;
   libraryReady: boolean;
   memoryBlocked: boolean;
+  channelEmpty?: boolean;
 }): ChatSetupItem[] {
   const items: ChatSetupItem[] = [];
 
@@ -152,16 +155,18 @@ export function chatSetupItems(opts: {
     items.push({ id: "ai", label: "Add AI key", done: false, action: "settings" });
   }
 
-  if (opts.hasWorkspace && !opts.libraryReady) {
-    items.push({ id: "library", label: "Add documents", done: false, action: "ingest" });
+  if (opts.hasWorkspace && opts.channelEmpty) {
+    items.push({ id: "import", label: "Import notes", done: false, action: "import" });
+  } else if (opts.hasWorkspace && !opts.libraryReady) {
+    items.push({ id: "library", label: "Import notes", done: false, action: "import" });
   }
 
   if (opts.memoryBlocked) {
     items.push({
       id: "embeddings",
-      label: "Fix memory search",
+      label: "Rebuild search index",
       done: false,
-      action: "settings",
+      action: "reindex",
     });
   }
 
