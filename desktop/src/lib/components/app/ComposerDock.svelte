@@ -402,9 +402,8 @@
     {#each COMPOSER_SKILLS as skill (skill.id)}
       <button
         type="button"
-        class="skill-chip"
+        class="skill-chip tone-{skill.id}"
         class:on={assistant.forcedJob === skill.job}
-        class:tone-{skill.id}
         title={skill.hint}
         data-testid={`skill-${skill.id}`}
         onclick={() => selectSkill(skill.job)}
