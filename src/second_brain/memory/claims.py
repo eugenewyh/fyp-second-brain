@@ -133,8 +133,9 @@ def _claim_match_text(card: ClaimCard) -> str:
     parts = [card.claim]
     for field in (card.source_path, card.path, card.slug):
         if field:
-            parts.append(field)
-            parts.append(Path(field).stem)
+            p = Path(field)
+            parts.append(p.name)
+            parts.append(p.stem.replace("_", " ").replace("-", " "))
     parts.extend(card.evidence or [])
     return " ".join(parts)
 
