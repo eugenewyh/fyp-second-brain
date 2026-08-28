@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   classifyIntent,
+  hasLearnIntent,
   hasResearchIntent,
   hasLookupVerbs,
   isNoteDump,
@@ -77,6 +78,12 @@ describe("classifyIntent", () => {
         "Research how specialty coffee roasting affects flavor — compare light vs dark roast",
       ),
     ).toBe(true);
+  });
+
+  it("explains teach-me-about as learning from notes, not teach", () => {
+    expect(hasLearnIntent("teach everything about lec10")).toBe(true);
+    expect(classifyIntent({ text: "teach everything about lec10" })).toBe("explain");
+    expect(classifyIntent({ text: "Teach me about session beans" })).toBe("explain");
   });
 });
 

@@ -28,13 +28,14 @@
     onViewMemory,
   }: Props = $props();
 
+  const routeStatus = $derived(assistant.routeStatus);
   const routeCopy = $derived(
-    assistant.routeStatus === "teach"
-      ? "Remembering…"
-      : assistant.routeStatus === "explain"
-        ? "Asking from memory…"
-        : assistant.routeStatus === "lookup"
-          ? "Researching…"
+    routeStatus === "teach"
+      ? "Remembering"
+      : routeStatus === "explain"
+        ? "Asking from memory"
+        : routeStatus === "lookup"
+          ? "Researching"
           : null,
   );
 
@@ -69,9 +70,86 @@
     return (turn.claimsCreated ?? 0) + (turn.claimsRevised ?? 0);
   }
 
-  async function scrollToBottom() {
+  async function scrollToBottom(force = false) {
     await tick();
-    if (scroller) scroller.scrollTop = scroller.scrollHeight;
+    if (!scroller) return;
+    const distance = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight;
+    // Don't yank the viewport while the user is reading earlier turns
+    if (!force && distance > 120) return;
+    scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
+  }
+
+  /**
+   * Cursor-style sticky stack: every user prompt that has scrolled past
+   * stays pinned full-size; newer ones dock just under older ones.
+   */
+  function stickyUser(node: HTMLElement) {
+    const root = node.closest(".thread");
+    if (!(root instanceof HTMLElement)) return;
+
+    const STICK_PAD = 8;
+    const STACK_GAP = 8;
+
+    const yInScroller = (el: HTMLElement) => {
+      const er = el.getBoundingClientRect();
+      const rr = root.getBoundingClientRect();
+      return er.top - rr.top + root.scrollTop;
+    };
+
+    const syncAll = () => {
+      const rows = [...root.querySelectorAll<HTMLElement>("[data-sticky-user]")];
+      if (!rows.length) return;
+
+      // Record natural Y while unpinned — stuck getBoundingClientRect is wrong for this
+      for (const row of rows) {
+        if (!row.classList.contains("is-stuck")) {
+          row.dataset.stackY = String(yInScroller(row));
+        }
+      }
+
+      const pinLine = root.scrollTop + STICK_PAD;
+      const pinned = rows.map((row) => Number(row.dataset.stackY ?? 0) <= pinLine);
+
+      let offset = STICK_PAD;
+      for (let i = 0; i < rows.length; i += 1) {
+        const row = rows[i];
+        if (!pinned[i]) {
+          row.classList.remove("is-stuck");
+          row.style.top = "";
+          row.style.zIndex = "";
+          // Refresh natural Y now that it's flowing again
+          row.dataset.stackY = String(yInScroller(row));
+          continue;
+        }
+
+        row.classList.add("is-stuck");
+        row.style.top = `${offset}px`;
+        row.style.zIndex = String(30 + i);
+        offset += row.getBoundingClientRect().height + STACK_GAP;
+      }
+    };
+
+    const sync = () => {
+      syncAll();
+      requestAnimationFrame(syncAll);
+    };
+
+    root.addEventListener("scroll", sync, { passive: true });
+    const ro = new ResizeObserver(sync);
+    ro.observe(root);
+    ro.observe(node);
+    requestAnimationFrame(sync);
+
+    return {
+      destroy() {
+        root.removeEventListener("scroll", sync);
+        ro.disconnect();
+        node.classList.remove("is-stuck");
+        node.style.top = "";
+        node.style.zIndex = "";
+        delete node.dataset.stackY;
+      },
+    };
   }
 
   $effect(() => {
@@ -85,22 +163,20 @@
 </script>
 
 <div class="thread-wrap" data-testid="chat-thread">
+  <div class="thread-fade" aria-hidden="true"></div>
   <div class="thread ui-scroll" bind:this={scroller}>
     {#if !empty}
       <div class="messages">
         {#each thread as turn (turn.id)}
           {#if turn.kind === "user"}
-            <div class="row user-row">
+            <div class="row user-row" data-sticky-user use:stickyUser>
               <div class="bubble user" data-testid="user-bubble">
                 <p>{turn.content}</p>
               </div>
             </div>
           {:else if turn.kind === "manager"}
             <div class="row manager-row">
-              <div class="bubble manager" data-testid="manager-bubble">
-                <p class="job-label">Manager</p>
-                <p>{turn.content}</p>
-              </div>
+              <p class="status-line" data-testid="manager-bubble">{turn.content}</p>
             </div>
           {:else if turn.kind === "quick"}
             <div class="row ask-row">
@@ -112,9 +188,6 @@
                 />
               {:else}
                 <div class="ask-body" data-testid="ask-bubble">
-                  <p class="job-label">
-                    {turn.thinMemory ? "Needs memory" : "Ask"}
-                  </p>
                   <div class="ask-prose">
                     {@html markdownBodyToHtml(turn.content)}
                   </div>
@@ -138,7 +211,7 @@
                       {#if onTeach}
                         <button
                           type="button"
-                          class="action-btn primary"
+                          class="action-btn"
                           data-testid="teach-first"
                           disabled={assistant.isLoading}
                           onclick={() => onTeach()}
@@ -172,55 +245,69 @@
                   onRetry={() => void assistant.retryDigest(turn.id)}
                 />
               {:else}
-              <div class="digest-card" data-testid="digest-card">
-                {#if turn.status === "running"}
-                  <p class="digest-kicker">Remembering…</p>
-                  <p class="digest-summary">{turn.label}</p>
-                {:else}
-                  <p class="digest-kicker">
-                    {turn.idempotent ? "Already in memory" : "Remembered"}
-                  </p>
-                  <p class="digest-summary">{turn.summary || turn.label}</p>
-                  <ul class="digest-meta">
-                    <li>
-                      {formatDigestSummary({
-                        created: turn.claimsCreated ?? 0,
-                        revised: turn.claimsRevised ?? 0,
-                        dropped: turn.claimsDropped ?? 0,
-                        idempotent: turn.idempotent,
-                      })}
-                    </li>
-                    {#if turn.savedPath}
-                      <li>
-                        <button
-                          type="button"
-                          class="digest-link"
-                          onclick={() => openPath(turn.savedPath ?? "")}
-                        >
-                          {turn.savedPath.split(/[\\/]/).pop()}
-                        </button>
-                      </li>
+                {@const count = rememberedCount(turn)}
+                {@const fileName = turn.savedPath
+                  ? turn.savedPath.split(/[\\/]/).pop()
+                  : null}
+                {@const headline =
+                  turn.status === "running"
+                    ? turn.label || "Remembering…"
+                    : turn.summary ||
+                      turn.label ||
+                      (turn.idempotent ? "Already in memory" : "Remembered")}
+                {@const metaLine = formatDigestSummary({
+                  created: turn.claimsCreated ?? 0,
+                  revised: turn.claimsRevised ?? 0,
+                  dropped: turn.claimsDropped ?? 0,
+                  idempotent: false,
+                })}
+                <div
+                  class="digest"
+                  class:digest-live={turn.status === "running"}
+                  data-testid="digest-card"
+                >
+                  <div class="digest-body">
+                    <p
+                      class="digest-headline"
+                      class:status-shimmer={turn.status === "running"}
+                    >
+                      {headline}
+                    </p>
+                    {#if turn.status !== "running"}
+                      <p class="digest-sub">
+                        <span>
+                          {turn.idempotent
+                            ? "Already in memory"
+                            : metaLine && metaLine !== "Remembered"
+                              ? metaLine
+                              : "Saved to memory"}
+                        </span>
+                        {#if fileName}
+                          <span class="digest-dot" aria-hidden="true">·</span>
+                          <button
+                            type="button"
+                            class="digest-file"
+                            title={turn.savedPath}
+                            onclick={() => openPath(turn.savedPath ?? "")}
+                          >
+                            {fileName}
+                          </button>
+                        {/if}
+                      </p>
                     {/if}
-                  </ul>
-                  {#if rememberedCount(turn) > 0 || turn.idempotent}
-                    <div class="next-actions">
-                      {#if onViewMemory}
-                        <button
-                          type="button"
-                          class="action-btn primary"
-                          data-testid="view-memory"
-                          onclick={() => onViewMemory()}
-                        >
-                          View memory
-                          {#if rememberedCount(turn) > 0}
-                            · {rememberedCount(turn)}
-                          {/if}
-                        </button>
-                      {/if}
-                    </div>
+                  </div>
+                  {#if turn.status !== "running" && (count > 0 || turn.idempotent) && onViewMemory}
+                    <button
+                      type="button"
+                      class="digest-cta"
+                      data-testid="view-memory"
+                      onclick={() => onViewMemory()}
+                    >
+                      View memory{#if count > 0}
+                        <span class="digest-count">{count}</span>{/if}
+                    </button>
                   {/if}
-                {/if}
-              </div>
+                </div>
               {/if}
             </div>
           {:else if turn.kind === "research"}
@@ -239,8 +326,8 @@
           {/if}
         {/each}
         {#if routeCopy}
-          <div class="row">
-            <p class="route-status" role="status">{routeCopy}</p>
+          <div class="row route-row">
+            <p class="route-status status-shimmer" role="status">{routeCopy}</p>
           </div>
         {/if}
       </div>
@@ -254,13 +341,32 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
+    position: relative;
+  }
+
+  /* Soft top edge so content doesn't guillotine under the header */
+  .thread-fade {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1.25rem;
+    z-index: 12;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      var(--bg) 0%,
+      color-mix(in oklch, var(--bg) 70%, transparent) 45%,
+      transparent 100%
+    );
   }
 
   .thread {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
-    padding: 1.35rem var(--chat-gutter, 1.5rem) 0.85rem;
+    scroll-behavior: smooth;
+    padding: 1.1rem var(--chat-gutter, 1.5rem) 0.85rem;
   }
 
   .messages {
@@ -268,70 +374,166 @@
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1.1rem;
     padding-bottom: 0.85rem;
   }
 
   .row {
     display: flex;
     width: 100%;
-    justify-content: flex-start;
+    justify-content: stretch;
   }
 
   .ask-row,
   .run-row,
-  .digest-row {
+  .digest-row,
+  .user-row,
+  .manager-row {
     justify-content: stretch;
   }
 
-  .job-label {
-    margin: 0 0 0.35rem;
-    font-size: var(--text-2xs);
-    font-weight: var(--font-semibold);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--accent-live);
-  }
-
-  .digest-card {
-    width: 100%;
-    padding: 0.85rem 1rem;
-    border: 1px solid color-mix(in srgb, var(--warning) 28%, var(--border));
-    border-radius: var(--radius-xl);
-    background: color-mix(in srgb, var(--warning) 6%, var(--bg-elevated));
-  }
-
-  .digest-kicker {
-    margin: 0 0 0.25rem;
-    font-size: var(--text-2xs);
-    font-weight: var(--font-semibold);
-    color: var(--warning);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  .digest-summary {
-    margin: 0;
-    color: var(--text);
-    line-height: 1.45;
-  }
-
-  .digest-meta {
-    margin: 0.45rem 0 0;
+  /* Cursor-style: full prompts stick and pile under each other */
+  .user-row {
+    position: sticky;
+    top: 0;
+    z-index: 5;
     padding: 0;
-    list-style: none;
+    background: transparent;
+  }
+
+  .user-row.is-stuck {
+    /* keep solid so scrolling content doesn't show through the stack */
+    background: var(--bg);
+    padding-bottom: 2px;
+  }
+
+  .user-row .bubble.user {
+    transition: box-shadow 0.18s var(--ease-out, ease), border-color 0.18s var(--ease-out, ease);
+  }
+
+  .user-row.is-stuck .bubble.user {
+    border-color: var(--border);
+    box-shadow:
+      0 1px 0 color-mix(in oklch, var(--border) 80%, transparent),
+      0 8px 20px color-mix(in oklch, oklch(0 0 0) 22%, transparent);
+  }
+
+  /* Compact status banner — headline + meta + trailing action */
+  .digest {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    width: 100%;
+    max-width: 100%;
+    padding: 0.7rem 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg-elevated);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .digest-live {
+    border-color: var(--border-active);
+  }
+
+  .digest-body {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .digest-headline {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: var(--text-base);
+    font-weight: var(--font-medium);
+    line-height: 1.4;
+    color: var(--text);
+  }
+
+  .digest-sub {
+    margin: 0.2rem 0 0;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
     font-size: var(--text-sm);
+    line-height: 1.4;
     color: var(--text-faint);
   }
 
-  .digest-link {
-    background: none;
-    border: none;
+  .digest-dot {
+    color: var(--text-faint);
+    flex-shrink: 0;
+  }
+
+  .digest-file {
+    margin: 0;
     padding: 0;
-    color: var(--accent-live);
+    border: none;
+    border-radius: 0;
+    background: none;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: inherit;
+    line-height: inherit;
     cursor: pointer;
+    min-width: 0;
+    min-height: auto;
+    max-width: 16rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+
+  .digest-file:hover {
+    color: var(--text);
     text-decoration: underline;
     text-underline-offset: 0.15em;
+  }
+
+  .digest-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+    margin: 0;
+    padding: 0.4rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    line-height: 1;
+    cursor: pointer;
+    min-height: auto;
+    transition:
+      background 0.12s ease,
+      border-color 0.12s ease,
+      color 0.12s ease;
+  }
+
+  .digest-cta:hover {
+    background: var(--chrome-action-hover);
+    border-color: var(--border-active);
+    color: var(--text);
+  }
+
+  .digest-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.15rem;
+    height: 1.15rem;
+    padding: 0 0.3rem;
+    border-radius: var(--radius-full);
+    background: var(--control-fill);
+    color: var(--text-faint);
+    font-size: var(--text-2xs);
+    font-weight: var(--font-semibold);
   }
 
   .next-actions {
@@ -347,9 +549,9 @@
     gap: 0.25rem;
     padding: 0.35rem 0.7rem;
     border: 1px solid var(--border);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-md);
     background: var(--bg-elevated);
-    color: var(--text);
+    color: var(--text-muted);
     font-size: var(--text-xs);
     font-weight: var(--font-medium);
     cursor: pointer;
@@ -359,16 +561,7 @@
   .action-btn:hover:not(:disabled) {
     background: var(--chrome-action-hover);
     border-color: var(--border-active);
-  }
-
-  .action-btn.primary {
-    background: var(--accent);
-    border-color: transparent;
-    color: var(--accent-contrast);
-  }
-
-  .action-btn.primary:hover:not(:disabled) {
-    background: var(--accent-hover);
+    color: var(--text);
   }
 
   .action-btn:disabled {
@@ -379,22 +572,28 @@
   .bubble.user {
     width: 100%;
     max-width: 100%;
-    padding: 0.75rem 0.9rem;
-    border-radius: var(--radius-lg);
-    background: var(--bubble-user);
+    box-sizing: border-box;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    background: var(--bg-elevated);
     color: var(--text);
     line-height: 1.5;
     white-space: pre-wrap;
+    box-shadow: var(--shadow-sm);
   }
 
-  .bubble.manager {
-    max-width: 100%;
-    color: var(--text-muted);
-    line-height: 1.5;
-  }
-
-  .bubble.manager p {
+  .bubble.user p {
     margin: 0;
+  }
+
+  /* Cursor-style system status — muted prose, no role chrome */
+  .status-line {
+    margin: 0;
+    width: 100%;
+    color: var(--text-muted);
+    font-size: var(--text-base);
+    line-height: 1.5;
   }
 
   .ask-body {
@@ -414,6 +613,33 @@
     margin-bottom: 0;
   }
 
+  .ask-prose :global(ol),
+  .ask-prose :global(ul) {
+    margin: 0.35rem 0 0.65rem;
+    padding-left: 1.4rem;
+  }
+
+  .ask-prose :global(ol) {
+    list-style: decimal;
+  }
+
+  .ask-prose :global(ul) {
+    list-style: disc;
+  }
+
+  .ask-prose :global(li) {
+    margin: 0 0 0.4rem;
+    padding-left: 0.15rem;
+  }
+
+  .ask-prose :global(li:last-child) {
+    margin-bottom: 0;
+  }
+
+  .ask-prose :global(li > p) {
+    margin: 0;
+  }
+
   .sources {
     margin-top: 0.65rem;
   }
@@ -424,19 +650,47 @@
     color: var(--text-faint);
   }
 
+  .route-row {
+    padding: 0.15rem 0;
+  }
+
   .route-status {
     margin: 0;
     font-size: var(--text-sm);
-    color: var(--accent-live);
     font-weight: var(--font-medium);
+    color: var(--text-muted);
   }
 
-  .user-row {
-    justify-content: flex-end;
+  .status-shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--text-muted) 0%,
+      var(--text) 45%,
+      var(--text-muted) 90%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: status-shimmer 2.2s ease-in-out infinite;
   }
 
-  .user-row .bubble.user {
-    width: auto;
-    max-width: min(36rem, 92%);
+  @keyframes status-shimmer {
+    0% {
+      background-position: 100% center;
+    }
+    100% {
+      background-position: -100% center;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .status-shimmer {
+      animation: none;
+      background: none;
+      -webkit-background-clip: unset;
+      background-clip: unset;
+      color: var(--text-muted);
+    }
   }
 </style>

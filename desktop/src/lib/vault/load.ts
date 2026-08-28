@@ -14,7 +14,12 @@ import {
 const SUPPORTED_EXTENSIONS = new Set([".md", ".txt", ".pdf"]);
 
 export async function getProjectRoot(): Promise<string> {
-  return invoke<string>("get_project_root");
+  try {
+    return await invoke<string>("get_project_root");
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(`Vault root unavailable: ${message}`);
+  }
 }
 
 export async function getVaultRoot(): Promise<string> {

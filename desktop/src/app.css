@@ -5,49 +5,53 @@
 
 :root {
   /*
-   * Cursor Light — layered greys, inverted-neutral accents (no brand color)
-   * Sidebar (--pane-bg #fcfcfc) vs main canvas (--bg #f3f3f3)
+   * Soft teal OKLCH theme (hue ~193) — crisp canvas + mint pane + luminous teal CTAs.
+   * Source tokens: shadcn-style :root / .dark OKLCH palette.
    * Overlay titlebar is not a separate strip — columns paint to the window edge.
    */
-  --bg: #f3f3f3;
-  --pane-bg: #fcfcfc;
+  --bg: oklch(0.994 0.002 193.559);
+  --pane-bg: oklch(0.965 0.006 162.467);
   --paper: var(--bg);
-  --bg-elevated: #ffffff;
+  --bg-elevated: oklch(0.988 0.005 193.51);
   --surface: var(--bg-elevated);
   --surface-hover: var(--selection-hover);
-  --border: #e5e5e5;
-  --border-subtle: #ebebeb;
-  --border-active: #cecece;
+  --border: oklch(0.957 0.004 193.533);
+  --border-subtle: oklch(0.972 0.003 193.54);
+  --border-active: oklch(0.9 0.008 193.5);
 
-  --text: #252525;
-  --text-muted: #6f6f6f;
-  --text-faint: #9d9d9d;
+  --text: oklch(0.099 0.01 192.5);
+  --text-muted: oklch(0.488 0.027 161.148);
+  --text-faint: oklch(0.62 0.02 162);
 
-  --selection-bg: #e4e4e4;
-  --selection-hover: #ececec;
-  --input-bg: #f3f3f3;
-  --input-border: #cecece;
+  --selection-bg: oklch(0.965 0.006 162.467);
+  --selection-hover: color-mix(in oklch, oklch(0.432 0.017 192.815) 6%, transparent);
+  --input-bg: oklch(0.965 0.006 162.467);
+  --input-border: oklch(0.957 0.004 193.533);
 
-  --accent: #252525;
-  --accent-hover: #141414;
-  --accent-muted: color-mix(in srgb, var(--accent) 10%, transparent);
-  --accent-contrast: #ffffff;
+  /* Soft primary plate (shadcn --primary) + ink on plate */
+  --accent: oklch(0.432 0.017 192.815);
+  --accent-hover: oklch(0.35 0.02 192.8);
+  --accent-muted: color-mix(in oklch, var(--accent) 10%, transparent);
+  --accent-contrast: oklch(0.994 0.002 193.559);
+  --accent-soft: oklch(0.927 0.005 193.502);
 
-  /* Live / skill accent — slate-cyan (not purple) */
-  --accent-live: #2f6f8f;
-  --accent-live-dim: color-mix(in srgb, var(--accent-live) 14%, transparent);
+  /* Brand CTA — punchier teal on the same hue for wow, readable on white */
+  --accent-live: oklch(0.48 0.09 193);
+  --accent-live-hover: oklch(0.42 0.1 193);
+  --accent-live-dim: color-mix(in oklch, var(--accent-live) 12%, transparent);
   --accent-link: var(--accent-live);
+  --accent-on-live: oklch(0.99 0.002 193);
 
-  --focus-ring: color-mix(in srgb, var(--text) 28%, transparent);
+  --focus-ring: color-mix(in oklch, var(--accent-live) 32%, transparent);
 
-  --success: #1f8a65;
-  --success-dim: color-mix(in srgb, var(--success) 12%, transparent);
-  --warning: #a16900;
-  --warning-dim: color-mix(in srgb, var(--warning) 12%, transparent);
-  --error: #cf2d56;
-  --error-dim: color-mix(in srgb, var(--error) 10%, transparent);
+  --success: oklch(0.55 0.12 162);
+  --success-dim: color-mix(in oklch, var(--success) 12%, transparent);
+  --warning: oklch(0.65 0.14 75);
+  --warning-dim: color-mix(in oklch, var(--warning) 14%, transparent);
+  --error: oklch(0.499 0.197 29.466);
+  --error-dim: color-mix(in oklch, var(--error) 10%, transparent);
   --info: var(--accent-live);
-  --info-dim: color-mix(in srgb, var(--accent) 14%, transparent);
+  --info-dim: color-mix(in oklch, var(--accent-live) 10%, transparent);
 
   --status-pending: var(--text-faint);
   --status-running: var(--accent-live);
@@ -55,8 +59,8 @@
   --status-iterating: var(--warning);
   --status-error: var(--error);
 
-  --bubble-user: color-mix(in srgb, #141414 6%, var(--bg));
-  --control-fill: color-mix(in srgb, #141414 4%, var(--bg));
+  --bubble-user: oklch(0.948 0.01 193);
+  --control-fill: color-mix(in oklch, oklch(0.432 0.017 192.815) 5%, transparent);
   --chrome-action-hover: var(--selection-hover);
 
   /* —— Radius (controls, feedback highlights, and surfaces share this ladder) —— */
@@ -85,67 +89,77 @@
   --space-10: 4rem; /* 64 */
 
   /*
-   * Typography scale (Inter 400/500/600 · JetBrains Mono for code)
-   * Dense desktop sizes — size / weight / line-height / letter-spacing
+   * Typography — dense desktop (macOS-friendly), Cursor/Linear-readable chat.
+   * Body 14 · meta 13 · chrome 12 · caption 11. Hierarchy via weight + muted ink.
+   * Inter 400/500/600 · JetBrains Mono for code.
    */
-  --type-display-mega-size: 48px;
-  --type-display-mega-weight: 400;
+  --type-display-mega-size: 40px;
+  --type-display-mega-weight: 500;
   --type-display-mega-leading: 1.1;
-  --type-display-mega-tracking: -1.2px;
+  --type-display-mega-tracking: -0.8px;
 
   --type-display-lg-size: 28px;
-  --type-display-lg-weight: 400;
+  --type-display-lg-weight: 500;
   --type-display-lg-leading: 1.2;
-  --type-display-lg-tracking: -0.5px;
+  --type-display-lg-tracking: -0.4px;
 
   --type-display-md-size: 20px;
-  --type-display-md-weight: 400;
+  --type-display-md-weight: 500;
   --type-display-md-leading: 1.25;
   --type-display-md-tracking: -0.25px;
 
-  --type-display-sm-size: 17px;
-  --type-display-sm-weight: 400;
+  --type-display-sm-size: 16px;
+  --type-display-sm-weight: 500;
   --type-display-sm-leading: 1.3;
   --type-display-sm-tracking: -0.1px;
 
   --type-title-md-size: 15px;
   --type-title-md-weight: 600;
-  --type-title-md-leading: 1.35;
-  --type-title-md-tracking: 0;
+  --type-title-md-leading: 1.4;
+  --type-title-md-tracking: -0.01em;
 
-  --type-body-md-size: 13px;
+  /* Chat / primary reading — between Apple 13 and Linear 15 */
+  --type-body-md-size: 14px;
   --type-body-md-weight: 400;
-  --type-body-md-leading: 1.5;
+  --type-body-md-leading: 1.55;
   --type-body-md-tracking: 0;
 
-  --type-body-sm-size: 12px;
+  /* Secondary meta, digest lines, source lists */
+  --type-body-sm-size: 13px;
   --type-body-sm-weight: 400;
-  --type-body-sm-leading: 1.45;
+  --type-body-sm-leading: 1.5;
   --type-body-sm-tracking: 0;
 
-  --type-caption-size: 10px;
-  --type-caption-weight: 600;
-  --type-caption-leading: 1.35;
-  --type-caption-tracking: 0.7px;
+  /* Small UI chrome (chips, helper) */
+  --type-label-size: 12px;
+  --type-label-weight: 500;
+  --type-label-leading: 1.4;
+  --type-label-tracking: 0;
 
-  --type-code-size: 12px;
+  /* Badges / kbd — above Apple 10pt floor */
+  --type-caption-size: 11px;
+  --type-caption-weight: 500;
+  --type-caption-leading: 1.35;
+  --type-caption-tracking: 0.02em;
+
+  --type-code-size: 13px;
   --type-code-weight: 400;
-  --type-code-leading: 1.45;
+  --type-code-leading: 1.5;
   --type-code-tracking: 0;
 
-  --type-button-size: 12px;
+  --type-button-size: 13px;
   --type-button-weight: 500;
   --type-button-leading: 1;
   --type-button-tracking: 0;
 
-  --type-nav-size: 12px;
+  --type-nav-size: 13px;
   --type-nav-weight: 500;
   --type-nav-leading: 1.35;
   --type-nav-tracking: 0;
 
   /* Legacy size aliases → semantic scale (keep call sites working) */
   --text-2xs: var(--type-caption-size);
-  --text-xs: var(--type-caption-size);
+  --text-xs: var(--type-label-size);
   --text-sm: var(--type-body-sm-size);
   --text-base: var(--type-body-md-size);
   --text-md: var(--type-body-sm-size);
@@ -160,10 +174,10 @@
   --font-medium: 500;
   --font-semibold: 600;
 
-  --content-max: 48rem;
+  --content-max: 56rem;
   /* Shared Agent transcript + composer column (must stay in lockstep) */
-  --chat-col: 48rem;
-  --chat-gutter: var(--space-6);
+  --chat-col: 56rem;
+  --chat-gutter: var(--space-5);
   --touch: 2.25rem;
   --rail-width: 52px;
   --panel-width: 280px;
@@ -173,19 +187,23 @@
   /* macOS overlay inset (traffic lights sit in this band; columns paint through it) */
   --titlebar-height: 40px;
 
-  /* Flat — hairlines only, no drop shadows (JTX match) */
-  --shadow-sm: none;
-  --shadow-md: 0 0 0 1px var(--border);
-  --shadow-lg: 0 0 0 1px var(--border);
-  --shadow-nous: 0 0 0 1px var(--border);
-  --stroke-nous: color-mix(in srgb, currentColor 8%, transparent);
-  --shadow-composer: none;
+  /* Soft elevation — teal-cast ink, layered (lv1–lv3 feel) */
+  --shadow-sm: 0 2px 4px 0 color-mix(in oklch, oklch(0.2 0.02 193) 8%, transparent);
+  --shadow-md:
+    0 4px 12px 0 color-mix(in oklch, oklch(0.2 0.02 193) 4%, transparent),
+    0 2px 8px 0 color-mix(in oklch, oklch(0.2 0.02 193) 6%, transparent);
+  --shadow-lg:
+    0 0 1px 0 color-mix(in oklch, oklch(0.2 0.02 193) 18%, transparent),
+    0 12px 32px 0 color-mix(in oklch, oklch(0.2 0.02 193) 10%, transparent);
+  --shadow-nous: var(--shadow-md);
+  --stroke-nous: color-mix(in oklch, oklch(0.2 0.02 193) 10%, transparent);
+  --shadow-composer: var(--shadow-md);
 
-  --overlay-backdrop: color-mix(in srgb, #141414 28%, transparent);
-  --control-knob: #ffffff;
-  --graph-label-bg: rgba(243, 243, 243, 0.82);
-  --dot-idle: #9d9d9d;
-  --dot-active: #252525;
+  --overlay-backdrop: color-mix(in oklch, oklch(0.15 0.02 193) 28%, transparent);
+  --control-knob: oklch(0.994 0.002 193.559);
+  --graph-label-bg: color-mix(in oklch, var(--pane-bg) 88%, transparent);
+  --dot-idle: oklch(0.62 0.02 162);
+  --dot-active: var(--accent-live);
 
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
     sans-serif;
@@ -215,61 +233,68 @@
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
-/* Cursor Dark — sidebar (#181818) vs main (#1f1f1f), grey selection */
+/* Soft teal dark — deep ink canvas + mint-cast pane + luminous teal */
 [data-theme="dark"] {
-  --bg: #181818;
-  --pane-bg: #1f1f1f;
+  --bg: oklch(0.145 0.012 192.3);
+  --pane-bg: oklch(0.175 0.01 161.2);
   --paper: var(--bg);
-  --bg-elevated: #252526;
+  --bg-elevated: oklch(0.205 0.014 192.1);
   --surface: var(--bg-elevated);
   --surface-hover: var(--selection-hover);
-  --border: #2b2b2b;
-  --border-subtle: #2b2b2b;
-  --border-active: #3c3c3c;
+  --border: oklch(0.28 0.012 192.8);
+  --border-subtle: oklch(0.235 0.01 192.5);
+  --border-active: oklch(0.34 0.014 192.8);
 
-  --text: #cccccc;
-  --text-muted: #9d9d9d;
-  --text-faint: #6e7681;
+  --text: oklch(0.965 0.006 193.5);
+  --text-muted: oklch(0.72 0.022 161.7);
+  --text-faint: oklch(0.55 0.018 162);
 
-  --selection-bg: #2f2f2f;
-  --selection-hover: #2a2a2a;
-  --input-bg: #313131;
-  --input-border: #3c3c3c;
+  --selection-bg: oklch(0.25 0.014 192);
+  --selection-hover: color-mix(in oklch, oklch(0.965 0.006 193.5) 9%, transparent);
+  --input-bg: oklch(0.22 0.014 192);
+  --input-border: oklch(0.28 0.012 192.8);
 
-  --accent: #e4e4e4;
-  --accent-hover: #ffffff;
-  --accent-muted: color-mix(in srgb, var(--accent) 14%, transparent);
-  --accent-contrast: #1f1f1f;
+  --accent: oklch(0.927 0.005 193.502);
+  --accent-hover: oklch(0.96 0.004 193.5);
+  --accent-muted: color-mix(in oklch, var(--accent) 14%, transparent);
+  --accent-contrast: oklch(0.145 0.012 192.3);
+  --accent-soft: oklch(0.26 0.014 193);
 
-  --accent-live: #5eb3d4;
-  --accent-live-dim: color-mix(in srgb, var(--accent-live) 16%, transparent);
+  --accent-live: oklch(0.78 0.09 193);
+  --accent-live-hover: oklch(0.85 0.08 193);
+  --accent-live-dim: color-mix(in oklch, var(--accent-live) 16%, transparent);
   --accent-link: var(--accent-live);
-  --focus-ring: color-mix(in srgb, var(--accent-live) 40%, transparent);
+  --accent-on-live: oklch(0.16 0.02 192);
+  --focus-ring: color-mix(in oklch, var(--accent-live) 40%, transparent);
 
-  --success: #3fa266;
-  --success-dim: color-mix(in srgb, var(--success) 14%, transparent);
-  --warning: #d2943e;
-  --warning-dim: color-mix(in srgb, var(--warning) 12%, transparent);
-  --error: #fc6b83;
-  --error-dim: color-mix(in srgb, var(--error) 12%, transparent);
+  --success: oklch(0.7 0.12 162);
+  --success-dim: color-mix(in oklch, var(--success) 14%, transparent);
+  --warning: oklch(0.78 0.14 75);
+  --warning-dim: color-mix(in oklch, var(--warning) 12%, transparent);
+  --error: oklch(0.62 0.238 29.268);
+  --error-dim: color-mix(in oklch, var(--error) 12%, transparent);
   --info: var(--accent-live);
-  --info-dim: color-mix(in srgb, var(--accent) 16%, transparent);
+  --info-dim: color-mix(in oklch, var(--accent-live) 14%, transparent);
 
   --status-running: var(--accent-live);
-  --bubble-user: color-mix(in srgb, #ffffff 7%, transparent);
-  --control-fill: color-mix(in srgb, #ffffff 5%, transparent);
+  --bubble-user: oklch(0.235 0.016 192);
+  --control-fill: color-mix(in oklch, oklch(0.965 0.006 193.5) 7%, transparent);
   --chrome-action-hover: var(--selection-hover);
-  --shadow-sm: none;
-  --shadow-md: 0 0 0 1px var(--border);
-  --shadow-lg: 0 0 0 1px var(--border);
-  --shadow-nous: 0 0 0 1px var(--border);
-  --stroke-nous: color-mix(in srgb, #ffffff 8%, transparent);
-  --shadow-composer: none;
-  --overlay-backdrop: color-mix(in srgb, #000000 45%, transparent);
-  --control-knob: #ecece8;
-  --graph-label-bg: rgba(31, 31, 31, 0.82);
-  --dot-idle: #6e7681;
-  --dot-active: #ffffff;
+  --shadow-sm: 0 2px 4px 0 color-mix(in oklch, oklch(0 0 0) 35%, transparent);
+  --shadow-md:
+    0 0 1px 0 color-mix(in oklch, oklch(0.982 0.006 193.477) 8%, transparent),
+    0 8px 24px 0 color-mix(in oklch, oklch(0 0 0) 35%, transparent);
+  --shadow-lg:
+    0 0 1px 0 color-mix(in oklch, oklch(0.982 0.006 193.477) 10%, transparent),
+    0 16px 40px 0 color-mix(in oklch, oklch(0 0 0) 45%, transparent);
+  --shadow-nous: var(--shadow-md);
+  --stroke-nous: color-mix(in oklch, oklch(0.982 0.006 193.477) 8%, transparent);
+  --shadow-composer: var(--shadow-md);
+  --overlay-backdrop: color-mix(in oklch, oklch(0 0 0) 50%, transparent);
+  --control-knob: oklch(0.982 0.006 193.477);
+  --graph-label-bg: color-mix(in oklch, var(--bg-elevated) 88%, transparent);
+  --dot-idle: oklch(0.58 0.02 162);
+  --dot-active: var(--accent-live);
   color-scheme: dark;
 }
 
@@ -400,6 +425,14 @@ textarea {
   color: var(--text);
 }
 
+.type-label {
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+  line-height: var(--type-label-leading);
+  letter-spacing: var(--type-label-tracking);
+  color: var(--text-muted);
+}
+
 .type-caption {
   font-size: var(--type-caption-size);
   font-weight: var(--type-caption-weight);
@@ -432,9 +465,9 @@ textarea {
 }
 
 .type-meta {
-  font-size: var(--type-caption-size);
+  font-size: var(--type-body-sm-size);
   font-weight: var(--font-medium);
-  line-height: var(--type-caption-leading);
+  line-height: var(--type-body-sm-leading);
   color: var(--text-muted);
 }
 
@@ -646,8 +679,18 @@ textarea {
   line-height: var(--type-body-md-leading);
 }
 
+.report-content ul,
+.report-content ol {
+  margin: 0.35rem 0 0.65rem;
+  padding-left: 1.4rem;
+}
+
+.report-content ol {
+  list-style: decimal;
+}
+
 .report-content ul {
-  padding-left: 1.15rem;
+  list-style: disc;
 }
 
 :global(.tiptap-surface) {

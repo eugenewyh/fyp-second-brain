@@ -1,4 +1,4 @@
-export type ChatStarterId = "teach" | "ask" | "research" | "watch";
+export type ChatStarterId = "teach" | "ask" | "research";
 
 export type LandingPhase = "bootstrap" | "seed" | "ready";
 
@@ -34,7 +34,7 @@ export function topicForStarters(label: string): string {
   return t;
 }
 
-/** Empty-state starters aligned with capture → recall → autonomous research → scheduled research. */
+/** Empty-state starters aligned with capture → recall → autonomous research. */
 export const CHAT_STARTERS: ChatStarter[] = [
   {
     id: "teach",
@@ -57,14 +57,6 @@ export const CHAT_STARTERS: ChatStarter[] = [
     blurb: "Multi-agent research with sources; report writes back to memory",
     prompt: (topic) =>
       `Research the latest on ${topic}, verify sources, and file a report here`,
-  },
-  {
-    id: "watch",
-    verb: "Schedule",
-    title: "Stay current",
-    blurb: "Recurring research briefs — papers, launches, shifts",
-    prompt: (topic) =>
-      `Schedule research on ${topic} for significant changes and brief me on weekday mornings`,
   },
 ];
 
@@ -98,7 +90,7 @@ export function landingHero(phase: LandingPhase): LandingHero {
       return {
         kicker: "Topic memory",
         title: "Talk in this topic",
-        sub: "Teach to remember. Ask from claims. Research looks outside and can write back. Watch briefs you on a schedule.",
+        sub: "Teach to remember. Ask from claims. Research looks outside and can write back. Recurring briefs live in Scheduled Research.",
       };
   }
 }
@@ -111,7 +103,7 @@ export function visibleStarterIds(phase: LandingPhase): ChatStarterId[] {
       // Empty topic: lead with Teach so the core loop is obvious.
       return ["teach"];
     case "ready":
-      return ["teach", "ask", "research", "watch"];
+      return ["teach", "ask", "research"];
   }
 }
 
@@ -122,7 +114,7 @@ export function composerPlaceholder(phase: LandingPhase): string {
     case "seed":
       return "Paste notes or attach files to Teach this topic…";
     case "ready":
-      return "Teach, ask from memory, research, or schedule a watch…";
+      return "Teach, ask from memory, or research…";
   }
 }
 

@@ -14,6 +14,7 @@ from second_brain.agent.policy import (
     apply_policy,
     fallback_job,
     force_file,
+    has_learn_intent,
     has_notes_intent,
     has_research_intent,
     has_search_intent,
@@ -43,10 +44,12 @@ Decision order (stop at the first match):
 2. Synthesis / mission over notes → research (even if they also say "cite my notes")
    Signals: synthesise, stance on, write-up, literature review, report on, multi-part, go deeper, more sources
 3. Notes-grounded recall question → answer
-   Signals: according to my notes, from my notes, what do I care about, what do my notes say
+   Signals: according to my notes, from my notes, what do I care about, what do my notes say,
+   teach me about, teach everything about, walk me through, explain to me about
    Requires overlapping notes > 0. If overlapping notes are 0 → refuse
 4. Belief / note dump (statements, not a question) → file
    Signals: I think / I still / I now think / long multi-sentence assertions with no ?
+   "Teach me about X" is NOT file — that is answer (user wants to learn from notes)
 5. In-topic question with overlapping notes > 0 → answer
 6. Unrelated to the topic and no lookup ask → refuse
 7. Uncertain but on-topic and overlapping notes > 0 → answer
@@ -66,6 +69,7 @@ User: "Find papers on JustGRPO" → {"job":"research","reason":"explicit paper l
 User: "According to my notes, what do I care about for espresso?" (notes>0) → {"job":"answer","reason":"notes recall"}
 User: "Synthesise my stance on DLMs; cite my notes." (notes>0) → {"job":"research","reason":"synthesis over notes"}
 User: "I now think grind size matters more than the machine." → {"job":"file","reason":"belief dump"}
+User: "Teach me everything about lec10" (notes>0) → {"job":"answer","reason":"explain from notes"}
 User: "Best espresso machine for a small kitchen?" in topic "dlm" (notes=0) → {"job":"refuse","reason":"off-topic no lookup"}
 """
 
@@ -249,6 +253,9 @@ def decide_act(
     elif has_notes_intent(text):
         proposed = "answer"
         reason = "asked from notes"
+    elif has_learn_intent(text):
+        proposed = "answer"
+        reason = "wants explanation from notes"
     elif not is_question(text) and fallback_job(
         text=text,
         matching_claim_count=snapshot.matching_claim_count,

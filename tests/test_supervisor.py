@@ -140,6 +140,30 @@ def test_file_on_question_without_attachments_coerced():
     assert apply_policy("file", text=IN_TOPIC, matching_claim_count=3) == "answer"
 
 
+def test_learn_intent_routes_to_answer_not_file():
+    from second_brain.agent.policy import has_learn_intent
+
+    q = "teach everything about lec10"
+    assert has_learn_intent(q)
+    assert apply_policy("file", text=q, matching_claim_count=5) == "answer"
+    assert apply_policy("answer", text=q, matching_claim_count=0) == "refuse"
+    assert fallback_job(text=q, matching_claim_count=5) == "answer"
+
+
+def test_learn_intent_skips_llm_when_notes_match(matching_recall, monkeypatch):
+    from second_brain.agent.policy import has_learn_intent
+
+    def boom(*_a, **_k):
+        raise AssertionError("learn intent must skip the LLM")
+
+    monkeypatch.setattr("second_brain.agent.supervisor._llm_choose", boom)
+    q = "teach everything about lec10"
+    assert has_learn_intent(q)
+    decision = decide_act(q, project_path="/vault/Student notes", choose_fn=lambda *_a: "file")
+    assert decision.job == "answer"
+    assert decision.reason == "wants explanation from notes"
+
+
 def test_sglang_dump_files_even_when_claims_exist(matching_recall, monkeypatch):
     def boom(*_a, **_k):
         raise AssertionError("belief dumps must skip the LLM")

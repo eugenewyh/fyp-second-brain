@@ -87,7 +87,7 @@ describe("visibleStarterIds", () => {
   it("leads empty topics with Teach; full set when ready", () => {
     expect(visibleStarterIds("bootstrap")).toEqual([]);
     expect(visibleStarterIds("seed")).toEqual(["teach"]);
-    expect(visibleStarterIds("ready")).toEqual(["teach", "ask", "research", "watch"]);
+    expect(visibleStarterIds("ready")).toEqual(["teach", "ask", "research"]);
   });
 });
 
@@ -103,11 +103,10 @@ describe("landingHero", () => {
 });
 
 describe("chatStarterPrompt", () => {
-  it("fills teach / ask / research / watch templates", () => {
+  it("fills teach / ask / research templates", () => {
     expect(chatStarterPrompt("ask", "FYP")).toContain("FYP");
     expect(chatStarterPrompt("research", "FYP")).toContain("file a report");
     expect(chatStarterPrompt("teach", "FYP")).toContain("Here are my notes");
-    expect(chatStarterPrompt("watch", "FYP")).toContain("Schedule research on FYP");
   });
 });
 
@@ -150,12 +149,11 @@ describe("chatSetupItems", () => {
 });
 
 describe("CHAT_STARTERS", () => {
-  it("covers capture, recall, autonomous research, and watch", () => {
+  it("covers capture, recall, and autonomous research", () => {
     expect(CHAT_STARTERS.map((s) => s.id)).toEqual([
       "teach",
       "ask",
       "research",
-      "watch",
     ]);
   });
 });

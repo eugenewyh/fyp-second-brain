@@ -10,7 +10,8 @@
     type WorkspaceGroup,
     type WorkspaceSession,
   } from "$lib/assistant/workspace-chats";
-  import { ChevronRight, Hash, Loader2, MessageSquare, Pin, Plus, X } from "@lucide/svelte";
+  import { ThinkingOrb } from "svelte-thinking-orbs";
+  import { ChevronRight, Hash, MessageSquare, Pin, Plus, X } from "@lucide/svelte";
 
   const reduceMotion =
     typeof window !== "undefined" &&
@@ -382,7 +383,14 @@
                 >
                   <span class="lead-icon" class:live={chatRun} aria-hidden="true">
                     {#if chatRun}
-                      <span class="spin"><Loader2 size={13} strokeWidth={2} /></span>
+                      <span class="orb-slot">
+                        <ThinkingOrb
+                          state="connecting"
+                          size={20}
+                          theme="auto"
+                          aria-label="Working"
+                        />
+                      </span>
                     {:else}
                       <MessageSquare size={13} strokeWidth={1.75} />
                     {/if}
@@ -671,9 +679,13 @@
     color: var(--accent-live, var(--text));
   }
 
-  .spin {
+  .orb-slot {
     display: inline-flex;
-    animation: spin 0.85s linear infinite;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
   }
 
   .label {
@@ -877,12 +889,6 @@
     background: color-mix(in srgb, var(--danger, #c44) 12%, transparent);
   }
 
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   @keyframes menu-in {
     from {
       opacity: 0;
@@ -927,8 +933,7 @@
     .menu,
     .pin-mark.pop,
     .workspace.pin-pop,
-    .twist,
-    .spin {
+    .twist {
       animation: none;
       transition: none;
       transform: none;

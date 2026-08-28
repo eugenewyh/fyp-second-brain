@@ -337,38 +337,11 @@
       }
 
       if (job === "watch") {
-        const project =
-          assistant.sessions[sessionId]?.projectPath ?? assistant.activeProjectPath();
-        if (!project) {
-          assistant.appendManager(
-            "I need a topic folder before I can start scheduled research.",
-            sessionId,
-          );
-          return;
-        }
-        try {
-          const created = await api.createWatch(project, {
-            name: instruction.slice(0, 48) || "Scheduled Research",
-            focus: instruction,
-            enabled: true,
-          });
-          const status = created.enabled
-            ? "It's Active — refine Exclude/Trusted sources or hit Run anytime."
-            : "Fill Focus and Include in Scheduled Research, then turn it Active.";
-          assistant.appendManager(
-            `Schedule created — open Scheduled Research to refine or Run. ${status}`,
-            sessionId,
-          );
-          if (created.watch_id && created.enabled) {
-            void api.cloudWatchSync(created.project_path, created.watch_id).catch(() => {});
-          }
-          app.openWatch();
-        } catch (e) {
-          assistant.appendManager(
-            e instanceof Error ? e.message : "Couldn't start scheduled research.",
-            sessionId,
-          );
-        }
+        assistant.appendManager(
+          "Recurring briefs live in Scheduled Research — open it from the sidebar to create or edit a schedule.",
+          sessionId,
+        );
+        app.openWatch();
         return;
       }
 
@@ -489,7 +462,6 @@
       teach: "file",
       ask: "answer",
       research: "research",
-      watch: "watch",
     } as const;
     assistant.setForcedJob(jobs[id]);
     assistant.input = prompt;
@@ -616,8 +588,7 @@
           onRetryAsk={(id) => void retryAsk(id)}
           onTeach={() => {
             assistant.setForcedJob("file");
-            assistant.input = "";
-            assistant.composerFocusNonce += 1;
+            app.openSheet("ingest");
           }}
           onViewMemory={() => app.openMemory()}
         />
@@ -669,8 +640,7 @@
     flex-direction: column;
     background: var(--bg);
     position: relative;
-    --chat-gutter: 1.5rem;
-    --chat-col: 42rem;
+    --chat-gutter: 1.25rem;
   }
 
   .banner {
@@ -713,10 +683,6 @@
   .agent-pane :global(.dock-wrap.dock) {
     flex-shrink: 0;
     width: 100%;
-  }
-
-  .agent-pane.empty {
-    --chat-col: 44rem;
   }
 
   .new-chat-stage {

@@ -13,6 +13,9 @@ const SYNTHESIS_RE =
 const NOTES_RE =
   /\b(according to my notes|in my notes|from my notes|my notes say|based on my notes|from my library|cite my notes)\b/i;
 
+const LEARN_RE =
+  /\b(teach\s+me(?:\s+everything)?\s+about|teach(?:\s+me)?\s+(?:everything\s+)?about|walk\s+me\s+through|help\s+me\s+(?:understand|learn)(?:\s+about|\s+what|\s+how|\s+why|\s+the|\s+everything|\s+all|\s+\w|$)|explain\s+(?:to\s+me\s+)?(?:everything\s+)?about)\b/i;
+
 const QUESTION_START =
   /^(what|why|how|when|where|who|which|does|do|did|is|are|can|could|should|would|explain|summarise|summarize|synthesi[sz]e|compare)\b/i;
 
@@ -39,6 +42,10 @@ export function hasNotesIntent(text: string): boolean {
   return NOTES_RE.test(text.trim());
 }
 
+export function hasLearnIntent(text: string): boolean {
+  return LEARN_RE.test(text.trim());
+}
+
 export function isQuestion(text: string): boolean {
   const t = text.trim();
   if (!t) return false;
@@ -50,7 +57,7 @@ export function isQuestion(text: string): boolean {
 export function isNoteDump(text: string): boolean {
   const t = text.trim();
   if (!t) return false;
-  if (hasLookupVerbs(t) || isQuestion(t) || hasSynthesisIntent(t)) return false;
+  if (hasLookupVerbs(t) || isQuestion(t) || hasSynthesisIntent(t) || hasLearnIntent(t)) return false;
   const paragraphs = t.split(/\n\s*\n/).filter((p) => p.trim().length > 40);
   return t.length >= 800 || paragraphs.length >= 3;
 }
@@ -64,7 +71,7 @@ export function classifyIntent(opts: {
   if (isNoteDump(text)) return "teach";
   // Synthesis over notes → research (lookup), not plain explain
   if (hasSynthesisIntent(text)) return "lookup";
-  if (hasNotesIntent(text)) return "explain";
+  if (hasNotesIntent(text) || hasLearnIntent(text)) return "explain";
   if (hasLookupVerbs(text) || hasResearchIntent(text)) return "lookup";
   return "explain";
 }

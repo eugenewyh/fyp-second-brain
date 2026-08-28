@@ -56,9 +56,13 @@
     // workspace.knowledgePanelOpen is loaded from localStorage; leave as-is.
 
     let cleanup: (() => void) | undefined;
-    void startVaultWatcher(() => {}).then((stop) => {
-      cleanup = stop;
-    });
+    void startVaultWatcher(() => {})
+      .then((stop) => {
+        cleanup = stop;
+      })
+      .catch(() => {
+        /* Browser / missing Tauri IPC — UI still works without live vault watch */
+      });
     return () => cleanup?.();
   });
 

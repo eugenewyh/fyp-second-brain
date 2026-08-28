@@ -125,7 +125,7 @@
     </ol>
   {/if}
 
-  {#if showCompose}
+  {#if showCompose && compose}
     <div class="compose">
       {@render compose()}
     </div>
@@ -163,9 +163,9 @@
     {:else if phase === "bootstrap"}
       Setup first — chat needs a workspace and something to remember.
     {:else if phase === "seed"}
-      Use the Teach chip · or import a folder · <kbd>⌘K</kbd> for commands
+      Use Teach on the composer · or import a folder · <kbd>⌘K</kbd> for commands
     {:else}
-      Skills stay on the composer · <kbd>⌘K</kbd> commands · agents write back to memory
+      Skills on the composer · <kbd>⌘K</kbd> commands · agents write back to memory
     {/if}
   </p>
 </div>
@@ -244,8 +244,8 @@
     padding: 0.55rem 0.95rem;
     border: 1px solid transparent;
     border-radius: var(--radius-lg);
-    background: var(--accent);
-    color: var(--accent-contrast);
+    background: var(--accent-live);
+    color: var(--accent-on-live, #ffffff);
     font-size: var(--text-sm);
     font-weight: var(--font-medium);
     cursor: pointer;
@@ -253,7 +253,7 @@
   }
 
   .primary-cta:hover {
-    background: var(--accent-hover);
+    background: var(--accent-live-hover);
   }
 
   .coach {
