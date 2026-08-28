@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
+    "dev:app": "bash ../scripts/dev_desktop.sh",
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -28,6 +29,7 @@
     "@tiptap/html": "^3.27.1",
     "@tiptap/pm": "^3.27.1",
     "@tiptap/starter-kit": "^3.27.1",
+    "better-auth": "^1.7.1",
     "force-graph": "^1.51.4",
     "fuse.js": "^7.4.2",
     "marked": "^18.0.5",

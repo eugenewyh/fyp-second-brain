@@ -70,7 +70,7 @@
 <section class="st-card">
   <div class="st-card-head">
     <h3 class="st-card-title">Harness budget</h3>
-    <p class="st-card-sub">After you set a goal or an Active Watch, Nous runs inside these limits without asking again.</p>
+    <p class="st-card-sub">After you set a goal or an active schedule, Nous runs inside these limits without asking again.</p>
   </div>
   <div class="st-field-grid">
     <label class="st-field">
@@ -84,7 +84,7 @@
       />
     </label>
     <label class="st-field">
-      <span class="st-field-label">Max Watch passes</span>
+      <span class="st-field-label">Max scheduled research passes</span>
       <input
         class="st-control narrow"
         value={settingsForm.WATCH_MAX_PASSES}

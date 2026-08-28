@@ -14,6 +14,16 @@ _SEARCH_INTENT = re.compile(
     r")\b",
     re.I,
 )
+_RESEARCH_INTENT = re.compile(
+    r"(?ix)"
+    r"(^\s*research\b)"
+    r"|(\b(?:investigate|explore|survey|deep\s+dive|write\s+(?:a\s+)?report)\b)"
+    r"|(\b(?:file\s+(?:a\s+)?report|compile\s+(?:a\s+)?report|run\s+(?:a\s+)?report)\b)"
+    r"|(\b(?:find\s+sources|gather\s+sources|source\s+review)\b)"
+    r"|(\b(?:pros\s+and\s+cons|state\s+of\s+the\s+art|literature\s+review)\b)"
+    r"|(\b(?:compare|contrast)\s+.+\s+(?:vs\.?|versus|and)\b)"
+    r"|(\b(?:what\s+(?:are|is)\s+(?:the\s+)?(?:latest|current|recent))\b)"
+)
 _DEEPEN = re.compile(
     r"\b(go\s+deeper|dig\s+(in|into)|expand\s+on|more\s+sources|research\s+this)\b",
     re.I,
@@ -42,6 +52,11 @@ _SENTENCE = re.compile(r"[.!?]+")
 
 def has_search_intent(text: str) -> bool:
     return bool(_SEARCH_INTENT.search((text or "").strip()))
+
+
+def has_research_intent(text: str) -> bool:
+    """Mission-style research without explicit lookup verbs (Research chip / Auto)."""
+    return bool(_RESEARCH_INTENT.search((text or "").strip()))
 
 
 def has_notes_intent(text: str) -> bool:
@@ -78,8 +93,8 @@ def sentence_count(text: str) -> int:
 
 
 def research_allowed(text: str, *, matching_claim_count: int) -> bool:
-    """Research with explicit lookup, in-topic deepen, or synthesis over notes."""
-    if has_search_intent(text):
+    """Research with explicit lookup, mission phrasing, in-topic deepen, or synthesis."""
+    if has_search_intent(text) or has_research_intent(text):
         return True
     if matching_claim_count > 0 and (
         _DEEPEN.search(text or "") or has_synthesis_intent(text)
@@ -117,14 +132,11 @@ def apply_policy(
             return "file"
         if job == "answer" and matching_claim_count <= 0:
             return "refuse"
-        if (
-            job == "research"
-            and matching_claim_count <= 0
-            and not has_search_intent(text)
-        ):
-            return "refuse"
+        # Composer Research chip / forced research — user consent to look outside.
+        if job == "research":
+            return "research"
         return job
-    if has_search_intent(text):
+    if has_search_intent(text) or has_research_intent(text):
         return "research"
     # Notes-grounded synthesis → research; plain recall → answer.
     if has_notes_intent(text):
@@ -161,7 +173,7 @@ def fallback_job(
     """Used when the fast model is unavailable."""
     if force_file(text=text, has_attachments=has_attachments):
         return "file"
-    if has_search_intent(text):
+    if has_search_intent(text) or has_research_intent(text):
         return "research"
     if has_synthesis_intent(text) and matching_claim_count > 0:
         return "research"

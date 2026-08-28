@@ -3,6 +3,10 @@ export type TurnIntent = "teach" | "explain" | "lookup";
 const LOOKUP_RE =
   /\b(look\s*up|looking\s*up|find\s+papers?|arxiv|search\s+the\s+web|what'?s\s+new|latest)\b/i;
 
+/** Mission-style research (Research chip, "Research …", compare/write-up phrasing). */
+const RESEARCH_INTENT_RE =
+  /(?:^\s*research\b)|(?:\b(?:investigate|explore|survey|deep\s+dive|write\s+(?:a\s+)?report)\b)|(?:\b(?:file\s+(?:a\s+)?report|compile\s+(?:a\s+)?report|run\s+(?:a\s+)?report)\b)|(?:\b(?:find\s+sources|gather\s+sources|source\s+review)\b)|(?:\b(?:pros\s+and\s+cons|state\s+of\s+the\s+art|literature\s+review)\b)|(?:\b(?:compare|contrast)\s+.+\s+(?:vs\.?|versus|and)\b)|(?:\b(?:what\s+(?:are|is)\s+(?:the\s+)?(?:latest|current|recent))\b)/i;
+
 const SYNTHESIS_RE =
   /\b(synthesi[sz]e|synthesis|stance\s+on|write[- ]?up|literature\s+review|report\s+on|multi[- ]?part)\b/i;
 
@@ -14,6 +18,17 @@ const QUESTION_START =
 
 export function hasLookupVerbs(text: string): boolean {
   return LOOKUP_RE.test(text.trim());
+}
+
+export function hasResearchIntent(text: string): boolean {
+  return RESEARCH_INTENT_RE.test(text.trim());
+}
+
+/** User already asked to look outside — never show static refuse + extra Look up step. */
+export function shouldAutoResearch(text: string): boolean {
+  const t = text.trim();
+  if (!t) return false;
+  return hasResearchIntent(t) || hasLookupVerbs(t) || hasSynthesisIntent(t);
 }
 
 export function hasSynthesisIntent(text: string): boolean {
@@ -50,7 +65,7 @@ export function classifyIntent(opts: {
   // Synthesis over notes → research (lookup), not plain explain
   if (hasSynthesisIntent(text)) return "lookup";
   if (hasNotesIntent(text)) return "explain";
-  if (hasLookupVerbs(text)) return "lookup";
+  if (hasLookupVerbs(text) || hasResearchIntent(text)) return "lookup";
   return "explain";
 }
 

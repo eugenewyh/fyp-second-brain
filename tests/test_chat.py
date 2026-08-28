@@ -59,8 +59,8 @@ def test_thin_memory_refuses_without_llm(monkeypatch):
 
     resp = chat_with_context([ChatMessage(role="user", content="What is quantum computing?")])
     assert resp.thin_memory is True
-    assert "no notes" in resp.answer.lower()
-    assert "look it up" in resp.answer.lower()
+    assert "no notes" in resp.answer.lower() or "don't have notes" in resp.answer.lower()
+    assert "teach" in resp.answer.lower()
     assert resp.answer == THIN_MEMORY_ANSWER
 
 

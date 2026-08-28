@@ -1,9 +1,12 @@
-"""Multi-user Cloud Watch API — register/login + BYOK + per-user watches."""
+"""Cloud Watch API — Better Auth sessions + BYOK + per-user watches."""
 
 from __future__ import annotations
 
+import json
 import os
 import secrets
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Header, HTTPException
@@ -14,12 +17,12 @@ from worker import run_due
 
 DATA_DIR = Path(os.getenv("CLOUD_WATCH_DATA", "/data"))
 DB_PATH = DATA_DIR / "cloud-watch.db"
-# Cron-only secret (not given to end users)
 CRON_TOKEN = (os.getenv("CLOUD_WATCH_CRON_TOKEN") or os.getenv("CLOUD_WATCH_TOKEN") or "").strip()
-# Encrypts user BYOK keys at rest
 MASTER_SECRET = (os.getenv("CLOUD_WATCH_SECRET") or CRON_TOKEN or "").strip()
+AUTH_URL = (os.getenv("AUTH_URL") or "").strip().rstrip("/")
+AUTH_INTERNAL_SECRET = (os.getenv("AUTH_INTERNAL_SECRET") or "").strip()
 
-app = FastAPI(title="Nous Cloud Watch", version="1.0.0")
+app = FastAPI(title="Nous Cloud Watch", version="1.1.0")
 store = Store(DB_PATH)
 
 
@@ -29,11 +32,41 @@ def _bearer(authorization: str | None) -> str:
     return authorization.split(" ", 1)[1].strip()
 
 
-def require_user(authorization: str | None = Header(default=None)) -> str:
-    token = _bearer(authorization)
-    user_id = store.user_id_for_token(token)
+def _resolve_auth_user(token: str) -> tuple[str, str]:
+    """Return (user_id, email) via Nous auth /internal/session."""
+    if not AUTH_URL:
+        raise HTTPException(503, "AUTH_URL not configured on Cloud Watch")
+    if not AUTH_INTERNAL_SECRET:
+        raise HTTPException(503, "AUTH_INTERNAL_SECRET not configured on Cloud Watch")
+    req = urllib.request.Request(
+        f"{AUTH_URL}/internal/session",
+        method="GET",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "X-Internal-Secret": AUTH_INTERNAL_SECRET,
+            "Accept": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10.0) as resp:
+            data = json.loads(resp.read().decode("utf-8") or "{}")
+    except urllib.error.HTTPError as e:
+        if e.code in (401, 403):
+            raise HTTPException(401, "Invalid or expired session") from e
+        raise HTTPException(502, "Auth service unavailable") from e
+    except urllib.error.URLError as e:
+        raise HTTPException(502, "Can't reach auth service") from e
+    user_id = str(data.get("userId") or "").strip()
+    email = str(data.get("email") or "").strip()
     if not user_id:
         raise HTTPException(401, "Invalid or expired session")
+    return user_id, email
+
+
+def require_user(authorization: str | None = Header(default=None)) -> str:
+    token = _bearer(authorization)
+    user_id, email = _resolve_auth_user(token)
+    store.ensure_user(user_id, email)
     return user_id
 
 
@@ -43,11 +76,6 @@ def require_cron(authorization: str | None = Header(default=None)) -> None:
     got = _bearer(authorization)
     if not secrets.compare_digest(got, CRON_TOKEN):
         raise HTTPException(401, "Invalid cron token")
-
-
-class AuthBody(BaseModel):
-    email: str
-    password: str
 
 
 class LlmBody(BaseModel):
@@ -73,38 +101,13 @@ class WatchUpsert(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "cloud-watch", "version": "1.0.0", "multi_user": True}
-
-
-@app.post("/v1/auth/register")
-def register(body: AuthBody):
-    try:
-        user = store.create_user(body.email, body.password)
-    except ValueError as e:
-        raise HTTPException(400, str(e)) from e
-    token = store.create_session(user.id)
-    return {"token": token, "user": user.to_public()}
-
-
-@app.post("/v1/auth/login")
-def login(body: AuthBody):
-    from store import verify_password
-
-    user = store.get_user_by_email(body.email)
-    if user is None or not verify_password(body.password, user.password_hash):
-        raise HTTPException(401, "Invalid email or password")
-    token = store.create_session(user.id)
-    return {"token": token, "user": user.to_public()}
-
-
-@app.post("/v1/auth/logout")
-def logout(authorization: str | None = Header(default=None)):
-    try:
-        token = _bearer(authorization)
-    except HTTPException:
-        return {"ok": True}
-    store.delete_session(token)
-    return {"ok": True}
+    return {
+        "status": "ok",
+        "service": "cloud-watch",
+        "version": "1.1.0",
+        "multi_user": True,
+        "auth": bool(AUTH_URL),
+    }
 
 
 @app.get("/v1/me")

@@ -69,7 +69,7 @@
       enabled = w.enabled;
     } catch (e) {
       if (gen !== loadGen) return;
-      error = e instanceof Error ? e.message : "Could not load Watch";
+      error = e instanceof Error ? e.message : "Could not load schedule";
     } finally {
       if (gen === loadGen) loading = false;
     }
@@ -104,7 +104,7 @@
     try {
       const res = await api.cloudWatchSync(project, id);
       if (res.skipped) return;
-      live = live || "Synced to Cloud Watch.";
+      live = live || "Synced to Cloud Scheduled Research.";
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Cloud sync failed";
       live = `Saved locally. Cloud sync: ${msg}`;
@@ -236,7 +236,7 @@
       id = w.watch_id || "legacy";
     }
     running = true;
-    live = "Starting Watch…";
+    live = "Starting scheduled research…";
     error = "";
     abort = new AbortController();
     try {
@@ -255,7 +255,7 @@
         abort.signal,
         { sessionId: assistant.activeSessionId, watchId: id, force: true },
       );
-      live = result.slow_day ? "Slow day — nothing new to rehash." : "Watch finished.";
+      live = result.slow_day ? "Slow day — nothing new to rehash." : "Scheduled research finished.";
       workspace.requestVaultRefresh();
       try {
         const w = await api.getWatch(path, id);
@@ -271,7 +271,7 @@
       }
     } catch (e) {
       if (e instanceof Error && e.name === "AbortError") live = "Cancelled";
-      else error = e instanceof Error ? e.message : "Watch failed";
+      else error = e instanceof Error ? e.message : "Scheduled research failed";
     } finally {
       running = false;
       abort = null;
@@ -282,7 +282,7 @@
     const note = steer.trim();
     if (!note) return;
     if (isDraft) {
-      error = "Save this Watch before adding a note.";
+      error = "Save this schedule before adding a note.";
       return;
     }
     try {
@@ -304,7 +304,7 @@
 <div class="editor">
   <header class="bar" data-tauri-drag-region>
     <nav class="crumb">
-      <button type="button" class="link" onclick={onBack}>Watch</button>
+      <button type="button" class="link" onclick={onBack}>Scheduled Research</button>
       <ChevronRight size={14} strokeWidth={2} />
       <span>{name || "Untitled"}</span>
     </nav>
@@ -330,7 +330,7 @@
   </header>
 
   <div class="body ui-scroll">
-    <input class="title" bind:value={name} placeholder="Untitled" aria-label="Watch name" />
+    <input class="title" bind:value={name} placeholder="Untitled" aria-label="Schedule name" />
     <div class="meta">
       <button
         type="button"
@@ -375,11 +375,11 @@
           <div class="card-main">
             <p class="card-title">Weekday mornings</p>
             <p class="hint">
-              When this Watch is active, Nous writes a brief on weekday mornings while the app is open.
+              When this schedule is active, Nous writes a brief on weekday mornings while the app is open.
               If Nous was closed, catch-up runs after the scheduled hour when you reopen.
               Use Run for an extra look today (rewrites today’s brief).
               {#if connection.cloudWatchConfigured}
-                Cloud Watch runs around 9am even if this Mac is asleep.
+                Cloud Scheduled Research runs around 9am even if this Mac is asleep.
               {/if}
             </p>
           </div>
@@ -391,7 +391,7 @@
         <div class="card stack">
           <label class="field">
             <span>Focus</span>
-            <textarea rows="3" bind:value={focusDraft} placeholder="What should this Watch track?"></textarea>
+            <textarea rows="3" bind:value={focusDraft} placeholder="What should this schedule track?"></textarea>
           </label>
           <label class="field">
             <span>Include</span>
@@ -411,7 +411,7 @@
           </label>
         </div>
         {#if isDraft}
-          <p class="hint disclose">Save to keep this Watch, then you can add a note for the next run.</p>
+          <p class="hint disclose">Save to keep this schedule, then you can add a note for the next run.</p>
         {:else if steerOpen}
           <form
             class="steer"

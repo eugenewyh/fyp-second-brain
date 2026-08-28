@@ -46,11 +46,11 @@
     live
       ? turn.status === "awaiting_plan"
         ? "Needs review"
-        : "Working"
+        : "Researching…"
       : failed
         ? "Failed"
         : done
-          ? "Done"
+          ? "Report ready"
           : "",
   );
   const thoughtLabel = $derived(
@@ -69,8 +69,8 @@
   );
   const rememberedLabel = $derived(
     claimCount > 0
-      ? `Saved ${claimCount} idea${claimCount === 1 ? "" : "s"} from this chat`
-      : "Saved to this chat",
+      ? `${claimCount} claim${claimCount === 1 ? "" : "s"} written back to memory`
+      : "Saved to this topic’s memory",
   );
   const deepenGaps = $derived(
     done && turn.result?.report ? extractOpenQuestions(turn.result.report, 3) : [],

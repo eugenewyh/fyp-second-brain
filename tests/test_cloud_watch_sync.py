@@ -1,4 +1,4 @@
-"""Sidecar cloud-watch sync helpers (mocked HTTP) — multi-user session token."""
+"""Cloud Watch sync helpers (mocked HTTP) — Better Auth Bearer session."""
 
 from __future__ import annotations
 
@@ -13,56 +13,29 @@ sys.path.insert(0, str(ROOT / "src"))
 from second_brain.agent.cloud_watch_sync import (  # noqa: E402
     _friendly_http_error,
     cloud_watch_configured,
-    login,
     pull_pending_briefs,
+    set_session_token,
     sync_watch_to_cloud,
 )
 
 
 def test_not_configured(monkeypatch):
     monkeypatch.delenv("CLOUD_WATCH_URL", raising=False)
-    monkeypatch.delenv("CLOUD_WATCH_USER_TOKEN", raising=False)
-    monkeypatch.delenv("CLOUD_WATCH_TOKEN", raising=False)
+    set_session_token("")
     assert cloud_watch_configured() is False
 
 
 def test_friendly_http_error_extracts_fastapi_detail():
     assert (
-        _friendly_http_error(401, '{"detail":"Invalid email or password"}')
-        == "Invalid email or password"
+        _friendly_http_error(401, '{"detail":"Invalid or expired session"}')
+        == "Invalid or expired session"
     )
-    assert _friendly_http_error(401, "not-json") == "Invalid email or password"
-
-
-def test_login_surfaces_clean_auth_error(monkeypatch):
-    import urllib.error as urllib_error
-
-    monkeypatch.setenv("CLOUD_WATCH_URL", "http://example.test")
-
-    class Err(urllib_error.HTTPError):
-        def __init__(self):
-            super().__init__(
-                "http://example.test/v1/auth/login",
-                401,
-                "Unauthorized",
-                hdrs=None,
-                fp=None,
-            )
-
-        def read(self):
-            return b'{"detail":"Invalid email or password"}'
-
-    with patch("urllib.request.urlopen", side_effect=Err()):
-        try:
-            login("a@b.com", "wrong-password")
-            assert False, "expected RuntimeError"
-        except RuntimeError as e:
-            assert str(e) == "Invalid email or password"
+    assert "Session expired" in _friendly_http_error(401, "not-json")
 
 
 def test_sync_watch_to_cloud(monkeypatch):
     monkeypatch.setenv("CLOUD_WATCH_URL", "http://example.test")
-    monkeypatch.setenv("CLOUD_WATCH_USER_TOKEN", "user-session")
+    set_session_token("user-session")
 
     class FakeResp:
         def __enter__(self):
@@ -91,7 +64,7 @@ def test_push_local_llm_to_cloud(monkeypatch):
     from second_brain.agent.cloud_watch_sync import push_local_llm_to_cloud
 
     monkeypatch.setenv("CLOUD_WATCH_URL", "http://example.test")
-    monkeypatch.setenv("CLOUD_WATCH_USER_TOKEN", "user-session")
+    set_session_token("user-session")
     monkeypatch.setenv("LLM_PROVIDER", "groq")
     monkeypatch.setenv("GROQ_API_KEY", "gsk_local_key")
     monkeypatch.setenv("LLM_MODEL", "openai/gpt-oss-120b")
@@ -125,7 +98,7 @@ def test_push_local_llm_requires_models_key(monkeypatch):
     from second_brain.agent.cloud_watch_sync import push_local_llm_to_cloud
 
     monkeypatch.setenv("CLOUD_WATCH_URL", "http://example.test")
-    monkeypatch.setenv("CLOUD_WATCH_USER_TOKEN", "user-session")
+    set_session_token("user-session")
     monkeypatch.setenv("LLM_PROVIDER", "groq")
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
     monkeypatch.delenv("LLM_API_KEY", raising=False)
@@ -138,7 +111,7 @@ def test_push_local_llm_requires_models_key(monkeypatch):
 
 def test_pull_writes_and_acks(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("CLOUD_WATCH_URL", "http://example.test")
-    monkeypatch.setenv("CLOUD_WATCH_USER_TOKEN", "user-session")
+    set_session_token("user-session")
     calls: list[str] = []
 
     class FakeResp:
@@ -162,13 +135,11 @@ def test_pull_writes_and_acks(tmp_path: Path, monkeypatch):
                 {
                     "briefs": [
                         {
-                            "id": 1,
-                            "user_id": "u1",
+                            "id": 7,
                             "watch_id": "papers",
                             "topic": "Coffee",
                             "day": "2026-08-26",
-                            "markdown": "# Morning Brief\n\nHi.\n",
-                            "pending": True,
+                            "markdown": "# Brief\n",
                         }
                     ]
                 }
@@ -176,9 +147,13 @@ def test_pull_writes_and_acks(tmp_path: Path, monkeypatch):
         return FakeResp({"ok": True})
 
     with patch("urllib.request.urlopen", side_effect=fake_urlopen):
-        result = pull_pending_briefs(documents_dir=tmp_path)
-
-    assert result["count"] == 1
-    path = tmp_path / "Coffee" / "watches" / "papers" / "briefs" / "2026-08-26.md"
-    assert path.is_file()
+        out = pull_pending_briefs(documents_dir=tmp_path)
+    assert out["count"] == 1
+    assert (tmp_path / "Coffee" / "watches" / "papers" / "briefs" / "2026-08-26.md").is_file()
     assert any("/ack" in c for c in calls)
+
+
+def test_requires_session_token(monkeypatch):
+    monkeypatch.setenv("CLOUD_WATCH_URL", "http://example.test")
+    set_session_token("")
+    assert cloud_watch_configured() is False

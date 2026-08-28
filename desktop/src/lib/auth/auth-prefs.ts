@@ -1,25 +1,5 @@
-/** Persist “continue without account” so we don’t re-prompt every launch. */
+/** Strip wrappers so auth UI shows a short human message. */
 
-const KEY = "nous.auth.continueLocal";
-
-export function loadContinueLocal(): boolean {
-  try {
-    return localStorage.getItem(KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-export function saveContinueLocal(value: boolean) {
-  try {
-    if (value) localStorage.setItem(KEY, "1");
-    else localStorage.removeItem(KEY);
-  } catch {
-    /* ignore */
-  }
-}
-
-/** Strip sidecar/HTTP wrappers so auth UI shows a short human message. */
 export function formatAuthError(raw: unknown, fallback = "Could not sign in"): string {
   const text =
     raw instanceof Error ? raw.message : typeof raw === "string" ? raw : fallback;
@@ -38,13 +18,18 @@ export function formatAuthError(raw: unknown, fallback = "Could not sign in"): s
     }
   }
 
-  const httpPrefix = trimmed.match(/^Cloud Watch HTTP \d+:\s*(.+)$/i);
+  const httpPrefix = trimmed.match(
+    /^Cloud (?:Watch|Scheduled Research) HTTP \d+:\s*(.+)$/i,
+  );
   if (httpPrefix?.[1] && !httpPrefix[1].startsWith("{")) {
     return httpPrefix[1].trim();
   }
 
-  if (/^Cloud Watch unreachable/i.test(trimmed) || /URLError/i.test(trimmed)) {
-    return "Can't reach Cloud Watch right now.";
+  if (
+    /^Cloud (?:Watch|Scheduled Research) unreachable/i.test(trimmed) ||
+    /URLError/i.test(trimmed)
+  ) {
+    return "Can't reach Cloud Scheduled Research right now.";
   }
 
   return trimmed;

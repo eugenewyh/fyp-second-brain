@@ -20,7 +20,7 @@
     if (app.sheet === "ingest") return "Library";
     if (app.sheet === "settings") return "Settings";
     if (app.sheet === "references") return "References";
-    if (app.sheet === "watch") return "Watch";
+    if (app.sheet === "watch") return "Scheduled Research";
     if (app.sheet === "memory") return "Memory";
     if (app.sheet === "capabilities") return "Capabilities";
     if (app.sheet === "artifacts") return "Artifacts";
@@ -42,13 +42,13 @@
       aria-label={title}
       onclick={(e) => e.stopPropagation()}
     >
-      <header class="sheet-header">
+      <header class="sheet-header" data-tauri-drag-region>
         <h2>{title}</h2>
-        <button type="button" class="close" onclick={() => app.closeSheet()}>Close</button>
+        <button type="button" class="close" data-tauri-drag-region="false" onclick={() => app.closeSheet()}>Close</button>
       </header>
       <div
         class="sheet-body ui-scroll"
-        class:sheet-body-flush={app.sheet === "settings" || wide}
+        class:sheet-body-flush={app.sheet === "settings" || app.sheet === "ingest" || wide}
       >
         {#if app.sheet === "ingest"}
           <IngestPanel />
@@ -106,6 +106,13 @@
     padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--border-subtle);
     flex-shrink: 0;
+    -webkit-app-region: drag;
+    app-region: drag;
+  }
+
+  .sheet-header .close {
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
   }
 
   .sheet-header h2 {
@@ -140,6 +147,11 @@
 
   .sheet-body-flush :global(.memory-bar) {
     display: none;
+  }
+
+  .sheet-body-flush :global(.library) {
+    height: 100%;
+    overflow-y: auto;
   }
 
   .refs {

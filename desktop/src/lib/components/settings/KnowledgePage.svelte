@@ -1,6 +1,8 @@
 <script lang="ts">
   import { connection } from "$lib/stores/connection.svelte";
   import { app } from "$lib/stores/app.svelte";
+  import { api } from "$lib/api";
+  import { getVaultRoot } from "$lib/vault/load";
 
   interface Props {
     settingsForm: Record<string, string>;
@@ -13,6 +15,8 @@
   let { settingsForm, autoIngest, saving, onAutoIngest, onPersist }: Props = $props();
 
   let showAdvanced = $state(false);
+  let reindexBusy = $state(false);
+  let reindexMsg = $state("");
 
   function onEmbedProvider(e: Event) {
     const value = (e.currentTarget as HTMLSelectElement).value;
@@ -23,6 +27,21 @@
           ? "text-embedding-3-small"
           : "BAAI/bge-small-en-v1.5";
     onPersist({ EMBEDDING_PROVIDER: value, EMBEDDING_MODEL: model });
+  }
+
+  async function reindexVault() {
+    reindexBusy = true;
+    reindexMsg = "";
+    try {
+      const root = await getVaultRoot();
+      const result = await api.ingest(root, { reset: true });
+      reindexMsg = `Indexed ${result.ingested_chunks} pages (${result.collection_total} total)`;
+      await connection.refreshStatus();
+    } catch (e) {
+      reindexMsg = e instanceof Error ? e.message : "Reindex failed";
+    } finally {
+      reindexBusy = false;
+    }
   }
 </script>
 
@@ -35,11 +54,8 @@
     <p class="embed-warn">
       {connection.embeddingsError ||
         (connection.reindexRequired
-          ? "Re-ingest your vault so search matches the current embedding model."
+          ? "Rebuild the search index so Ask matches the current embedding model."
           : "Embeddings are unavailable.")}
-      <button type="button" class="linkish" onclick={() => app.openSheet("ingest")}>
-        Open ingest
-      </button>
     </p>
   {:else}
     <p class="embed-ok">
@@ -47,15 +63,29 @@
       {connection.embeddingsModel ? ` · ${connection.embeddingsModel}` : ""}
     </p>
   {/if}
+  <button
+    type="button"
+    class="linkish"
+    disabled={reindexBusy || !connection.connected}
+    onclick={() => void reindexVault()}
+  >
+    {reindexBusy ? "Reindexing…" : "Rebuild search index"}
+  </button>
+  {#if reindexMsg}
+    <p class="embed-ok" style="margin-top: 0.45rem">{reindexMsg}</p>
+  {/if}
 </section>
 
 <section class="st-card">
   <div class="st-card-head">
     <h3 class="st-card-title">Library</h3>
-    <p class="st-card-sub">How new files enter your knowledge base.</p>
+    <p class="st-card-sub">Import folders into a workspace and file them as memory claims.</p>
   </div>
-  <label class="st-field">
-    <span class="st-field-label">Auto-add new files</span>
+  <button type="button" class="linkish" onclick={() => app.openSheet("ingest")}>
+    Open Library
+  </button>
+  <label class="st-field" style="margin-top: 0.85rem">
+    <span class="st-field-label">Auto-index new vault files for search</span>
     <select
       class="st-control narrow"
       value={autoIngest ? "true" : "false"}

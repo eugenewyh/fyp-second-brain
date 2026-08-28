@@ -10,7 +10,7 @@ export type ChatStarter = {
   prompt: (topic: string) => string;
 };
 
-export type ChatSetupAction = "settings" | "ingest" | "workspace";
+export type ChatSetupAction = "settings" | "ingest" | "workspace" | "import" | "reindex";
 
 export type ChatSetupItem = {
   id: string;
@@ -34,7 +34,7 @@ export function topicForStarters(label: string): string {
   return t;
 }
 
-/** Empty-state starters aligned with capture → recall → autonomous research → watch. */
+/** Empty-state starters aligned with capture → recall → autonomous research → scheduled research. */
 export const CHAT_STARTERS: ChatStarter[] = [
   {
     id: "teach",
@@ -60,11 +60,11 @@ export const CHAT_STARTERS: ChatStarter[] = [
   },
   {
     id: "watch",
-    verb: "Watch",
+    verb: "Schedule",
     title: "Stay current",
-    blurb: "Autonomous briefs on a schedule — papers, launches, shifts",
+    blurb: "Recurring research briefs — papers, launches, shifts",
     prompt: (topic) =>
-      `Watch ${topic} for significant changes and brief me on weekday mornings`,
+      `Schedule research on ${topic} for significant changes and brief me on weekday mornings`,
   },
 ];
 
@@ -73,9 +73,10 @@ export function landingPhase(opts: {
   aiConfigured: boolean;
   hasWorkspace: boolean;
   libraryReady: boolean;
+  channelEmpty?: boolean;
 }): LandingPhase {
   if (opts.offline || !opts.aiConfigured || !opts.hasWorkspace) return "bootstrap";
-  if (!opts.libraryReady) return "seed";
+  if (!opts.libraryReady || opts.channelEmpty) return "seed";
   return "ready";
 }
 
@@ -85,19 +86,19 @@ export function landingHero(phase: LandingPhase): LandingHero {
       return {
         kicker: "Get started",
         title: "Set up your second brain",
-        sub: "Create a workspace, connect AI, and add documents. Nous needs something to remember before recall or research are useful.",
+        sub: "Create a topic workspace, connect AI, then Teach something to remember. Ask and Research only work after memory exists.",
       };
     case "seed":
       return {
-        kicker: "Second brain",
-        title: "Give Nous something to remember",
-        sub: "This workspace is empty — no indexed notes yet. Teach a dump, ingest files, or attach documents first.",
+        kicker: "How Nous works",
+        title: "Teach → Ask → Research",
+        sub: "This topic has nothing in memory yet. Files in the library are a shelf — Teach turns them into claims you can Ask about.",
       };
     case "ready":
       return {
-        kicker: "Second brain",
-        title: "Long-term memory with autonomous agents",
-        sub: "Nous recalls what you've taught it, runs multi-agent research when needed, and writes back — so the next session isn't a cold start.",
+        kicker: "Topic memory",
+        title: "Talk in this topic",
+        sub: "Teach to remember. Ask from claims. Research looks outside and can write back. Watch briefs you on a schedule.",
       };
   }
 }
@@ -107,6 +108,7 @@ export function visibleStarterIds(phase: LandingPhase): ChatStarterId[] {
     case "bootstrap":
       return [];
     case "seed":
+      // Empty topic: lead with Teach so the core loop is obvious.
       return ["teach"];
     case "ready":
       return ["teach", "ask", "research", "watch"];
@@ -118,9 +120,9 @@ export function composerPlaceholder(phase: LandingPhase): string {
     case "bootstrap":
       return "Complete setup to start…";
     case "seed":
-      return "Teach Nous something about this workspace…";
+      return "Paste notes or attach files to Teach this topic…";
     case "ready":
-      return "Teach, ask from memory, or start research…";
+      return "Teach, ask from memory, research, or schedule a watch…";
   }
 }
 
@@ -136,6 +138,7 @@ export function chatSetupItems(opts: {
   hasWorkspace: boolean;
   libraryReady: boolean;
   memoryBlocked: boolean;
+  channelEmpty?: boolean;
 }): ChatSetupItem[] {
   const items: ChatSetupItem[] = [];
 
@@ -152,16 +155,18 @@ export function chatSetupItems(opts: {
     items.push({ id: "ai", label: "Add AI key", done: false, action: "settings" });
   }
 
-  if (opts.hasWorkspace && !opts.libraryReady) {
-    items.push({ id: "library", label: "Add documents", done: false, action: "ingest" });
+  if (opts.hasWorkspace && opts.channelEmpty) {
+    items.push({ id: "import", label: "Import notes", done: false, action: "import" });
+  } else if (opts.hasWorkspace && !opts.libraryReady) {
+    items.push({ id: "library", label: "Import notes", done: false, action: "import" });
   }
 
   if (opts.memoryBlocked) {
     items.push({
       id: "embeddings",
-      label: "Fix memory search",
+      label: "Rebuild search index",
       done: false,
-      action: "settings",
+      action: "reindex",
     });
   }
 

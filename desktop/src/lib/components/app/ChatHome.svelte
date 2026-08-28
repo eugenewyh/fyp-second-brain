@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { assistant, isIdleSession } from "$lib/stores/assistant.svelte";
+  import { assistant } from "$lib/stores/assistant.svelte";
   import { workspace } from "$lib/stores/workspace.svelte";
   import AgentPane from "./AgentPane.svelte";
   import ChatHeader from "./ChatHeader.svelte";
@@ -13,7 +13,6 @@
     savePeekWidth,
   } from "$lib/workspace/layout-prefs";
 
-  const emptyChat = $derived(isIdleSession({ turns: assistant.getActiveThread() }));
   const showDocPeek = $derived(app.isDocumentPeek && app.isHome);
   const unboundChat = $derived(!workspace.activeTopicPath);
   const chatTitle = $derived(assistant.activeSession?.title ?? DEFAULT_SESSION_TITLE);
@@ -60,13 +59,11 @@
 
 <div class="chat-home">
   <div class="thread-col">
-    {#if !emptyChat || !unboundChat}
-      <ChatHeader
-        chatTitle={chatTitle}
-        remembered={remembered}
-        unbound={unboundChat}
-      />
-    {/if}
+    <ChatHeader
+      chatTitle={chatTitle}
+      remembered={remembered}
+      unbound={unboundChat}
+    />
     <AgentPane />
   </div>
   {#if showDocPeek}

@@ -212,6 +212,7 @@ class NavigationStore {
       channelEmpty: workspace.channelEmpty,
     });
     this.ensureSessionTab(id);
+    // Always open chat for this workspace (Memory/Watch are independent views).
     app.openHome();
     return id;
   }

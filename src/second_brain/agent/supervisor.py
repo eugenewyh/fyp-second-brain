@@ -15,6 +15,7 @@ from second_brain.agent.policy import (
     fallback_job,
     force_file,
     has_notes_intent,
+    has_research_intent,
     has_search_intent,
     has_synthesis_intent,
     is_question,
@@ -23,8 +24,8 @@ from second_brain.agent.policy import (
 logger = logging.getLogger(__name__)
 
 REFUSE_MESSAGE = (
-    "This topic has no notes on that yet.\n\n"
-    "Dump a note into this project, or look it up if you want sources from the library and the web."
+    "I don't have notes on this topic yet. Teach something here first — "
+    "then Ask from what you saved."
 )
 
 SUPERVISOR_SYSTEM = """You are the Auto router for Nous, a personal knowledge agent.
@@ -239,6 +240,9 @@ def decide_act(
     elif has_search_intent(text):
         proposed = "research"
         reason = "explicit lookup"
+    elif has_research_intent(text):
+        proposed = "research"
+        reason = "research mission"
     elif has_synthesis_intent(text) and snapshot.matching_claim_count > 0:
         proposed = "research"
         reason = "synthesis over notes"
@@ -256,18 +260,29 @@ def decide_act(
         proposed = choose_fn(text, snapshot)
         reason = "test"
     else:
-        try:
-            picked, reason = _llm_choose(text, snapshot)
-        except Exception:
-            logger.debug("Supervisor LLM choose failed", exc_info=True)
-            picked, reason = None, ""
-        proposed = picked or fallback_job(
-            text=text,
+        from second_brain.agent.job_router import route_job
+
+        routed, router_reason, conf = route_job(
+            text,
             matching_claim_count=snapshot.matching_claim_count,
             has_attachments=has_attachments,
         )
-        if picked is None:
-            reason = reason or "fallback"
+        if routed is not None:
+            proposed = routed
+            reason = router_reason or "router"
+        else:
+            try:
+                picked, reason = _llm_choose(text, snapshot)
+            except Exception:
+                logger.debug("Supervisor LLM choose failed", exc_info=True)
+                picked, reason = None, ""
+            proposed = picked or fallback_job(
+                text=text,
+                matching_claim_count=snapshot.matching_claim_count,
+                has_attachments=has_attachments,
+            )
+            if picked is None:
+                reason = reason or "fallback"
 
     job = apply_policy(
         proposed,

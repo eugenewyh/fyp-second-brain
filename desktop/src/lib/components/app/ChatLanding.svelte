@@ -10,6 +10,7 @@
     type ChatSetupAction,
     type LandingPhase,
   } from "$lib/assistant/chat-starters";
+  import { COACH_STEPS } from "$lib/assistant/composer-skills";
 
   interface Props {
     phase: LandingPhase;
@@ -18,6 +19,7 @@
     aiConfigured?: boolean;
     hasWorkspace?: boolean;
     libraryReady?: boolean;
+    channelEmpty?: boolean;
     memoryBlocked?: boolean;
     disabled?: boolean;
     compose?: Snippet;
@@ -33,6 +35,7 @@
     aiConfigured = true,
     hasWorkspace = true,
     libraryReady = true,
+    channelEmpty = false,
     memoryBlocked = false,
     disabled = false,
     compose,
@@ -52,12 +55,14 @@
       aiConfigured,
       hasWorkspace,
       libraryReady,
+      channelEmpty,
       memoryBlocked,
     }),
   );
   const showSetup = $derived(setupItems.length > 0);
   const showCompose = $derived(phase !== "bootstrap" && !!compose);
   const showStarters = $derived(starters.length > 0);
+  const showCoach = $derived(phase === "seed");
 
   function pickStarter(id: ChatStarterId) {
     activeStarter = id;
@@ -78,38 +83,46 @@
   <header class="hero">
     <p class="kicker">{hero.kicker}</p>
     <h1 class="title">{hero.title}</h1>
-    <p class="sub">{hero.sub}</p>
-  </header>
-
-  {#if showSetup}
-    <section class="setup" aria-label="Setup">
-      <span class="setup-label">Setup</span>
-      <div class="setup-row">
-        {#each setupItems as item (item.id)}
+    <p class="sub">
+      {hero.sub}
+      {#if showSetup}
+        {#each setupItems as item, i (item.id)}
+          {#if i === 0}<span class="setup-sep" aria-hidden="true"> </span>{/if}
           {#if item.action}
             <button
               type="button"
-              class="setup-chip"
+              class="setup-link"
               onclick={() => runSetup(item.action)}
             >
-              <span class="setup-dot" aria-hidden="true"></span>
               {item.label}
             </button>
           {:else}
-            <span class="setup-chip static" role="status">
-              <span class="setup-dot" aria-hidden="true"></span>
-              {item.label}
-            </span>
+            <span class="setup-status" role="status">{item.label}</span>
           {/if}
+          {#if i < setupItems.length - 1}<span class="setup-sep"> · </span>{/if}
         {/each}
-      </div>
-    </section>
-  {/if}
+      {/if}
+    </p>
+  </header>
 
   {#if phase === "bootstrap" && !hasWorkspace}
     <button type="button" class="primary-cta" onclick={() => onNewWorkspace?.()}>
       Create workspace
     </button>
+  {/if}
+
+  {#if showCoach}
+    <ol class="coach" data-testid="ux-coach" aria-label="How to use this topic">
+      {#each COACH_STEPS as step (step.n)}
+        <li class="coach-step">
+          <span class="coach-n" aria-hidden="true">{step.n}</span>
+          <div class="coach-copy">
+            <p class="coach-title">{step.title}</p>
+            <p class="coach-body">{step.body}</p>
+          </div>
+        </li>
+      {/each}
+    </ol>
   {/if}
 
   {#if showCompose}
@@ -146,13 +159,13 @@
     {#if offline}
       Backend offline — reconnect to send.
     {:else if memoryBlocked}
-      Memory search blocked — fix embeddings, then re-ingest.
+      Rebuilding search index when needed — wait a moment, or retry from the banner.
     {:else if phase === "bootstrap"}
       Setup first — chat needs a workspace and something to remember.
     {:else if phase === "seed"}
-      <kbd>⌘K</kbd> commands · ingest or attach files · then ask and research unlock
+      Use the Teach chip · or import a folder · <kbd>⌘K</kbd> for commands
     {:else}
-      <kbd>⌘K</kbd> commands · autonomous agents write back to memory
+      Skills stay on the composer · <kbd>⌘K</kbd> commands · agents write back to memory
     {/if}
   </p>
 </div>
@@ -161,7 +174,7 @@
   .chat-landing {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.1rem;
     width: 100%;
   }
 
@@ -177,91 +190,62 @@
     font-weight: var(--font-semibold);
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--text-faint);
+    color: var(--accent-live);
   }
 
   .title {
     margin: 0;
-    font-size: clamp(1.25rem, 2.4vw, 1.55rem);
+    font-size: clamp(1.35rem, 2.6vw, 1.7rem);
     font-weight: var(--font-semibold);
     letter-spacing: -0.03em;
-    line-height: 1.22;
+    line-height: 1.2;
     color: var(--text);
   }
 
   .sub {
     margin: 0;
-    max-width: 34rem;
+    max-width: 36rem;
     font-size: var(--text-sm);
     line-height: 1.55;
     color: var(--text-muted);
   }
 
-  .setup {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.45rem 0.65rem;
-    padding: 0.55rem 0.65rem;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
-    background: var(--control-fill);
+  .setup-sep {
+    color: var(--text-muted);
   }
 
-  .setup-label {
-    font-size: var(--text-2xs);
-    font-weight: var(--font-semibold);
-    letter-spacing: var(--type-caption-tracking);
-    text-transform: uppercase;
-    color: var(--text-faint);
-  }
-
-  .setup-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-  }
-
-  .setup-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.2rem 0.55rem;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-full);
-    background: var(--bg-elevated);
+  .setup-link {
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: none;
     color: var(--text);
-    font-size: var(--text-xs);
+    font: inherit;
     font-weight: var(--font-medium);
+    line-height: inherit;
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+    text-decoration-color: color-mix(in srgb, var(--text) 35%, transparent);
     cursor: pointer;
     min-height: auto;
   }
 
-  .setup-chip.static {
-    cursor: default;
+  .setup-link:hover {
+    text-decoration-color: var(--text);
+  }
+
+  .setup-status {
+    font: inherit;
     color: var(--text-muted);
-  }
-
-  .setup-chip:hover:not(.static) {
-    border-color: var(--border);
-    color: var(--text);
-  }
-
-  .setup-dot {
-    width: 0.4rem;
-    height: 0.4rem;
-    border-radius: 50%;
-    background: var(--warning);
-    flex-shrink: 0;
   }
 
   .primary-cta {
     align-self: flex-start;
     padding: 0.55rem 0.95rem;
-    border: 1px solid var(--border);
+    border: 1px solid transparent;
     border-radius: var(--radius-lg);
-    background: var(--text);
-    color: var(--bg);
+    background: var(--accent);
+    color: var(--accent-contrast);
     font-size: var(--text-sm);
     font-weight: var(--font-medium);
     cursor: pointer;
@@ -269,7 +253,63 @@
   }
 
   .primary-cta:hover {
-    opacity: 0.92;
+    background: var(--accent-hover);
+  }
+
+  .coach {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    background: color-mix(in srgb, var(--accent-live) 4%, var(--bg-elevated));
+    padding: 0.75rem 0.85rem;
+  }
+
+  .coach-step {
+    display: flex;
+    gap: 0.7rem;
+    align-items: flex-start;
+  }
+
+  .coach-n {
+    flex-shrink: 0;
+    width: 1.35rem;
+    height: 1.35rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    background: var(--accent-live-dim);
+    color: var(--accent-live);
+    font-size: var(--text-2xs);
+    font-weight: var(--font-semibold);
+    margin-top: 0.1rem;
+  }
+
+  .coach-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .coach-title {
+    margin: 0;
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  .coach-body {
+    margin: 0;
+    font-size: var(--text-xs);
+    line-height: 1.45;
+    color: var(--text-muted);
   }
 
   .compose {
@@ -295,7 +335,7 @@
 
   .starter-grid.single {
     grid-template-columns: 1fr;
-    max-width: 18rem;
+    max-width: 22rem;
   }
 
   .starter {
@@ -303,22 +343,23 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 0.15rem;
-    padding: 0.65rem 0.7rem;
+    padding: 0.7rem 0.75rem;
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
-    background: transparent;
+    background: var(--bg-elevated);
     text-align: left;
     cursor: pointer;
     min-height: auto;
     transition:
       border-color 0.12s ease,
-      background 0.12s ease;
+      background 0.12s ease,
+      box-shadow 0.12s ease;
   }
 
   .starter:hover:not(:disabled),
   .starter.on {
-    background: var(--control-fill);
-    border-color: var(--border);
+    background: color-mix(in srgb, var(--accent-live) 6%, var(--bg-elevated));
+    border-color: color-mix(in srgb, var(--accent-live) 28%, var(--border));
   }
 
   .starter:disabled {
@@ -331,7 +372,7 @@
     font-weight: var(--font-semibold);
     letter-spacing: var(--type-caption-tracking);
     text-transform: uppercase;
-    color: var(--text-faint);
+    color: var(--accent-live);
   }
 
   .starter-title {

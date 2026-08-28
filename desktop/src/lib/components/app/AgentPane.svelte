@@ -4,14 +4,15 @@
   import { connection } from "$lib/stores/connection.svelte";
   import { workspace } from "$lib/stores/workspace.svelte";
   import { app } from "$lib/stores/app.svelte";
-  import { classifyIntent, leftoverQuestionAfterTeach } from "$lib/assistant/intent";
+  import { classifyIntent, leftoverQuestionAfterTeach, shouldAutoResearch } from "$lib/assistant/intent";
   import { suggestTopicName } from "$lib/assistant/topic-name";
   import { ensureProjectFolder, readNote, updateProjectFolder } from "$lib/vault/load";
   import { splitFrontmatter } from "$lib/vault/markdown";
   import { tabs } from "$lib/stores/tabs.svelte";
   import type { ManagerJob } from "$lib/api";
-  import type { ChatStarterId } from "$lib/assistant/chat-starters";
+  import type { ChatStarterId, ChatSetupAction } from "$lib/assistant/chat-starters";
   import { composerPlaceholder, landingPhase } from "$lib/assistant/chat-starters";
+  import { THIN_MEMORY_REFUSE } from "$lib/assistant/composer-skills";
   import { channelComposerPlaceholder } from "$lib/assistant/channel-agents";
   import ComposerDock from "./ComposerDock.svelte";
   import ChatLanding from "./ChatLanding.svelte";
@@ -39,7 +40,7 @@
   const channelEmpty = $derived(workspace.channelEmpty);
   const bootstrap = $derived(offline || !aiConfigured || !hasWorkspace);
   const phase = $derived(
-    landingPhase({ offline, aiConfigured, hasWorkspace, libraryReady }),
+    landingPhase({ offline, aiConfigured, hasWorkspace, libraryReady, channelEmpty }),
   );
   const onboarding = $derived(!bootstrap && channelEmpty);
   const landingPlaceholder = $derived(composerPlaceholder(phase));
@@ -49,7 +50,7 @@
   const empty = $derived(isIdleSession({ turns: thread }));
   /** Idle chat → Cursor-style centered composer; after first send → dock. */
   const showNewChat = $derived(empty);
-  const showSetupLanding = $derived(bootstrap && empty);
+  const showSetupLanding = $derived(empty && phase !== "ready");
   const newChatPlaceholder = $derived(
     offline
       ? "Backend offline — reconnect to send…"
@@ -231,6 +232,7 @@
     let alsoFromTurn: string[] = [];
     let newTopic = "";
     let idea = "";
+    const forcedSkill = assistant.forcedJob;
 
     try {
       try {
@@ -242,7 +244,7 @@
           clarifyCount,
           history,
           topics: workspace.projectFolders.map((f) => ({ name: f.name, path: f.path })),
-          forcedJob: assistant.forcedJob,
+          forcedJob: forcedSkill,
         });
         kind = turn.kind;
         job = (turn.job ?? "answer") as ManagerJob;
@@ -261,7 +263,14 @@
         if (assistant.forcedJob) assistant.setForcedJob(null);
       } catch {
         const intent = classifyIntent({ text, hasAttachments });
-        job = intent === "teach" ? "file" : intent === "lookup" ? "research" : "answer";
+        job =
+          shouldAutoResearch(text) || forcedSkill === "research"
+            ? "research"
+            : intent === "teach"
+              ? "file"
+              : intent === "lookup"
+                ? "research"
+                : "answer";
         createTopic = suggestTopicName(text);
       }
 
@@ -331,20 +340,23 @@
         const project =
           assistant.sessions[sessionId]?.projectPath ?? assistant.activeProjectPath();
         if (!project) {
-          assistant.appendManager("I need a topic folder before I can watch.", sessionId);
+          assistant.appendManager(
+            "I need a topic folder before I can start scheduled research.",
+            sessionId,
+          );
           return;
         }
         try {
           const created = await api.createWatch(project, {
-            name: instruction.slice(0, 48) || "Watch",
+            name: instruction.slice(0, 48) || "Scheduled Research",
             focus: instruction,
             enabled: true,
           });
           const status = created.enabled
             ? "It's Active — refine Exclude/Trusted sources or hit Run anytime."
-            : "Fill Focus and Include in Watch, then turn it Active.";
+            : "Fill Focus and Include in Scheduled Research, then turn it Active.";
           assistant.appendManager(
-            `Watch created — open Watch to refine or Run. ${status}`,
+            `Schedule created — open Scheduled Research to refine or Run. ${status}`,
             sessionId,
           );
           if (created.watch_id && created.enabled) {
@@ -353,7 +365,7 @@
           app.openWatch();
         } catch (e) {
           assistant.appendManager(
-            e instanceof Error ? e.message : "Couldn't start a watch.",
+            e instanceof Error ? e.message : "Couldn't start scheduled research.",
             sessionId,
           );
         }
@@ -379,12 +391,26 @@
         return;
       }
       if (job === "refuse") {
-        assistant.presentRefuse(
-          text,
-          refuseMessage ||
-            "This topic has no notes on that yet.\n\nDump a note into this project, or look it up if you want sources from the library and the web.",
-          { skipUserTurn: true, sessionId },
-        );
+        if (shouldAutoResearch(text) || forcedSkill === "research") {
+          await assistant.runGoal(instruction || text, {
+            skipUserTurn: true,
+            alsoProjectPaths: alsoPaths,
+            sessionId,
+          });
+          return;
+        }
+        assistant.presentRefuse(text, refuseMessage || THIN_MEMORY_REFUSE, {
+          skipUserTurn: true,
+          sessionId,
+        });
+        return;
+      }
+      if (shouldAutoResearch(instruction || text)) {
+        await assistant.runGoal(instruction || text, {
+          skipUserTurn: true,
+          alsoProjectPaths: alsoPaths,
+          sessionId,
+        });
         return;
       }
       await assistant.sendQuickAnswer(workspace.activeNotePath, await chatContext(), instruction, {
@@ -458,13 +484,32 @@
     assistant.ensureManagerOpener(true);
   });
 
-  function applyStarter(prompt: string, _id: ChatStarterId) {
+  function applyStarter(prompt: string, id: ChatStarterId) {
+    const jobs = {
+      teach: "file",
+      ask: "answer",
+      research: "research",
+      watch: "watch",
+    } as const;
+    assistant.setForcedJob(jobs[id]);
     assistant.input = prompt;
     assistant.composerFocusNonce += 1;
   }
 
-  function openSetupAction(action: "settings" | "ingest") {
-    app.openSheet(action === "settings" ? "settings" : "ingest");
+  function openSetupAction(action: ChatSetupAction) {
+    if (action === "import" || action === "ingest") {
+      app.openSheet("ingest");
+      return;
+    }
+    if (action === "workspace") {
+      app.openNewProject();
+      return;
+    }
+    if (action === "reindex") {
+      void connection.retryReindex();
+      return;
+    }
+    app.openSheet("settings");
   }
 </script>
 
@@ -487,14 +532,23 @@
     </div>
   {:else if !showNewChat && connection.memorySearchBlocked}
     <div class="banner">
-      <span>
-        {connection.reindexRequired
-          ? "Vault search needs re-ingest after an embedding model change."
-          : connection.embeddingsError ||
-            "Embeddings unavailable. Bundled fastembed is the default — Ollama is optional."}
-      </span>
-      <button type="button" class="link" onclick={() => app.openSheet("ingest")}>Ingest</button>
-      <button type="button" class="link" onclick={() => app.openSheet("settings")}>Settings</button>
+      {#if connection.reindexBusy}
+        <span>Rebuilding search index…</span>
+      {:else if connection.reindexError}
+        <span>{connection.reindexError}</span>
+        <button type="button" class="link" onclick={() => void connection.retryReindex()}>
+          Retry
+        </button>
+      {:else if connection.reindexRequired}
+        <span>Updating search index…</span>
+      {:else}
+        <span>
+          {connection.embeddingsError || "Vault search is temporarily unavailable."}
+        </span>
+        <button type="button" class="link" onclick={() => void connection.retryReindex()}>
+          Retry
+        </button>
+      {/if}
     </div>
   {/if}
 
@@ -514,6 +568,7 @@
             {aiConfigured}
             {hasWorkspace}
             libraryReady={libraryReady}
+            {channelEmpty}
             memoryBlocked={connection.memorySearchBlocked}
             disabled={offline || assistant.isLoading}
             onStarter={applyStarter}
@@ -544,45 +599,6 @@
               header={workspacePicker}
               onSubmit={submit}
             />
-            <div class="new-chat-chips" role="group" aria-label="Quick actions">
-              <button
-                type="button"
-                class="action-chip"
-                class:on={assistant.forcedJob === null}
-                title="Shift+Tab to cycle"
-                onclick={() => assistant.setForcedJob(null)}
-              >
-                Auto
-              </button>
-              <button
-                type="button"
-                class="action-chip"
-                class:on={assistant.forcedJob === "answer"}
-                title="Force Ask · Shift+Tab"
-                onclick={() => assistant.setForcedJob("answer")}
-              >
-                Ask
-                <kbd>⇧Tab</kbd>
-              </button>
-              <button
-                type="button"
-                class="action-chip"
-                class:on={assistant.forcedJob === "research"}
-                title="Force Research"
-                onclick={() => assistant.setForcedJob("research")}
-              >
-                Research
-              </button>
-              <button
-                type="button"
-                class="action-chip"
-                class:on={assistant.forcedJob === "file"}
-                title="Force Teach"
-                onclick={() => assistant.setForcedJob("file")}
-              >
-                Teach
-              </button>
-            </div>
           </div>
         {/if}
       </div>
@@ -598,6 +614,12 @@
           onCancel={() => assistant.cancelResearch()}
           onLookup={(query) => void lookupInResearch(query)}
           onRetryAsk={(id) => void retryAsk(id)}
+          onTeach={() => {
+            assistant.setForcedJob("file");
+            assistant.input = "";
+            assistant.composerFocusNonce += 1;
+          }}
+          onViewMemory={() => app.openMemory()}
         />
       </div>
 
@@ -719,54 +741,5 @@
     flex-direction: column;
     gap: 0.75rem;
     width: 100%;
-  }
-
-  .new-chat-chips {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0 0.15rem;
-  }
-
-  .action-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.35rem 0.7rem;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-full);
-    background: transparent;
-    color: var(--text-muted);
-    font-size: var(--text-sm);
-    font-weight: var(--font-medium);
-    cursor: pointer;
-    min-height: auto;
-    transition:
-      background var(--dur-control) var(--ease-out),
-      border-color var(--dur-control) var(--ease-out),
-      color var(--dur-control) var(--ease-out);
-  }
-
-  .action-chip:hover {
-    background: var(--chrome-action-hover);
-    color: var(--text);
-    border-color: var(--border);
-  }
-
-  .action-chip.on {
-    background: var(--selection-bg);
-    color: var(--text);
-    border-color: var(--border);
-  }
-
-  .action-chip kbd {
-    font-family: var(--font-mono);
-    font-size: 0.85em;
-    font-weight: var(--font-normal);
-    color: var(--text-faint);
-    padding: 0;
-    border: none;
-    background: none;
   }
 </style>

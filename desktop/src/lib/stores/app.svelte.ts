@@ -35,15 +35,12 @@ class AppStore {
   /** Incremented when opening the Watch tab so the list is shown. */
   watchListNonce = $state(0);
   artifactsFilter = $state<ArtifactsFilter>("all");
-  /** Force the sign-in modal (e.g. from sidebar after “continue locally”). */
-  authGateOpen = $state(false);
+  /** Preferred Settings tab when opening the sheet. */
+  settingsTab = $state<"appearance" | "models" | "account">("appearance");
 
-  openAuthGate() {
-    this.authGateOpen = true;
-  }
-
-  closeAuthGate() {
-    this.authGateOpen = false;
+  openSettings(tab: "appearance" | "models" | "account" = "appearance") {
+    this.settingsTab = tab;
+    this.sheet = "settings";
   }
 
   /** Chat Home (legacy `agent` mode still counts). Watch is a separate tab. */

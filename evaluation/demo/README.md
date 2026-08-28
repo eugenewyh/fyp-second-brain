@@ -1,48 +1,69 @@
-# UAT demo pack — Home Coffee
+# UAT demo packs
 
-Fun, non-technical topic for facilitators and participants who are not AI researchers.
+Easy, non-technical topics for facilitators and participants.
 
-## What’s inside
+| Pack | Theme |
+|------|--------|
+| [`Coffee/`](Coffee/) | Home espresso — gear, beans, routine, recipes |
+| [`Plants/`](Plants/) | Houseplants — light, watering, mistakes, weekly habit |
 
-| Path | Purpose |
-|------|---------|
-| `Coffee/` | Topic folder ready to copy into the vault (`data/documents/Coffee`) |
-| `Coffee/IDEA.md` | Personal stance the Manager treats as topic intent |
-| `Coffee/notes/*.md` | Dump-style personal notes (gear, beans, routine, recipes, mistakes) |
-| `TEACH_DUMP.txt` | Long paste for **Teach** if you prefer chat dump over file ingest |
+---
 
-## Important: files ≠ memory
+## Plants (recommended for Import → memory UAT)
 
-Copying `Coffee/` into the vault shows notes in Edit workspace, but **Ask only uses memory claims** (`Coffee/memory/claims/`). Until notes are **Remembered / Taught**, the Manager will say the topic has no notes.
+Everyday topic. Five short notes under `Plants/notes/`.
 
-The app auto-runs Remember when it sees unfiled notes. You can also:
+### Setup in the app (Library import)
 
-- Paste `TEACH_DUMP.txt` into the channel, or
-- Command palette → Remember topic notes, or
-- Open **Coffee** and wait for the digest turn to finish
+1. **New workspace** named **Plants** (idea optional — or paste from `Plants/IDEA.md`).
+2. On the empty landing, click **Import notes** (opens Library).
+3. **Choose folders** → pick:
 
-## Quick setup
-
-```bash
-# From repo root — copies the seed into the live vault
-cp -R evaluation/demo/Coffee data/documents/Coffee
-
-# Optional: index via CLI (desktop Add docs / vault watcher also works)
-python scripts/ingest.py --input data/documents/Coffee
+```text
+evaluation/demo/Plants/notes
 ```
 
-In the app: open workspace **Coffee**, expand chats, **+** New Chat if you want a clean thread, wait for Remember if it starts, then follow `uat_questionnaire.md` (Round 2).
+4. **Import & file to memory** — watch the chat for Remember / digest.
+5. When filing finishes, try the prompts below.
 
-## Suggested prompts (Round 2)
+### Alternate: copy whole pack into the vault
 
-**Ask (vault answer)**  
-> According to my notes, what do I care about when making espresso at home besides just a strong taste?
+```bash
+# From repo root
+cp -R evaluation/demo/Plants data/documents/Plants
+```
 
-**Research (goal run)**  
-> Looking at my notes, how do I make espresso at home? Cover grind and dose, steaming milk, and what I’d buy next.
+Then open workspace **Plants** and run **Remember topic notes** (⌘K) if claims did not auto-file.
 
-**Second chat (parallel / titles)**  
-> What’s my weekday morning coffee routine according to my notes?
+### Suggested prompts
+
+**Ask**  
+> According to my notes, how should I water a snake plant, and what mistake should I avoid?
+
+**Ask (cross-note)**  
+> Where should my plants sit for light, and what happened when I kept them in the bathroom?
+
+**Research**  
+> Looking at my notes, how do I keep houseplants alive in a small apartment? Cover light, watering, and my Sunday habit.
+
+**Second chat**  
+> What plants do I actually keep, and what might I buy next?
 
 **Teach (optional)**  
-Paste the full contents of `TEACH_DUMP.txt` into the channel composer.
+Paste `Plants/TEACH_DUMP.txt` into the composer.
+
+---
+
+## Coffee (original Round 2 pack)
+
+See [`Coffee/README.md`](Coffee/README.md). Quick copy:
+
+```bash
+cp -R evaluation/demo/Coffee data/documents/Coffee
+```
+
+Then follow `evaluation/uat_questionnaire.md` (Round 2).
+
+### Important: files ≠ memory
+
+Notes on disk are not Ask memory until **Remember / Teach** files them as claims. Library **Import notes** runs that path for you.

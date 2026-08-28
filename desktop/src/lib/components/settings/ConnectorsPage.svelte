@@ -1,7 +1,8 @@
 <script lang="ts">
   import { api } from "$lib/api";
   import { connection } from "$lib/stores/connection.svelte";
-  import { saveContinueLocal } from "$lib/auth/auth-prefs";
+  import { app } from "$lib/stores/app.svelte";
+  import { signOut } from "$lib/auth/client";
 
   interface Props {
     settingsForm: Record<string, string>;
@@ -66,7 +67,7 @@
     cwErr = false;
     try {
       await api.cloudWatchSyncLlm();
-      cwMsg = "Models key synced to Cloud Watch.";
+      cwMsg = "Models key synced to Cloud Scheduled Research.";
       await connection.refreshStatus();
     } catch (e) {
       cwErr = true;
@@ -79,8 +80,7 @@
   async function cwLogout() {
     cwBusy = true;
     try {
-      await api.cloudWatchLogout();
-      saveContinueLocal(false);
+      await signOut();
       cwMsg = "Signed out.";
       await connection.refreshStatus();
     } catch (e) {
@@ -167,7 +167,7 @@
 {#if connection.cloudWatchAvailable}
   <section class="st-card" style="margin-top: 1rem">
     <div class="st-card-head">
-      <h3 class="st-card-title">Cloud Watch</h3>
+      <h3 class="st-card-title">Cloud Scheduled Research</h3>
       <p class="st-card-sub">
         Morning briefs while this Mac is asleep. Uses the same LLM key as Settings → Models
         (synced to the server for the 9am job). Notes stay on this device.
@@ -181,7 +181,10 @@
           ? " · Models key on server"
           : " · Models key not synced yet — add a key in Models, or Sync now"}
       {:else}
-        Not signed in — use the welcome sign-in, or continue locally.
+        Not signed in — use Settings → Account (email code). Notes stay local either way.
+        <button type="button" class="linkish" onclick={() => app.openSettings("account")}>
+          Open Account
+        </button>
       {/if}
     </p>
 
@@ -302,6 +305,19 @@
     margin: 0.35rem 0 0;
     font-size: var(--text-sm);
     color: var(--text-muted);
+  }
+
+  .linkish {
+    display: inline;
+    margin-left: 0.25rem;
+    border: none;
+    background: none;
+    padding: 0;
+    font: inherit;
+    font-size: inherit;
+    color: var(--accent-link);
+    cursor: pointer;
+    text-decoration: underline;
   }
 
   .cw-actions {

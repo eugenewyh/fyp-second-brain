@@ -24,7 +24,7 @@ export function getCommands(): CommandAction[] {
     },
     {
       id: "watch",
-      label: "Open Watch",
+      label: "Open Scheduled Research",
       category: "navigation",
       run: () => app.openWatch(),
     },
@@ -34,18 +34,6 @@ export function getCommands(): CommandAction[] {
       category: "navigation",
       shortcut: "⌘G",
       run: () => workspace.toggleMemoryPanel(),
-    },
-    {
-      id: "capabilities",
-      label: "Open Capabilities",
-      category: "navigation",
-      run: () => app.openCapabilities(),
-    },
-    {
-      id: "artifacts",
-      label: "Open Artifacts",
-      category: "navigation",
-      run: () => app.openArtifacts(),
     },
     {
       id: "library",

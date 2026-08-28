@@ -1,9 +1,9 @@
 /** Workspace = topic folder; many Manager chats may share that memory. */
 
 export const ONBOARD_OPENER =
-  "This workspace has nothing in memory yet. What is it for — notes you already have, or research you want run?";
+  "This topic has nothing in memory yet. Teach notes or files first — then Ask from what I remember, or Research / Watch to look outside.";
 
 export function channelComposerPlaceholder(onboarding: boolean): string {
-  if (onboarding) return "Reply to set up this workspace…";
-  return "Message this workspace…";
+  if (onboarding) return "Paste notes or attach files to Teach this topic…";
+  return "Teach, ask from memory, research, or schedule a watch…";
 }

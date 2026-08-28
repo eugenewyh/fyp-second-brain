@@ -99,6 +99,24 @@ def test_research_allowed_with_search_intent_and_zero_matches():
     assert apply_policy("refuse", text=FIND_PAPERS, matching_claim_count=0) == "research"
 
 
+def test_research_allowed_with_research_intent_and_zero_matches():
+    from second_brain.agent.policy import has_research_intent
+
+    text = "Research indoor plant care for beginners"
+    assert has_research_intent(text)
+    assert research_allowed(text, matching_claim_count=0) is True
+    assert apply_policy("refuse", text=text, matching_claim_count=0) == "research"
+
+
+def test_forced_research_on_empty_topic():
+    assert apply_policy(
+        "research",
+        text=ESPRESSO,
+        matching_claim_count=0,
+        forced=True,
+    ) == "research"
+
+
 def test_research_allowed_with_matches_and_deepen():
     text = "Go deeper on constrained decoding"
     assert research_allowed(text, matching_claim_count=3) is True
@@ -136,7 +154,8 @@ def test_espresso_policy_denies_greedy_research(no_recall):
     decision = decide_act(ESPRESSO, project_path="/vault/dlm", choose_fn=lambda *_a: "research")
     assert decision.job == "refuse"
     assert decision.refuse_message == REFUSE_MESSAGE
-    assert "no notes" in (decision.refuse_message or "").lower()
+    assert "teach" in (decision.refuse_message or "").lower()
+    assert "notes" in (decision.refuse_message or "").lower()
 
 
 def test_in_topic_question_answers_from_notes(matching_recall):
@@ -168,15 +187,23 @@ def test_synthesis_over_notes_skips_llm(matching_recall, monkeypatch):
     assert decision.reason == "synthesis over notes"
 
 
-def test_ambiguous_calls_llm_once(matching_recall, monkeypatch):
+def test_plant_research_via_router(no_recall):
+    decision = decide_act(
+        "Research indoor plant care for low-light apartments — watering and soil",
+        project_path="/vault/Plants",
+    )
+    assert decision.job == "research"
+
+
+def test_ambiguous_falls_back_to_llm(matching_recall, monkeypatch):
     calls = {"n": 0}
 
     def fake_choose(message, snapshot):
         calls["n"] += 1
         return "answer", "ambiguous"
 
+    monkeypatch.setattr("second_brain.agent.job_router.route_job", lambda *_a, **_k: (None, "", 0.0))
     monkeypatch.setattr("second_brain.agent.supervisor._llm_choose", fake_choose)
-    # Short question without notes/search/synthesis verbs → LLM path
     decision = decide_act("What about the checkpoint?", project_path="/vault/dlm")
     assert calls["n"] == 1
     assert decision.job == "answer"
@@ -237,4 +264,4 @@ def test_act_http_attachments_and_espresso(monkeypatch: pytest.MonkeyPatch):
         body = espresso.json()
         assert body["job"] == "refuse"
         assert body["refuse_message"]
-        assert "look it up" in body["refuse_message"].lower()
+        assert "don't have notes" in body["refuse_message"].lower() or "teach" in body["refuse_message"].lower()

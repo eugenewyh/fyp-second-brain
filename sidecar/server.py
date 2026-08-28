@@ -10,7 +10,7 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT))
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -125,8 +125,6 @@ ENV_KEYS = [
     "DAILY_REVIEW_CATCH_UP",
     "ENABLE_SELF_CRITIQUE",
     "CLOUD_WATCH_URL",
-    "CLOUD_WATCH_TOKEN",
-    "CLOUD_WATCH_USER_TOKEN",
 ]
 
 # Kept in .env for the sidecar; never shown or writable via Settings UI.
@@ -136,10 +134,8 @@ _HIDDEN_ENV_KEYS = frozenset(
         "GOOGLE_API_KEY",
         "SESSION_TITLE_MODEL",
         "GEMINI_LITE_MODEL",
-        # Cloud Watch: URL is operator/build config; session token is set by sign-in.
+        # Cloud Watch URL is operator/build config (session comes from desktop Bearer).
         "CLOUD_WATCH_URL",
-        "CLOUD_WATCH_TOKEN",
-        "CLOUD_WATCH_USER_TOKEN",
     }
 )
 
@@ -221,11 +217,6 @@ class WatchPromoteRequest(BaseModel):
 class CloudWatchSyncRequest(BaseModel):
     project_path: str
     watch_id: str | None = None
-
-
-class CloudWatchAuthRequest(BaseModel):
-    email: str
-    password: str
 
 
 class CloudWatchLlmRequest(BaseModel):
@@ -1378,11 +1369,25 @@ def _cloud_sync_payload(project_path: str, watch_id: str | None) -> dict:
     }
 
 
+def _apply_cloud_watch_bearer(authorization: str | None) -> None:
+    """Bind Better Auth session from desktop Authorization header for this request."""
+    from second_brain.agent.cloud_watch_sync import set_session_token
+
+    token = ""
+    if authorization and authorization.lower().startswith("bearer "):
+        token = authorization.split(" ", 1)[1].strip()
+    set_session_token(token)
+
+
 @app.post("/api/cloud-watch/sync")
-def cloud_watch_sync(req: CloudWatchSyncRequest):
+def cloud_watch_sync(
+    req: CloudWatchSyncRequest,
+    authorization: str | None = Header(default=None),
+):
     """Push one Watch definition to the Cloud Watch service (no-op if not configured)."""
     from second_brain.agent.cloud_watch_sync import cloud_watch_configured, sync_watch_to_cloud
 
+    _apply_cloud_watch_bearer(authorization)
     if not cloud_watch_configured():
         return {"ok": False, "skipped": True, "reason": "not_configured"}
     payload = _cloud_sync_payload(req.project_path, req.watch_id)
@@ -1394,10 +1399,11 @@ def cloud_watch_sync(req: CloudWatchSyncRequest):
 
 
 @app.post("/api/cloud-watch/pull")
-def cloud_watch_pull():
+def cloud_watch_pull(authorization: str | None = Header(default=None)):
     """Pull pending cloud briefs into the local vault and ack them."""
     from second_brain.agent.cloud_watch_sync import cloud_watch_configured, pull_pending_briefs
 
+    _apply_cloud_watch_bearer(authorization)
     if not cloud_watch_configured():
         return {"ok": False, "skipped": True, "reason": "not_configured", "count": 0, "written": []}
     try:
@@ -1408,22 +1414,21 @@ def cloud_watch_pull():
 
 
 @app.get("/api/cloud-watch/status")
-def cloud_watch_status():
+def cloud_watch_status(authorization: str | None = Header(default=None)):
     from second_brain.agent.cloud_watch_sync import (
-        cloud_watch_config,
         cloud_watch_configured,
         cloud_watch_service_available,
         me,
     )
 
-    url, token = cloud_watch_config()
+    _apply_cloud_watch_bearer(authorization)
     available = cloud_watch_service_available()
-    signed_in = bool(available and token)
+    signed_in = bool(available and cloud_watch_configured())
     out: dict = {
         "available": available,
         "configured": cloud_watch_configured(),
         "signed_in": signed_in,
-        "url": "" if available else "",  # never expose URL to the client UI
+        "url": "",
         "user": None,
     }
     if signed_in:
@@ -1436,62 +1441,16 @@ def cloud_watch_status():
     return out
 
 
-def _cloud_watch_push_local_llm_best_effort() -> dict | None:
-    """After sign-in / Models save: copy local LLM key to Cloud Watch if possible."""
-    from second_brain.agent.cloud_watch_sync import push_local_llm_to_cloud
-
-    try:
-        return push_local_llm_to_cloud()
-    except RuntimeError:
-        return None
-
-
-@app.post("/api/cloud-watch/register")
-def cloud_watch_register(req: CloudWatchAuthRequest):
-    from second_brain.agent.cloud_watch_sync import cloud_watch_service_available, register
-
-    if not cloud_watch_service_available():
-        raise HTTPException(503, "Cloud Watch is not enabled on this build.")
-    try:
-        data = register(req.email, req.password)
-    except RuntimeError as e:
-        raise HTTPException(502, str(e)) from e
-    token = str(data.get("token") or "")
-    if token:
-        _write_env({"CLOUD_WATCH_USER_TOKEN": token})
-    user = _cloud_watch_push_local_llm_best_effort() or data.get("user")
-    return {"ok": True, "user": user, "token_saved": bool(token)}
-
-
-@app.post("/api/cloud-watch/login")
-def cloud_watch_login(req: CloudWatchAuthRequest):
-    from second_brain.agent.cloud_watch_sync import cloud_watch_service_available, login
-
-    if not cloud_watch_service_available():
-        raise HTTPException(503, "Cloud Watch is not enabled on this build.")
-    try:
-        data = login(req.email, req.password)
-    except RuntimeError as e:
-        raise HTTPException(502, str(e)) from e
-    token = str(data.get("token") or "")
-    if token:
-        _write_env({"CLOUD_WATCH_USER_TOKEN": token})
-    user = _cloud_watch_push_local_llm_best_effort() or data.get("user")
-    return {"ok": True, "user": user, "token_saved": bool(token)}
-
-
-@app.post("/api/cloud-watch/logout")
-def cloud_watch_logout():
-    _write_env({"CLOUD_WATCH_USER_TOKEN": ""})
-    return {"ok": True}
-
-
 @app.put("/api/cloud-watch/llm")
-def cloud_watch_llm(req: CloudWatchLlmRequest):
+def cloud_watch_llm(
+    req: CloudWatchLlmRequest,
+    authorization: str | None = Header(default=None),
+):
     from second_brain.agent.cloud_watch_sync import cloud_watch_configured, put_llm
 
+    _apply_cloud_watch_bearer(authorization)
     if not cloud_watch_configured():
-        raise HTTPException(400, "Sign in to Cloud Watch first.")
+        raise HTTPException(400, "Sign in under Settings → Account first.")
     try:
         user = put_llm(
             llm_provider=req.llm_provider,
@@ -1504,10 +1463,11 @@ def cloud_watch_llm(req: CloudWatchLlmRequest):
 
 
 @app.post("/api/cloud-watch/llm/sync")
-def cloud_watch_llm_sync():
+def cloud_watch_llm_sync(authorization: str | None = Header(default=None)):
     """Push the local Models key to Cloud Watch (same key as Research / Ask)."""
     from second_brain.agent.cloud_watch_sync import push_local_llm_to_cloud
 
+    _apply_cloud_watch_bearer(authorization)
     try:
         user = push_local_llm_to_cloud()
     except RuntimeError as e:
@@ -1628,18 +1588,6 @@ def update_settings(req: SettingsUpdate):
         if k in ENV_KEYS and k not in _HIDDEN_ENV_KEYS
     }
     _write_env(allowed)
-    llm_keys = {
-        "LLM_PROVIDER",
-        "LLM_API_KEY",
-        "LLM_MODEL",
-        "GROQ_API_KEY",
-        "OPENAI_API_KEY",
-        "OPENROUTER_API_KEY",
-        "XAI_API_KEY",
-        "CUSTOM_API_KEY",
-    }
-    if allowed.keys() & llm_keys:
-        _cloud_watch_push_local_llm_best_effort()
     return {"updated": list(allowed.keys()), "values": {
         k: v for k, v in _read_env().items() if k not in _HIDDEN_ENV_KEYS
     }}

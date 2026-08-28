@@ -7,6 +7,7 @@
   import AgentRunBlock from "./AgentRunBlock.svelte";
   import { markdownBodyToHtml } from "$lib/vault/markdown";
   import { formatDigestSummary } from "$lib/assistant/transparency";
+  import { shouldAutoResearch } from "$lib/assistant/intent";
   import FailRetry from "./FailRetry.svelte";
 
   interface Props {
@@ -14,6 +15,8 @@
     onCancel?: () => void;
     onLookup?: (query: string) => void;
     onRetryAsk?: (turnId: string) => void;
+    onTeach?: () => void;
+    onViewMemory?: () => void;
   }
 
   let {
@@ -21,15 +24,17 @@
     onCancel,
     onLookup,
     onRetryAsk,
+    onTeach,
+    onViewMemory,
   }: Props = $props();
 
   const routeCopy = $derived(
     assistant.routeStatus === "teach"
-      ? "Filing into memory"
+      ? "Remembering…"
       : assistant.routeStatus === "explain"
-        ? "Answering from memory"
+        ? "Asking from memory…"
         : assistant.routeStatus === "lookup"
-          ? "Not in memory — looking up."
+          ? "Researching…"
           : null,
   );
 
@@ -55,6 +60,13 @@
     }
     app.openDocument(path, { from: "agent" });
     workspace.setActiveNote(path);
+  }
+
+  function rememberedCount(turn: {
+    claimsCreated?: number;
+    claimsRevised?: number;
+  }): number {
+    return (turn.claimsCreated ?? 0) + (turn.claimsRevised ?? 0);
   }
 
   async function scrollToBottom() {
@@ -86,6 +98,7 @@
           {:else if turn.kind === "manager"}
             <div class="row manager-row">
               <div class="bubble manager" data-testid="manager-bubble">
+                <p class="job-label">Manager</p>
                 <p>{turn.content}</p>
               </div>
             </div>
@@ -99,6 +112,9 @@
                 />
               {:else}
                 <div class="ask-body" data-testid="ask-bubble">
+                  <p class="job-label">
+                    {turn.thinMemory ? "Needs memory" : "Ask"}
+                  </p>
                   <div class="ask-prose">
                     {@html markdownBodyToHtml(turn.content)}
                   </div>
@@ -117,16 +133,31 @@
                       {/if}
                     </div>
                   {/if}
-                  {#if turn.thinMemory && onLookup && priorUserText(turn.id)}
-                    <button
-                      type="button"
-                      class="lookup-link"
-                      data-testid="look-this-up"
-                      disabled={assistant.isLoading}
-                      onclick={() => onLookup(priorUserText(turn.id))}
-                    >
-                      Look this up
-                    </button>
+                  {#if turn.thinMemory}
+                    <div class="next-actions" data-testid="thin-memory-actions">
+                      {#if onTeach}
+                        <button
+                          type="button"
+                          class="action-btn primary"
+                          data-testid="teach-first"
+                          disabled={assistant.isLoading}
+                          onclick={() => onTeach()}
+                        >
+                          Teach notes
+                        </button>
+                      {/if}
+                      {#if onLookup && priorUserText(turn.id) && !shouldAutoResearch(priorUserText(turn.id))}
+                        <button
+                          type="button"
+                          class="action-btn"
+                          data-testid="look-this-up"
+                          disabled={assistant.isLoading}
+                          onclick={() => onLookup(priorUserText(turn.id))}
+                        >
+                          Look this up
+                        </button>
+                      {/if}
+                    </div>
                   {/if}
                 </div>
               {/if}
@@ -143,7 +174,7 @@
               {:else}
               <div class="digest-card" data-testid="digest-card">
                 {#if turn.status === "running"}
-                  <p class="digest-kicker">Filing into memory…</p>
+                  <p class="digest-kicker">Remembering…</p>
                   <p class="digest-summary">{turn.label}</p>
                 {:else}
                   <p class="digest-kicker">
@@ -156,6 +187,7 @@
                         created: turn.claimsCreated ?? 0,
                         revised: turn.claimsRevised ?? 0,
                         dropped: turn.claimsDropped ?? 0,
+                        idempotent: turn.idempotent,
                       })}
                     </li>
                     {#if turn.savedPath}
@@ -170,6 +202,23 @@
                       </li>
                     {/if}
                   </ul>
+                  {#if rememberedCount(turn) > 0 || turn.idempotent}
+                    <div class="next-actions">
+                      {#if onViewMemory}
+                        <button
+                          type="button"
+                          class="action-btn primary"
+                          data-testid="view-memory"
+                          onclick={() => onViewMemory()}
+                        >
+                          View memory
+                          {#if rememberedCount(turn) > 0}
+                            · {rememberedCount(turn)}
+                          {/if}
+                        </button>
+                      {/if}
+                    </div>
+                  {/if}
                 {/if}
               </div>
               {/if}
@@ -235,20 +284,29 @@
     justify-content: stretch;
   }
 
+  .job-label {
+    margin: 0 0 0.35rem;
+    font-size: var(--text-2xs);
+    font-weight: var(--font-semibold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent-live);
+  }
+
   .digest-card {
     width: 100%;
-    padding: 0.75rem 1rem;
-    border: 1px solid var(--border);
+    padding: 0.85rem 1rem;
+    border: 1px solid color-mix(in srgb, var(--warning) 28%, var(--border));
     border-radius: var(--radius-xl);
-    background: var(--control-fill);
+    background: color-mix(in srgb, var(--warning) 6%, var(--bg-elevated));
   }
 
   .digest-kicker {
     margin: 0 0 0.25rem;
-    font-size: var(--text-sm);
-    font-weight: var(--font-medium);
-    color: var(--text-muted);
-    letter-spacing: 0.02em;
+    font-size: var(--text-2xs);
+    font-weight: var(--font-semibold);
+    color: var(--warning);
+    letter-spacing: 0.06em;
     text-transform: uppercase;
   }
 
@@ -270,171 +328,115 @@
     background: none;
     border: none;
     padding: 0;
-    color: var(--accent, var(--text));
+    color: var(--accent-live);
     cursor: pointer;
     text-decoration: underline;
+    text-underline-offset: 0.15em;
+  }
+
+  .next-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.7rem;
+  }
+
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    background: var(--bg-elevated);
+    color: var(--text);
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+    cursor: pointer;
+    min-height: auto;
+  }
+
+  .action-btn:hover:not(:disabled) {
+    background: var(--chrome-action-hover);
+    border-color: var(--border-active);
+  }
+
+  .action-btn.primary {
+    background: var(--accent);
+    border-color: transparent;
+    color: var(--accent-contrast);
+  }
+
+  .action-btn.primary:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
+
+  .action-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
   }
 
   .bubble.user {
     width: 100%;
     max-width: 100%;
-    padding: 0.75rem 1rem;
-    border-radius: var(--radius-xl);
+    padding: 0.75rem 0.9rem;
+    border-radius: var(--radius-lg);
     background: var(--bubble-user);
     color: var(--text);
-    border: 1px solid var(--border);
-    font-size: var(--type-body-md-size);
-    font-weight: var(--type-body-md-weight);
-    line-height: var(--type-body-md-leading);
-  }
-
-  .bubble.user p {
-    margin: 0;
+    line-height: 1.5;
     white-space: pre-wrap;
   }
 
-  .manager-row {
-    justify-content: flex-start;
-  }
-
   .bubble.manager {
-    max-width: 28rem;
-    padding: 0.55rem 0.85rem;
-    border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-xs);
-    background: var(--control-fill);
-    color: var(--text);
-    font-size: var(--type-body-sm-size);
-    font-weight: var(--type-body-sm-weight);
-    line-height: var(--type-body-sm-leading);
-    border: 1px solid var(--border-subtle);
+    max-width: 100%;
+    color: var(--text-muted);
+    line-height: 1.5;
   }
 
   .bubble.manager p {
     margin: 0;
-    white-space: pre-wrap;
   }
 
   .ask-body {
     width: 100%;
-    color: var(--text);
-  }
-
-  .ask-body.err-bubble .err {
-    margin: 0;
   }
 
   .ask-prose {
-    font-size: var(--type-body-md-size);
-    font-weight: var(--type-body-md-weight);
-    line-height: 1.65;
-    letter-spacing: var(--type-body-md-tracking);
     color: var(--text);
+    line-height: 1.55;
   }
 
-  .ask-prose :global(> *:first-child) {
-    margin-top: 0;
+  .ask-prose :global(p) {
+    margin: 0 0 0.65rem;
   }
 
-  .ask-prose :global(> *:last-child) {
+  .ask-prose :global(p:last-child) {
     margin-bottom: 0;
   }
 
-  .ask-prose :global(p),
-  .ask-prose :global(ul),
-  .ask-prose :global(ol) {
-    margin: 0 0 0.7rem;
-  }
-
-  .ask-prose :global(ul),
-  .ask-prose :global(ol) {
-    padding-left: 1.2rem;
-  }
-
-  .ask-prose :global(li) {
-    margin-bottom: 0.5rem;
-  }
-
-  .ask-prose :global(h1),
-  .ask-prose :global(h2),
-  .ask-prose :global(h3) {
-    margin: 1rem 0 0.45rem;
-    font-weight: var(--font-semibold);
-    letter-spacing: -0.02em;
-    line-height: 1.3;
-    color: var(--text);
-  }
-
-  .ask-prose :global(h1) {
-    font-size: var(--text-xl);
-  }
-
-  .ask-prose :global(h2),
-  .ask-prose :global(h3) {
-    font-size: var(--text-lg);
-  }
-
-  .ask-prose :global(strong) {
-    font-weight: var(--font-semibold);
-  }
-
-  .ask-prose :global(code) {
-    font-family: var(--font-mono);
-    font-size: 0.88em;
-    background: var(--control-fill);
-    border-radius: var(--radius-sm);
-    padding: 0.08em 0.32em;
-  }
-
-  .ask-prose :global(pre) {
-    margin: 0 0 0.7rem;
-    padding: 0.7rem 0.85rem;
-    background: var(--control-fill);
-    border-radius: var(--radius-md);
-    overflow-x: auto;
-  }
-
-  .ask-prose :global(pre code) {
-    background: none;
-    padding: 0;
-  }
-
-  .route-status {
-    margin: 0.15rem 0 0.35rem;
-    color: var(--text-muted);
-    font-size: var(--text-sm);
-  }
-
   .sources {
-    margin-top: 0.7rem;
-  }
-
-  .err {
-    color: var(--error);
-    font-size: var(--text-base);
-    line-height: 1.5;
+    margin-top: 0.65rem;
   }
 
   .more-src {
     margin: 0.35rem 0 0;
     font-size: var(--text-xs);
-    color: var(--text-muted);
+    color: var(--text-faint);
   }
 
-  .lookup-link {
-    display: inline-block;
-    margin-top: 0.7rem;
-    background: none;
-    border: none;
-    padding: 0;
-    color: var(--accent, var(--text));
-    cursor: pointer;
-    font: inherit;
+  .route-status {
+    margin: 0;
     font-size: var(--text-sm);
+    color: var(--accent-live);
     font-weight: var(--font-medium);
   }
 
-  .lookup-link:disabled {
-    opacity: 0.5;
-    cursor: default;
+  .user-row {
+    justify-content: flex-end;
+  }
+
+  .user-row .bubble.user {
+    width: auto;
+    max-width: min(36rem, 92%);
   }
 </style>

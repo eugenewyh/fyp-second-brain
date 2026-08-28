@@ -182,8 +182,20 @@ def test_forced_job_research_overrides_notes_ask(no_llm, monkeypatch: pytest.Mon
     assert turn.reason == "forced"
 
 
+def test_forced_job_watch_dispatches(no_recall, no_llm):
+    turn = take_turn(
+        "diffusion language models",
+        project_path="/vault/dlm",
+        clarify_count=0,
+        forced_job="watch",
+    )
+    assert turn.kind == "dispatch"
+    assert turn.job == "watch"
+    assert turn.reason == "forced watch"
+
+
 def test_forced_job_still_clamped_by_policy(no_recall, no_llm):
-    """Force research off-topic with zero claims → refuse."""
+    """Force research on empty topic now allowed — user/composer chose Research."""
     turn = take_turn(
         ESPRESSO,
         project_path="/vault/dlm",
@@ -191,7 +203,17 @@ def test_forced_job_still_clamped_by_policy(no_recall, no_llm):
         forced_job="research",
     )
     assert turn.kind == "dispatch"
-    assert turn.job == "refuse"
+    assert turn.job == "research"
+
+
+def test_research_phrasing_on_empty_topic(no_recall, no_llm):
+    turn = take_turn(
+        "Research indoor plant care for low-light apartments",
+        project_path="/vault/Plants",
+        clarify_count=0,
+    )
+    assert turn.kind == "dispatch"
+    assert turn.job == "research"
 
 
 def test_dump_skips_interview(no_recall, no_llm):

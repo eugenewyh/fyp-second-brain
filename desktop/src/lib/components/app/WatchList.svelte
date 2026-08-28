@@ -101,7 +101,7 @@
       plannerError = plan?.watch_error?.trim() || "";
       connection.watchPlanError = plannerError;
     } catch (e) {
-      error = e instanceof Error ? e.message : "Could not load watches";
+      error = e instanceof Error ? e.message : "Could not load schedules";
     } finally {
       loading = false;
     }
@@ -117,11 +117,11 @@
     let path = topicPath;
     if (!path) {
       try {
-        path = await ensureProjectFolder(opts?.name || "Watch");
+        path = await ensureProjectFolder(opts?.name || "Scheduled Research");
         workspace.setActiveTopic(path);
         await workspace.syncProjectsFromDisk();
       } catch {
-        error = "Couldn't create a topic for this watch. Start a chat first.";
+        error = "Couldn't create a topic for this schedule. Start a chat first.";
         return;
       }
     }
@@ -315,16 +315,16 @@
 <div class="watch-list ui-scroll">
   <header class="hero">
     <div>
-      <h1>Watch</h1>
+      <h1>Scheduled Research</h1>
       <p class="sub">
-        Standing briefs for your topics. Active Watches run on weekday mornings while Nous is open;
+        Recurring research briefs for your topics. Active schedules run on weekday mornings while Nous is open;
         if the app was closed, catch-up runs after the scheduled hour when you reopen. Or Run anytime.
       </p>
     </div>
     <div class="hero-actions">
       <button type="button" class="primary" onclick={() => createNamed()}>
         <Plus size={15} strokeWidth={2.25} />
-        New Watch
+        New schedule
       </button>
     </div>
   </header>
@@ -358,7 +358,7 @@
 
   {#if connection.watchesApiStale}
     <p class="err" role="status">
-      Watch routes on this AI service are out of date.
+      Scheduled Research routes on this AI service are out of date.
       <button type="button" class="text-btn" disabled={reloading} onclick={() => void reloadService()}>
         {reloading ? "Reloading…" : "Reload AI service"}
       </button>
@@ -367,13 +367,13 @@
 
   {#if plannerError}
     <p class="err" role="status" title={plannerError}>
-      Morning Watch planning failed: {plannerError}
+      Morning schedule planning failed: {plannerError}
     </p>
   {/if}
 
   <div class="toolbar">
     {#if watches.length > 0}
-      <div class="filters" role="tablist" aria-label="Filter watches">
+      <div class="filters" role="tablist" aria-label="Filter schedules">
         <button type="button" class:on={kindFilter === "all"} onclick={() => (kindFilter = "all")}>All</button>
         <button type="button" class:on={kindFilter === "scheduled"} onclick={() => (kindFilter = "scheduled")}>Scheduled</button>
         <button type="button" class:on={kindFilter === "draft"} onclick={() => (kindFilter = "draft")}>Drafts</button>
@@ -391,7 +391,7 @@
   {/if}
 
   {#if !topicPath}
-    <p class="empty">Create a topic first, then add a Watch.</p>
+    <p class="empty">Create a topic first, then add a schedule.</p>
   {:else if loading && watches.length === 0}
     <p class="empty">Loading…</p>
   {:else if filtered.length === 0}
@@ -400,7 +400,7 @@
         ? "No matches."
         : kindFilter !== "all"
           ? "Nothing in this filter."
-          : "No watches yet — New Watch or pick a starter."}
+          : "No schedules yet — New schedule or pick a starter."}
     </p>
   {:else}
     <div class="table" role="table">
@@ -423,7 +423,7 @@
             type="button"
             class="more"
             class:on={menu?.key === rowKey(w)}
-            aria-label="Watch actions"
+            aria-label="Schedule actions"
             aria-haspopup="menu"
             aria-expanded={menu?.key === rowKey(w)}
             onclick={(e) => toggleMenu(e, w)}

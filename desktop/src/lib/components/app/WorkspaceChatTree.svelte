@@ -27,7 +27,6 @@
     search?: string;
     activeWorkspacePath: string | null;
     activeSessionId?: string | null;
-    onOpenWorkspace: (path: string) => void;
     onOpenSession: (sessionId: string) => void;
     onNewChat: (path: string) => void;
     onDeleteSession?: (sessionId: string) => void;
@@ -43,7 +42,6 @@
     search = "",
     activeWorkspacePath,
     activeSessionId = null,
-    onOpenWorkspace,
     onOpenSession,
     onNewChat,
     onDeleteSession,
@@ -278,11 +276,14 @@
 
 <ul class="list">
   {#each visibleGroups() as group (group.path)}
-    {@const workspaceActive = pathsMatch(group.path, activeWorkspacePath) && app.isHome}
+    {@const isSelectedWorkspace = pathsMatch(group.path, activeWorkspacePath)}
     {@const renaming = pathsMatch(renamingPath, group.path)}
     {@const pinFlash = pathsMatch(pinFlashPath, group.path)}
     {@const open = isExpanded(group.path)}
     {@const chats = filteredSessions(group)}
+    {@const workspaceRowActive =
+      isSelectedWorkspace &&
+      (app.isWatch || (app.isHome && !activeSessionId))}
     <li
       class="group"
       class:pin-flash={pinFlash}
@@ -291,40 +292,29 @@
     >
       <div
         class="workspace"
-        class:active={workspaceActive && !activeSessionId}
+        class:active={workspaceRowActive}
         class:pinned={group.pinned}
         class:pin-pop={pinFlash && group.pinned}
         role={renaming ? undefined : "button"}
         tabindex={renaming ? -1 : 0}
         onclick={() => {
           if (renaming) return;
-          setExpanded(group.path, true);
-          onOpenWorkspace(group.path);
+          toggleExpanded(group.path);
         }}
         onkeydown={(e) => {
           if (renaming) return;
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
-            onOpenWorkspace(group.path);
+            toggleExpanded(group.path);
           }
         }}
         oncontextmenu={(e) => openWorkspaceMenu(group.path, e)}
         title={group.name}
+        aria-expanded={open}
       >
-        <button
-          type="button"
-          class="twist"
-          class:open
-          aria-expanded={open}
-          aria-label={open ? "Collapse chats" : "Expand chats"}
-          onpointerdown={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          onclick={(e) => toggleExpanded(group.path, e)}
-        >
+        <span class="twist" class:open aria-hidden="true">
           <ChevronRight size={12} strokeWidth={2} />
-        </button>
+        </span>
         <span class="lead-icon" aria-hidden="true">
           <Hash size={13} strokeWidth={1.75} />
         </span>

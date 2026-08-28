@@ -173,9 +173,9 @@ export type ChatSession = {
   draftAttachments?: ComposerAttachment[];
 };
 
-/** No user message yet (opener-only or blank). */
+/** Blank or opener-only — no Teach / Ask / Research work yet. */
 export function isIdleSession(s: { turns: AssistantTurn[] }): boolean {
-  return !s.turns.some((t) => t.kind === "user");
+  return !s.turns.some((t) => t.kind !== "manager");
 }
 
 /** Typed (or attached) but not sent — still counts as a kept New chat. */
@@ -357,23 +357,24 @@ class AssistantStore {
   /** Quiet thread status for inferred routing (not a mode tab). */
   routeStatus = $state<"teach" | "explain" | "lookup" | null>(null);
   /**
-   * Force next Manager job (Shift+Tab / plus menu). null = Auto.
-   * Maps: Ask→answer, Research→research, Teach→file.
+   * Force next Manager job (skill chips / Shift+Tab). null = Auto.
+   * Maps: Ask→answer, Research→research, Teach→file, Watch→watch.
    */
-  forcedJob = $state<"answer" | "research" | "file" | null>(null);
+  forcedJob = $state<"answer" | "research" | "file" | "watch" | null>(null);
 
   cycleForcedJob(): void {
-    const order: Array<"answer" | "research" | "file" | null> = [
+    const order: Array<"answer" | "research" | "file" | "watch" | null> = [
       null,
       "answer",
       "research",
       "file",
+      "watch",
     ];
     const i = order.indexOf(this.forcedJob);
     this.forcedJob = order[(i + 1) % order.length];
   }
 
-  setForcedJob(job: "answer" | "research" | "file" | null): void {
+  setForcedJob(job: "answer" | "research" | "file" | "watch" | null): void {
     this.forcedJob = job;
   }
 
@@ -381,6 +382,7 @@ class AssistantStore {
     if (this.forcedJob === "answer") return "Ask";
     if (this.forcedJob === "research") return "Research";
     if (this.forcedJob === "file") return "Teach";
+    if (this.forcedJob === "watch") return "Watch";
     return "Auto";
   }
 
@@ -924,6 +926,14 @@ class AssistantStore {
     this.persist();
   }
 
+  /** Cancel + drop every chat bound to a workspace (before deleting its folder). */
+  purgeProjectSessions(projectPath: string): void {
+    const ids = Object.values(this.sessions)
+      .filter((s) => pathsMatch(s.projectPath, projectPath))
+      .map((s) => s.id);
+    for (const id of ids) this.deleteSession(id);
+  }
+
   /** Wipe all chat/research sessions from memory and localStorage. */
   clearAllSessions(): void {
     for (const id of Object.keys(this.jobs)) {
@@ -1331,6 +1341,8 @@ class AssistantStore {
     if (!sid || !this.sessions[sid]) return;
     const s = this.sessions[sid];
     if (!s || !channelEmpty) return;
+    // Don't greet once Remember / Ask / Research has started in this chat.
+    if (s.turns.some((t) => t.kind !== "manager")) return;
     if (s.turns.length === 0) {
       this.appendTurn({ id: newId(), kind: "manager", content: ONBOARD_OPENER }, sid);
       return;
@@ -1338,6 +1350,19 @@ class AssistantStore {
     if (!s.turns.some((t) => t.kind === "manager")) {
       this.appendTurn({ id: newId(), kind: "manager", content: ONBOARD_OPENER }, sid);
     }
+  }
+
+  /** Drop the empty-workspace greeting once notes are being filed. */
+  clearOnboardOpener(sessionId?: string | null): void {
+    const sid = sessionId ?? this.activeSessionId;
+    if (!sid || !this.sessions[sid]) return;
+    const s = this.sessions[sid];
+    const turns = s.turns.filter(
+      (t) => !(t.kind === "manager" && t.content === ONBOARD_OPENER),
+    );
+    if (turns.length === s.turns.length) return;
+    this.patchSession(sid, { turns });
+    this.persist();
   }
 
   clarifyCount(): number {
@@ -1894,6 +1919,7 @@ class AssistantStore {
     const sid = opts?.sessionId ?? this.ensureActiveSession();
     if (!sid || !this.sessions[sid] || this.sessionBusy(sid)) return;
 
+    this.clearOnboardOpener(sid);
     this.input = "";
     this.attachments = [];
     app.openAgent();
@@ -1932,13 +1958,16 @@ class AssistantStore {
       return;
     }
     try {
-      const result: DigestResult = await api.digest({
-        text: body || null,
-        title: opts?.title ?? label,
-        paths: paths.length ? paths : undefined,
-        projectPath: this.projectPathForSession(sid),
-        sessionId: sid,
-      });
+      const result: DigestResult = await api.digest(
+        {
+          text: body || null,
+          title: opts?.title ?? label,
+          paths: paths.length ? paths : undefined,
+          projectPath: this.projectPathForSession(sid),
+          sessionId: sid,
+        },
+        started.abort.signal,
+      );
       this.updateTurn(
         turnId,
         {
@@ -1960,14 +1989,14 @@ class AssistantStore {
       );
       this.appendTeachAskNudge(sid, result.claims_created, result.claims_revised);
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Remember failed";
+      const aborted = e instanceof Error && e.name === "AbortError";
       this.updateTurn(
         turnId,
         {
           kind: "digest",
           status: "error",
           label,
-          error: message,
+          error: aborted ? "Cancelled" : e instanceof Error ? e.message : "Remember failed",
           retryText: body || undefined,
           retryPaths: paths,
         },
@@ -2007,13 +2036,16 @@ class AssistantStore {
     const started = this.beginJob(sid, "digest", { turnId });
     if ("error" in started) return;
     try {
-      const result: DigestResult = await api.digest({
-        text: body || null,
-        title: turn.label,
-        paths: paths.length ? paths : undefined,
-        projectPath: this.projectPathForSession(sid),
-        sessionId: sid,
-      });
+      const result: DigestResult = await api.digest(
+        {
+          text: body || null,
+          title: turn.label,
+          paths: paths.length ? paths : undefined,
+          projectPath: this.projectPathForSession(sid),
+          sessionId: sid,
+        },
+        started.abort.signal,
+      );
       this.updateTurn(
         turnId,
         {
@@ -2035,14 +2067,14 @@ class AssistantStore {
       );
       this.appendTeachAskNudge(sid, result.claims_created, result.claims_revised);
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Remember failed";
+      const aborted = e instanceof Error && e.name === "AbortError";
       this.updateTurn(
         turnId,
         {
           kind: "digest",
           status: "error",
           label: turn.label,
-          error: message,
+          error: aborted ? "Cancelled" : e instanceof Error ? e.message : "Remember failed",
           retryText: body || undefined,
           retryPaths: paths,
         },

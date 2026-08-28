@@ -40,9 +40,9 @@ export function formatDigestSummary(opts: {
   const dropped = opts.dropped ?? 0;
   const parts: string[] = [];
   if (opts.idempotent) parts.push("Already in memory");
-  if (created) parts.push(`Saved ${created} idea${created === 1 ? "" : "s"}`);
-  if (revised) parts.push(`updated ${revised}`);
-  if (dropped) parts.push(`skipped ${dropped}`);
+  if (created) parts.push(`${created} claim${created === 1 ? "" : "s"} remembered`);
+  if (revised) parts.push(`${revised} updated`);
+  if (dropped) parts.push(`${dropped} skipped`);
   return parts.join(" · ") || "Remembered";
 }
 
