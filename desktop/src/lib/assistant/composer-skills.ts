@@ -84,4 +84,4 @@ export const COACH_STEPS = [
 ] as const;
 
 export const THIN_MEMORY_REFUSE =
-  "Nothing remembered for this topic yet — files in the library don't count until you Teach them.\n\nPaste notes or attach a file with Teach, or look it up if you want sources from the web.";
+  "I don't have notes on this topic yet. Teach something here first — then Ask from what you saved.";

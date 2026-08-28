@@ -155,7 +155,7 @@ def test_espresso_policy_denies_greedy_research(no_recall):
     assert decision.job == "refuse"
     assert decision.refuse_message == REFUSE_MESSAGE
     assert "teach" in (decision.refuse_message or "").lower()
-    assert "remembered" in (decision.refuse_message or "").lower()
+    assert "notes" in (decision.refuse_message or "").lower()
 
 
 def test_in_topic_question_answers_from_notes(matching_recall):
@@ -264,4 +264,4 @@ def test_act_http_attachments_and_espresso(monkeypatch: pytest.MonkeyPatch):
         body = espresso.json()
         assert body["job"] == "refuse"
         assert body["refuse_message"]
-        assert "look it up" in body["refuse_message"].lower()
+        assert "don't have notes" in body["refuse_message"].lower() or "teach" in body["refuse_message"].lower()

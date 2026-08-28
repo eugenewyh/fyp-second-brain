@@ -4,7 +4,7 @@
   import { connection } from "$lib/stores/connection.svelte";
   import { workspace } from "$lib/stores/workspace.svelte";
   import { app } from "$lib/stores/app.svelte";
-  import { classifyIntent, leftoverQuestionAfterTeach } from "$lib/assistant/intent";
+  import { classifyIntent, leftoverQuestionAfterTeach, shouldAutoResearch } from "$lib/assistant/intent";
   import { suggestTopicName } from "$lib/assistant/topic-name";
   import { ensureProjectFolder, readNote, updateProjectFolder } from "$lib/vault/load";
   import { splitFrontmatter } from "$lib/vault/markdown";
@@ -12,6 +12,7 @@
   import type { ManagerJob } from "$lib/api";
   import type { ChatStarterId, ChatSetupAction } from "$lib/assistant/chat-starters";
   import { composerPlaceholder, landingPhase } from "$lib/assistant/chat-starters";
+  import { THIN_MEMORY_REFUSE } from "$lib/assistant/composer-skills";
   import { channelComposerPlaceholder } from "$lib/assistant/channel-agents";
   import ComposerDock from "./ComposerDock.svelte";
   import ChatLanding from "./ChatLanding.svelte";
@@ -231,6 +232,7 @@
     let alsoFromTurn: string[] = [];
     let newTopic = "";
     let idea = "";
+    const forcedSkill = assistant.forcedJob;
 
     try {
       try {
@@ -242,7 +244,7 @@
           clarifyCount,
           history,
           topics: workspace.projectFolders.map((f) => ({ name: f.name, path: f.path })),
-          forcedJob: assistant.forcedJob,
+          forcedJob: forcedSkill,
         });
         kind = turn.kind;
         job = (turn.job ?? "answer") as ManagerJob;
@@ -261,7 +263,14 @@
         if (assistant.forcedJob) assistant.setForcedJob(null);
       } catch {
         const intent = classifyIntent({ text, hasAttachments });
-        job = intent === "teach" ? "file" : intent === "lookup" ? "research" : "answer";
+        job =
+          shouldAutoResearch(text) || forcedSkill === "research"
+            ? "research"
+            : intent === "teach"
+              ? "file"
+              : intent === "lookup"
+                ? "research"
+                : "answer";
         createTopic = suggestTopicName(text);
       }
 
@@ -382,12 +391,26 @@
         return;
       }
       if (job === "refuse") {
-        assistant.presentRefuse(
-          text,
-          refuseMessage ||
-            "Nothing remembered for this topic yet — files in the library don't count until you Teach them.\n\nPaste notes or attach a file with Teach, or look it up if you want sources from the web.",
-          { skipUserTurn: true, sessionId },
-        );
+        if (shouldAutoResearch(text) || forcedSkill === "research") {
+          await assistant.runGoal(instruction || text, {
+            skipUserTurn: true,
+            alsoProjectPaths: alsoPaths,
+            sessionId,
+          });
+          return;
+        }
+        assistant.presentRefuse(text, refuseMessage || THIN_MEMORY_REFUSE, {
+          skipUserTurn: true,
+          sessionId,
+        });
+        return;
+      }
+      if (shouldAutoResearch(instruction || text)) {
+        await assistant.runGoal(instruction || text, {
+          skipUserTurn: true,
+          alsoProjectPaths: alsoPaths,
+          sessionId,
+        });
         return;
       }
       await assistant.sendQuickAnswer(workspace.activeNotePath, await chatContext(), instruction, {

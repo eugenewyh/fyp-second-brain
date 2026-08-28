@@ -7,6 +7,7 @@
   import AgentRunBlock from "./AgentRunBlock.svelte";
   import { markdownBodyToHtml } from "$lib/vault/markdown";
   import { formatDigestSummary } from "$lib/assistant/transparency";
+  import { shouldAutoResearch } from "$lib/assistant/intent";
   import FailRetry from "./FailRetry.svelte";
 
   interface Props {
@@ -145,7 +146,7 @@
                           Teach notes
                         </button>
                       {/if}
-                      {#if onLookup && priorUserText(turn.id)}
+                      {#if onLookup && priorUserText(turn.id) && !shouldAutoResearch(priorUserText(turn.id))}
                         <button
                           type="button"
                           class="action-btn"

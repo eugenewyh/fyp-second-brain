@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   classifyIntent,
+  hasResearchIntent,
   hasLookupVerbs,
   isNoteDump,
   leftoverQuestionAfterTeach,
+  shouldAutoResearch,
 } from "./intent";
 
 const DUMP = [
@@ -61,6 +63,20 @@ describe("classifyIntent", () => {
         text: "Synthesise my stance on home espresso: grind vs dose. Cite my notes.",
       }),
     ).toBe("lookup");
+  });
+
+  it("treats Research mission phrasing as lookup", () => {
+    expect(
+      classifyIntent({
+        text: "Research how specialty coffee roasting affects flavor — compare light vs dark roast",
+      }),
+    ).toBe("lookup");
+    expect(hasResearchIntent("Research indoor plant care")).toBe(true);
+    expect(
+      shouldAutoResearch(
+        "Research how specialty coffee roasting affects flavor — compare light vs dark roast",
+      ),
+    ).toBe(true);
   });
 });
 
