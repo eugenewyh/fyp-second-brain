@@ -11,14 +11,9 @@
     shortModelLabel,
   } from "$lib/llm/models";
   import {
-    CalendarClock,
     Plus,
     ArrowUp,
     ChevronDown,
-    MessageCircleQuestion,
-    ScanSearch,
-    BookMarked,
-    WandSparkles,
     Paperclip,
     Files,
     Search,
@@ -33,20 +28,26 @@
     registerComposerDropTarget,
   } from "$lib/assistant/composer-dnd";
   import {
-    COMPOSER_SKILLS,
     skillPlaceholder,
     type ForcedJob,
   } from "$lib/assistant/composer-skills";
 
-  type ModeAction = "ask" | "research" | "teach" | "watch" | "auto";
+  type ModeAction = "ask" | "research" | "teach";
 
   const MODE_ITEMS: Array<{
     action: ModeAction;
     label: string;
     desc: string;
-    job: "answer" | "research" | "file" | "watch" | null;
-    tone: "ask" | "research" | "teach" | "watch" | "auto";
+    job: "answer" | "research" | "file";
+    tone: "ask" | "research" | "teach";
   }> = [
+    {
+      action: "teach",
+      label: "Teach",
+      desc: "Save notes or files into long-term memory",
+      job: "file",
+      tone: "teach",
+    },
     {
       action: "ask",
       label: "Ask",
@@ -60,27 +61,6 @@
       desc: "Run a multi-agent mission with sources and a report",
       job: "research",
       tone: "research",
-    },
-    {
-      action: "teach",
-      label: "Teach",
-      desc: "Save notes or files into long-term memory",
-      job: "file",
-      tone: "teach",
-    },
-    {
-      action: "watch",
-      label: "Watch",
-      desc: "Schedule recurring research briefs for this topic",
-      job: "watch",
-      tone: "watch",
-    },
-    {
-      action: "auto",
-      label: "Auto",
-      desc: "Let the Manager pick the best mode for this message",
-      job: null,
-      tone: "auto",
     },
   ];
 
@@ -127,6 +107,14 @@
       !assistant.isLoading &&
       !connection.memorySearchBlocked &&
       (!!assistant.input.trim() || assistant.attachments.length > 0),
+  );
+
+  const activeMode = $derived(
+    MODE_ITEMS.find((m) => m.job === assistant.forcedJob) ?? null,
+  );
+
+  const bottomModes = $derived(
+    MODE_ITEMS.filter((m) => m.job !== assistant.forcedJob),
   );
 
   async function loadModel() {
@@ -185,7 +173,7 @@
   }
 
   function runPlusAction(
-    action: "ingest" | "attach" | "ask" | "research" | "teach" | "watch" | "auto",
+    action: "ingest" | "attach" | "ask" | "research" | "teach",
   ) {
     plusOpen = false;
     if (action === "ask") {
@@ -203,15 +191,6 @@
       assistant.composerFocusNonce += 1;
       return;
     }
-    if (action === "watch") {
-      assistant.setForcedJob("watch");
-      assistant.composerFocusNonce += 1;
-      return;
-    }
-    if (action === "auto") {
-      assistant.setForcedJob(null);
-      return;
-    }
     if (action === "ingest") {
       app.openSheet("ingest");
       return;
@@ -219,8 +198,15 @@
     void pickAttachFiles();
   }
 
-  function selectSkill(job: ForcedJob) {
+  function selectSkill(job: Exclude<ForcedJob, null>) {
     assistant.setForcedJob(job);
+    plusOpen = false;
+    modelOpen = false;
+    assistant.composerFocusNonce += 1;
+  }
+
+  function clearForcedSkill() {
+    assistant.setForcedJob(null);
     plusOpen = false;
     modelOpen = false;
     assistant.composerFocusNonce += 1;
@@ -383,35 +369,45 @@
   });
 </script>
 
-{#snippet modeIcon(tone: "ask" | "research" | "teach" | "watch" | "auto")}
-  {#if tone === "ask"}
-    <MessageCircleQuestion size={16} strokeWidth={2} />
-  {:else if tone === "research"}
-    <ScanSearch size={16} strokeWidth={2} />
-  {:else if tone === "teach"}
-    <BookMarked size={16} strokeWidth={2} />
-  {:else if tone === "watch"}
-    <CalendarClock size={16} strokeWidth={2} />
-  {:else}
-    <WandSparkles size={16} strokeWidth={2} />
+{#snippet skillPills()}
+  {#if bottomModes.length}
+    <div class="skill-row" role="group" aria-label="Message skills" data-testid="composer-skills">
+      {#each bottomModes as mode, i (mode.action)}
+        <button
+          type="button"
+          class="skill-pill"
+          class:tone-teach={mode.tone === "teach"}
+          class:tone-ask={mode.tone === "ask"}
+          class:tone-research={mode.tone === "research"}
+          title={mode.desc}
+          data-testid={`skill-${mode.tone}`}
+          onclick={() => selectSkill(mode.job)}
+        >
+          <span>{mode.label}</span>
+          {#if i === 0}
+            <kbd class="skill-kbd">⇧Tab</kbd>
+          {/if}
+        </button>
+      {/each}
+    </div>
   {/if}
 {/snippet}
 
-{#snippet skillChips()}
-  <div class="skill-row" role="group" aria-label="Message skill" data-testid="composer-skills">
-    {#each COMPOSER_SKILLS as skill (skill.id)}
-      <button
-        type="button"
-        class="skill-chip tone-{skill.id}"
-        class:on={assistant.forcedJob === skill.job}
-        title={skill.hint}
-        data-testid={`skill-${skill.id}`}
-        onclick={() => selectSkill(skill.job)}
-      >
-        {skill.label}
-      </button>
-    {/each}
-  </div>
+{#snippet activeSkillChip()}
+  {#if activeMode}
+    <button
+      type="button"
+      class="skill-pill skill-pill-active"
+      class:tone-teach={activeMode.tone === "teach"}
+      class:tone-ask={activeMode.tone === "ask"}
+      class:tone-research={activeMode.tone === "research"}
+      title={`${activeMode.desc} (click to clear)`}
+      data-testid={`skill-active-${activeMode.tone}`}
+      onclick={clearForcedSkill}
+    >
+      <span>{activeMode.label}</span>
+    </button>
+  {/if}
 {/snippet}
 
 {#snippet plusTrigger()}
@@ -442,26 +438,6 @@
       role="menu"
       aria-label="Add"
     >
-      <div class="plus-section" role="group" aria-label="Modes">
-        {#each MODE_ITEMS as mode (mode.action)}
-          <button
-            type="button"
-            class="plus-mode"
-            class:selected={assistant.forcedJob === mode.job}
-            role="menuitem"
-            onclick={() => runPlusAction(mode.action)}
-          >
-            <span class="mode-icon mode-{mode.tone}" aria-hidden="true">
-              {@render modeIcon(mode.tone)}
-            </span>
-            <span class="mode-copy">
-              <span class="mode-title">{mode.label}</span>
-              <span class="mode-desc">{mode.desc}</span>
-            </span>
-          </button>
-        {/each}
-      </div>
-      <div class="plus-divider" role="separator"></div>
       <div class="plus-section" role="group" aria-label="Files">
         <button
           type="button"
@@ -487,7 +463,6 @@
           <span class="plus-kbd">⌘U</span>
         </button>
       </div>
-      <p class="plus-foot">⇧Tab cycles Auto → Ask → Research → Teach → Watch</p>
     </div>
   {/if}
 {/snippet}
@@ -682,7 +657,7 @@
       <div class="pill-bar">
         <div class="bar-left">
           {@render plusTrigger()}
-          {@render skillChips()}
+          {@render activeSkillChip()}
           {@render modelPicker()}
         </div>
         <div class="bar-right">
@@ -691,7 +666,7 @@
       </div>
       {@render plusPanel()}
     {:else}
-      <!-- Compact dock: chips + input + toolbar -->
+      <!-- Compact dock: input + toolbar -->
       {@render attachChips()}
       <div class="dock-input-row">
         <textarea
@@ -716,13 +691,15 @@
       <div class="pill-bar pill-bar-dock">
         <div class="bar-left">
           {@render plusTrigger()}
-          {@render skillChips()}
+          {@render activeSkillChip()}
           {@render modelPicker()}
         </div>
       </div>
       {@render plusPanel()}
     {/if}
   </div>
+
+  {@render skillPills()}
 
   {#if offline}
     <p class="privacy warn" role="status">Backend offline — reconnect to send</p>
@@ -869,11 +846,6 @@
     field-sizing: content;
   }
 
-  .pill-bar-dock {
-    padding: 0.35rem 0.65rem 0.5rem;
-    min-height: 2.5rem;
-  }
-
   /* —— Center card —— */
   .pill.pill-center {
     max-width: none;
@@ -885,18 +857,18 @@
     border-radius: var(--radius-xl);
     background: var(--bg-elevated, var(--control-fill));
     border: 1px solid var(--border);
-    box-shadow: none;
+    box-shadow: var(--shadow-composer);
     overflow: visible;
     min-height: 7.5rem;
   }
 
   .pill:focus-within {
-    border-color: var(--border-active);
+    border-color: color-mix(in oklch, var(--accent-live) 35%, var(--border));
   }
 
   .pill.pill-center:focus-within {
-    border-color: var(--border-active);
-    box-shadow: none;
+    border-color: color-mix(in oklch, var(--accent-live) 40%, var(--border));
+    box-shadow: var(--shadow-lg);
   }
 
   .pill.pill-offline {
@@ -1111,138 +1083,90 @@
     gap: 0.1rem;
   }
 
-  .plus-mode {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.7rem;
-    width: 100%;
-    text-align: left;
-    border: none;
-    background: transparent;
-    color: var(--text);
-    font: inherit;
-    padding: 0.55rem 0.6rem;
-    border-radius: var(--radius-lg);
-    cursor: pointer;
-  }
-
-  .plus-mode:hover,
-  .plus-mode.selected {
-    background: var(--chrome-action-hover);
-  }
-
-  .plus-mode.selected .mode-title {
-    font-weight: var(--font-semibold);
-  }
-
-  .mode-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.75rem;
-    height: 1.75rem;
-    flex-shrink: 0;
-    margin-top: 0.05rem;
-    border-radius: var(--radius-md);
-    background: color-mix(in srgb, currentColor 12%, transparent);
-  }
-
-  .mode-icon :global(svg) {
-    display: block;
-  }
-
-  .mode-ask {
-    color: var(--success);
-  }
-
-  .mode-research {
-    color: var(--accent-live);
-  }
-
-  .mode-teach {
-    color: var(--warning);
-  }
-
-  .mode-watch {
-    color: var(--info);
-  }
-
-  .mode-auto {
-    color: var(--text-faint);
-  }
-
   .skill-row {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.28rem;
+    justify-content: flex-start;
+    gap: 0.4rem;
+    width: 100%;
+    max-width: var(--chat-col, 45rem);
+    margin: 0.75rem auto 0;
+    /* Match .composer-top inset so pills line up with workspace picker */
+    padding: 0 1.1rem;
     min-width: 0;
+    box-sizing: border-box;
   }
 
-  .skill-chip {
+  .dock-wrap.dock .skill-row {
+    margin-top: 0.55rem;
+  }
+
+  .skill-pill {
     display: inline-flex;
     align-items: center;
-    height: 28px;
-    padding: 0 0.55rem;
-    border: 1px solid var(--border-subtle);
+    gap: 0.4rem;
+    height: 32px;
+    padding: 0 0.85rem;
+    border: 1px solid var(--border);
     border-radius: var(--radius-full);
-    background: transparent;
+    background: var(--bg-elevated, var(--bg));
+    box-shadow: var(--shadow-sm);
     color: var(--text-muted);
-    font-size: var(--text-xs);
+    font-size: var(--text-sm);
     font-weight: var(--font-medium);
+    line-height: 1;
+    letter-spacing: -0.01em;
     cursor: pointer;
     min-height: auto;
     transition:
       background 0.12s ease,
       border-color 0.12s ease,
-      color 0.12s ease;
+      color 0.12s ease,
+      box-shadow 0.12s ease;
   }
 
-  .skill-chip:hover {
+  .skill-pill:hover {
     background: var(--chrome-action-hover);
     color: var(--text);
-    border-color: var(--border);
+    border-color: var(--border-active, var(--border));
   }
 
-  .skill-chip.on {
+  .skill-pill-active {
     background: var(--accent-live-dim);
-    border-color: color-mix(in srgb, var(--accent-live) 35%, var(--border));
+    border-color: color-mix(in srgb, var(--accent-live) 45%, var(--border));
     color: var(--text);
   }
 
-  .skill-chip.on.tone-teach {
+  .skill-pill-active.tone-teach {
     background: var(--warning-dim);
-    border-color: color-mix(in srgb, var(--warning) 40%, var(--border));
+    border-color: color-mix(in srgb, var(--warning) 45%, var(--border));
   }
 
-  .skill-chip.on.tone-ask {
+  .skill-pill-active.tone-ask {
     background: var(--success-dim);
-    border-color: color-mix(in srgb, var(--success) 40%, var(--border));
+    border-color: color-mix(in srgb, var(--success) 45%, var(--border));
   }
 
-  .skill-chip.on.tone-research,
-  .skill-chip.on.tone-watch {
+  .skill-pill-active.tone-research {
     background: var(--accent-live-dim);
-    border-color: color-mix(in srgb, var(--accent-live) 40%, var(--border));
+    border-color: color-mix(in srgb, var(--accent-live) 45%, var(--border));
   }
 
-  .mode-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 0.12rem;
-    min-width: 0;
-  }
-
-  .mode-title {
-    font-size: var(--text-sm);
-    line-height: 1.3;
-    color: var(--text);
-  }
-
-  .mode-desc {
-    font-size: var(--text-2xs);
-    line-height: 1.35;
+  .skill-kbd {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    padding: 0.1rem 0.3rem;
+    border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+    border-radius: var(--radius-xs);
+    background: color-mix(in srgb, currentColor 8%, transparent);
     color: var(--text-faint);
+    font-family: inherit;
+    font-size: var(--text-2xs);
+    font-weight: var(--font-medium);
+    line-height: 1.2;
+    letter-spacing: 0;
   }
 
   .plus-row {
@@ -1277,13 +1201,6 @@
 
   .row-icon :global(svg) {
     display: block;
-  }
-
-  .plus-foot {
-    margin: 0.35rem 0.55rem 0.2rem;
-    font-size: var(--text-2xs);
-    color: var(--text-faint);
-    line-height: 1.35;
   }
 
   .force-chip {
@@ -1489,7 +1406,7 @@
 
   .model-free {
     flex-shrink: 0;
-    font-size: 0.65rem;
+    font-size: var(--text-2xs);
     font-weight: var(--font-medium);
     line-height: 1;
     padding: 0.2rem 0.35rem;
@@ -1560,13 +1477,13 @@
   }
 
   .send-soft.ready {
-    background: var(--accent);
-    color: var(--accent-contrast);
+    background: var(--accent-live);
+    color: var(--accent-on-live, #ffffff);
     cursor: pointer;
   }
 
   .send-soft.ready:hover {
-    background: var(--accent-hover);
+    background: var(--accent-live-hover);
   }
 
   .send-soft.busy {

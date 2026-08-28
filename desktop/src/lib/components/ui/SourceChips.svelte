@@ -28,84 +28,99 @@
 </script>
 
 {#if sources.length}
-  <div class="chips" data-testid="source-origin-chips">
-    {#each grouped as g}
-      <span class="chip" data-origin={g.origin}>{g.label} · {g.items.length}</span>
-    {/each}
+  <div class="sources" data-testid="source-origin-chips">
+    <div class="chips">
+      {#each grouped as g}
+        <span class="chip" data-origin={g.origin}>{g.label} · {g.items.length}</span>
+      {/each}
+    </div>
+    <ul class="list">
+      {#each sources as s}
+        {#if s.source}
+          {@const origin = classifySourceOrigin(s.source)}
+          <li>
+            {#if onOpen && (origin === "personal" || origin === "past_research")}
+              <button
+                type="button"
+                class="name"
+                title={s.source}
+                onclick={() => onOpen?.(s.source)}
+              >
+                {sourceDisplayName(s.source)}
+              </button>
+            {:else}
+              <span class="name static" title={s.source}>{sourceDisplayName(s.source)}</span>
+            {/if}
+          </li>
+        {/if}
+      {/each}
+    </ul>
   </div>
-  <ul class="list">
-    {#each sources as s}
-      {#if s.source}
-        {@const origin = classifySourceOrigin(s.source)}
-        <li>
-          <span class="tag" data-origin={origin}>{originShort(origin)}</span>
-          {#if onOpen && (origin === "personal" || origin === "past_research")}
-            <button type="button" class="name" onclick={() => onOpen?.(s.source)}>
-              {sourceDisplayName(s.source)}
-            </button>
-          {:else}
-            <span class="name static">{sourceDisplayName(s.source)}</span>
-          {/if}
-        </li>
-      {/if}
-    {/each}
-  </ul>
 {/if}
 
 <style>
+  .sources {
+    margin-top: 0.15rem;
+  }
+
   .chips {
     display: flex;
     flex-wrap: wrap;
     gap: 0.35rem;
-    margin: 0.5rem 0 0.4rem;
+    margin: 0 0 0.45rem;
   }
 
   .chip {
     font-size: var(--text-xs);
+    font-weight: var(--font-medium);
     color: var(--text-muted);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-full);
-    padding: 0.15rem 0.5rem;
+    background: var(--control-fill);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 0.2rem 0.5rem;
   }
 
   .list {
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 0.3rem;
-    margin-top: 0.35rem;
+    gap: 0.2rem;
+    margin: 0;
+    padding: 0;
   }
 
   li {
-    display: flex;
-    align-items: baseline;
-    gap: 0.45rem;
-    font-size: var(--text-xs);
-  }
-
-  .tag {
-    flex-shrink: 0;
-    color: var(--text-faint);
-    min-width: 4.5rem;
+    min-width: 0;
+    font-size: var(--text-sm);
   }
 
   .name {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0.15rem 0;
+    border: none;
+    border-radius: 0;
     background: transparent;
     color: var(--text-muted);
-    font-size: var(--text-xs);
+    font-size: var(--text-sm);
     font-weight: var(--font-normal);
-    padding: 0;
-    min-height: auto;
+    line-height: 1.4;
     text-align: left;
-    text-decoration: underline;
-    text-underline-offset: 2px;
+    text-decoration: none;
+    min-height: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
   }
 
   .name.static {
-    text-decoration: none;
+    cursor: default;
   }
 
-  .name:hover {
+  .name:hover:not(.static) {
     color: var(--text);
   }
 </style>

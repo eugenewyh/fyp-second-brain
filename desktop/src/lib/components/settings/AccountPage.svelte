@@ -351,8 +351,8 @@
 
   .primary {
     border: none;
-    background: var(--text);
-    color: var(--bg-elevated);
+    background: var(--accent-live);
+    color: var(--accent-on-live, #ffffff);
     font-weight: var(--font-semibold);
   }
 

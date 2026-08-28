@@ -219,13 +219,13 @@
   }
 
   .btn.primary {
-    background: var(--text);
-    color: var(--accent-contrast);
+    background: var(--accent-live);
+    color: var(--accent-on-live, #ffffff);
     border-color: transparent;
   }
 
   .btn.primary:hover {
-    background: var(--accent-hover);
+    background: var(--accent-live-hover);
   }
 
   .btn.ghost {

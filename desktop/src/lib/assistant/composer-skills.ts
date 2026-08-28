@@ -1,6 +1,6 @@
 /** Persistent composer skills — label intent for the Manager (not separate apps). */
 
-export type ComposerSkillId = "auto" | "teach" | "ask" | "research" | "watch";
+export type ComposerSkillId = "auto" | "teach" | "ask" | "research";
 
 export type ForcedJob = "file" | "answer" | "research" | "watch" | null;
 
@@ -10,15 +10,15 @@ export type ComposerSkill = {
   /** Short hint under the chip when selected */
   hint: string;
   placeholder: string;
-  job: ForcedJob;
+  job: Exclude<ForcedJob, "watch">;
 };
 
 export const COMPOSER_SKILLS: ComposerSkill[] = [
   {
     id: "auto",
     label: "Auto",
-    hint: "Manager picks Teach, Ask, Research, or Watch",
-    placeholder: "Teach, ask from memory, research, or schedule a watch…",
+    hint: "Manager picks Teach, Ask, or Research",
+    placeholder: "Teach, ask from memory, or research…",
     job: null,
   },
   {
@@ -42,16 +42,10 @@ export const COMPOSER_SKILLS: ComposerSkill[] = [
     placeholder: "What should I investigate and file here?",
     job: "research",
   },
-  {
-    id: "watch",
-    label: "Watch",
-    hint: "Recurring research brief on a schedule",
-    placeholder: "What should I watch and brief you on?",
-    job: "watch",
-  },
 ];
 
 export function skillForJob(job: ForcedJob): ComposerSkill {
+  if (job === "watch") return COMPOSER_SKILLS[0]!;
   return COMPOSER_SKILLS.find((s) => s.job === job) ?? COMPOSER_SKILLS[0]!;
 }
 
@@ -61,6 +55,7 @@ export function skillPlaceholder(job: ForcedJob, fallback?: string): string {
 }
 
 export function forcedJobLabel(job: ForcedJob): string {
+  if (job === "watch") return "Research";
   return skillForJob(job).label;
 }
 
@@ -78,8 +73,8 @@ export const COACH_STEPS = [
   },
   {
     n: "3",
-    title: "Then Ask — or Research / Watch",
-    body: "Ask from remembered claims. Research looks outside and can write back. Watch briefs you on a schedule.",
+    title: "Then Ask — or Research",
+    body: "Ask from remembered claims. Research looks outside and can write back. For recurring briefs, use Scheduled Research in the sidebar.",
   },
 ] as const;
 

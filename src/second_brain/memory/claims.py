@@ -129,6 +129,22 @@ def claim_similarity(a: str, b: str) -> float:
     return inter / union if union else 0.0
 
 
+def _claim_match_text(card: ClaimCard) -> str:
+    parts = [card.claim]
+    for field in (card.source_path, card.path, card.slug):
+        if field:
+            parts.append(field)
+            parts.append(Path(field).stem)
+    parts.extend(card.evidence or [])
+    return " ".join(parts)
+
+
+def claim_match_score(query: str, card: ClaimCard) -> float:
+    """Token overlap between query and claim text plus source metadata."""
+    blob = _claim_match_text(card)
+    return max(claim_similarity(query, card.claim), claim_similarity(query, blob))
+
+
 def _split_frontmatter(text: str) -> tuple[dict[str, str], str]:
     if not text.startswith("---"):
         return {}, text
@@ -689,7 +705,7 @@ def claims_matching_query(
     contested = list_claims(project_path, status="contested")
 
     def _scored(cards: list[ClaimCard]) -> list[tuple[float, ClaimCard]]:
-        scored = [(claim_similarity(query, c.claim), c) for c in cards]
+        scored = [(claim_match_score(query, c), c) for c in cards]
         scored = [(s, c) for s, c in scored if s > 0.05]
         scored.sort(key=lambda x: x[0], reverse=True)
         return scored

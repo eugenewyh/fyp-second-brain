@@ -365,6 +365,29 @@ def test_claims_matching_query_includes_contested(tmp_path, monkeypatch):
     assert "(contested)" in (ctx.text or "")
 
 
+def test_claims_matching_query_matches_source_path(tmp_path, monkeypatch):
+    from second_brain.memory import claims as claims_mod
+    from second_brain.memory.claims import ClaimCard, claims_matching_query
+
+    monkeypatch.setattr(claims_mod, "ingest_file", _noop_ingest)
+    project = tmp_path / "Student notes"
+    project.mkdir()
+    card = ClaimCard(
+        id="lec10-1",
+        claim="Arabica beans need lower roast temperatures than robusta for balanced acidity.",
+        status="settled",
+        origin=ORIGIN_DUMP,
+        slug="arabica-roast",
+        source_path="library/Lec10_Session_Beans_Clean.md",
+        confidence=0.9,
+    )
+    claims_mod._write_claim_file(card, project_path=str(project), ingest=False)
+
+    matched = claims_matching_query("teach everything about lec10", str(project), limit=5)
+    assert len(matched) == 1
+    assert matched[0].id == "lec10-1"
+
+
 def test_retrieve_union_includes_second_prefix_default_still_partitioned():
     dlm = "/vault/topics/dlm"
     thesis = "/vault/topics/thesis"

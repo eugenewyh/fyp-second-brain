@@ -353,10 +353,10 @@
 
   .primary {
     padding: 0.5rem 0.9rem;
-    border: 1px solid var(--border);
+    border: 1px solid transparent;
     border-radius: var(--radius-md);
-    background: var(--text);
-    color: var(--bg);
+    background: var(--accent-live);
+    color: var(--accent-on-live, #ffffff);
     font-size: var(--text-sm);
     font-weight: var(--font-medium);
     cursor: pointer;
@@ -364,7 +364,7 @@
   }
 
   .primary:hover:not(:disabled) {
-    opacity: 0.92;
+    background: var(--accent-live-hover);
   }
 
   .primary:disabled {

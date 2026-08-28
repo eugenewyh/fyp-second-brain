@@ -151,6 +151,8 @@ export type AssistantTurn =
       claimCount?: number;
       confidence?: number;
       goalStatus?: string;
+      /** Wall-clock start for "Worked for …" summaries. */
+      runStartedAt?: number;
     }
   | { id: string; kind: "manager"; content: string };
 
@@ -358,31 +360,34 @@ class AssistantStore {
   routeStatus = $state<"teach" | "explain" | "lookup" | null>(null);
   /**
    * Force next Manager job (skill chips / Shift+Tab). null = Auto.
-   * Maps: Ask→answer, Research→research, Teach→file, Watch→watch.
+   * Maps: Ask→answer, Research→research, Teach→file.
+   * Watch is not a composer skill — use Scheduled Research.
    */
   forcedJob = $state<"answer" | "research" | "file" | "watch" | null>(null);
 
   cycleForcedJob(): void {
-    const order: Array<"answer" | "research" | "file" | "watch" | null> = [
+    // Auto (null) → Teach → Ask → Research → Auto
+    const order: Array<"answer" | "research" | "file" | null> = [
       null,
+      "file",
       "answer",
       "research",
-      "file",
-      "watch",
     ];
-    const i = order.indexOf(this.forcedJob);
+    const current =
+      this.forcedJob === "watch" ? null : this.forcedJob;
+    const i = order.indexOf(current);
     this.forcedJob = order[(i + 1) % order.length];
   }
 
   setForcedJob(job: "answer" | "research" | "file" | "watch" | null): void {
-    this.forcedJob = job;
+    // Composer no longer forces Watch — send users to Scheduled Research.
+    this.forcedJob = job === "watch" ? null : job;
   }
 
   forcedJobLabel(): string {
     if (this.forcedJob === "answer") return "Ask";
     if (this.forcedJob === "research") return "Research";
     if (this.forcedJob === "file") return "Teach";
-    if (this.forcedJob === "watch") return "Watch";
     return "Auto";
   }
 
@@ -1060,6 +1065,7 @@ class AssistantStore {
         },
       ],
       retrievalScope: scope,
+      runStartedAt: Date.now(),
     });
   }
 
@@ -2410,6 +2416,7 @@ class AssistantStore {
           looping: false,
           retrievalScope: scope,
           alsoProjectPaths,
+          runStartedAt: Date.now(),
         },
         sid,
       );
@@ -2691,6 +2698,7 @@ class AssistantStore {
           liveCritiqueHistory: [],
           looping: false,
           alsoProjectPaths,
+          runStartedAt: Date.now(),
         },
         sid,
       );

@@ -56,15 +56,15 @@
   }
 
   .primary {
-    background: var(--accent);
-    color: var(--accent-contrast);
+    background: var(--accent-live);
+    color: var(--accent-on-live, #ffffff);
     padding: 0.4rem 0.9rem;
-    border: 1px solid color-mix(in srgb, var(--accent) 88%, #000);
+    border: 1px solid transparent;
   }
 
   .primary:hover:not(:disabled) {
-    background: var(--accent-hover);
-    border-color: var(--accent-hover);
+    background: var(--accent-live-hover);
+    border-color: transparent;
   }
 
   .primary:disabled {
@@ -74,12 +74,12 @@
 
   .live {
     background: var(--accent-live);
-    color: var(--accent-contrast);
+    color: var(--accent-on-live, #ffffff);
     padding: 0.4rem 0.9rem;
   }
 
   .live:hover:not(:disabled) {
-    background: var(--accent-hover);
+    background: var(--accent-live-hover);
   }
 
   .secondary {

@@ -34,6 +34,7 @@
     "fuse.js": "^7.4.2",
     "marked": "^18.0.5",
     "pdfjs-dist": "^6.0.227",
+    "svelte-thinking-orbs": "^0.1.0",
     "turndown": "^7.2.4"
   },
   "devDependencies": {

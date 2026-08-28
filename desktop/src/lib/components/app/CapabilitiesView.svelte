@@ -628,8 +628,8 @@
   }
 
   .btn {
-    background: var(--accent);
-    color: var(--accent-contrast);
+    background: var(--accent-live);
+    color: var(--accent-on-live, #ffffff);
     border: none;
     border-radius: var(--radius-md);
     min-height: 34px;

@@ -393,8 +393,8 @@
   }
 
   .add-go {
-    background: var(--accent);
-    color: var(--accent-contrast);
+    background: var(--accent-live);
+    color: var(--accent-on-live, #ffffff);
     font-size: var(--text-xs);
     min-height: 28px;
     padding: 0.25rem 0.55rem;

@@ -40,7 +40,7 @@
 <section class="st-card">
   <div class="st-card-head">
     <h3 class="st-card-title">Color theme</h3>
-    <p class="st-card-sub">Choose light, dark, or match your system setting.</p>
+    <p class="st-card-sub">Soft teal light & dark, or match your system.</p>
   </div>
 
   <div class="theme-segment" role="radiogroup" aria-label="Color theme">

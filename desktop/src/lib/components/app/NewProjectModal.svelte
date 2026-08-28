@@ -804,12 +804,12 @@
   }
 
   .btn.primary {
-    background: var(--accent);
-    color: var(--accent-contrast);
+    background: var(--accent-live);
+    color: var(--accent-on-live, #ffffff);
   }
 
   .btn.primary:hover:not(:disabled) {
-    background: var(--accent-hover);
+    background: var(--accent-live-hover);
   }
 
   .btn.primary:disabled {
