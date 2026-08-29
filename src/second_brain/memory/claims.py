@@ -723,6 +723,32 @@ def claims_matching_query(
     return out
 
 
+def _source_path_matches(candidate: str | None, pinned: str) -> bool:
+    from second_brain.rag.ask_depth import source_path_matches
+
+    return source_path_matches(candidate, pinned)
+
+
+def claims_for_source(
+    project_path: str | None,
+    source_path: str,
+    *,
+    limit: int | None = None,
+) -> list[ClaimCard]:
+    """All live claims grounded in one source file, settled first."""
+    settled = list_claims(project_path, status="active")
+    contested = list_claims(project_path, status="contested")
+    matched = [
+        c
+        for c in settled + contested
+        if _source_path_matches(c.source_path, source_path)
+    ]
+    matched.sort(key=lambda c: (0 if c.status in SETTLED_STATUSES else 1, c.slug or c.id))
+    if limit is not None:
+        return matched[:limit]
+    return matched
+
+
 def merge_topic_claims(
     source_path: str,
     dest_path: str,

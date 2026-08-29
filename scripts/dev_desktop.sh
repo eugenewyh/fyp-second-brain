@@ -25,7 +25,24 @@ auth_up() {
   curl -fsS --max-time 1 "http://127.0.0.1:3000/health" >/dev/null 2>&1
 }
 
+hosted_auth_url() {
+  if [[ -f "$ROOT/desktop/.env" ]]; then
+    grep '^VITE_AUTH_URL=' "$ROOT/desktop/.env" 2>/dev/null | cut -d= -f2- | tr -d '"' | tr -d "'"
+  fi
+}
+
+using_hosted_auth() {
+  local url
+  url="$(hosted_auth_url)"
+  [[ -n "$url" ]] && [[ "$url" == https://* ]]
+}
+
 ensure_auth() {
+  if using_hosted_auth; then
+    echo "Using hosted auth at $(hosted_auth_url) (skip local Docker auth)"
+    return
+  fi
+
   if auth_up; then
     echo "Auth already running on :3000"
     return
@@ -91,5 +108,8 @@ cd "$ROOT/desktop"
 if [[ ! -f .env ]] || ! grep -q 'VITE_AUTH_URL' .env 2>/dev/null; then
   echo 'VITE_AUTH_URL=http://localhost:3000' > .env
   echo "Wrote desktop/.env with VITE_AUTH_URL"
+fi
+if using_hosted_auth; then
+  echo "Account OTP uses $(hosted_auth_url) — ensure Render service is deployed."
 fi
 exec npm run tauri dev

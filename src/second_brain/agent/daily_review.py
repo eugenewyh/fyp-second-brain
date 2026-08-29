@@ -187,41 +187,55 @@ def plan_daily_review(
     watch_error: str | None = None
 
     # Standing Watches first — all eligible, not capped by max_goals
+    # Skip when cloud cron handles them for a signed-in user.
     try:
-        from second_brain.agent.watch import (
-            WatchError,
-            build_watch_goal,
-            list_watches,
-            list_watches_in_topic,
-            today_brief_exists,
-            validate_watch,
+        from second_brain.agent.cloud_watch_sync import (
+            cloud_watch_service_available,
+            cloud_watches_delegated,
         )
 
-        candidates = list_watches_in_topic(root) if project_path else list_watches(root)
+        skip_local_watches = (
+            cloud_watches_delegated() and cloud_watch_service_available()
+        )
+    except Exception:
+        skip_local_watches = False
 
-        for watch in candidates:
-            if not watch.enabled:
-                continue
-            cadence = (watch.cadence or "weekdays").strip().lower()
-            if cadence in {"weekdays", "weekday"} and weekend:
-                continue
-            try:
-                validate_watch(watch)
-            except WatchError:
-                continue
-            if today_brief_exists(watch.project_path, watch_id=watch.id):
-                continue
-            goals.append(
-                ReviewGoal(
-                    goal=build_watch_goal(watch),
-                    kind="watch",
-                    source=watch.project_path,
-                    watch_id=watch.id,
-                )
+    if not skip_local_watches:
+        try:
+            from second_brain.agent.watch import (
+                WatchError,
+                build_watch_goal,
+                list_watches,
+                list_watches_in_topic,
+                today_brief_exists,
+                validate_watch,
             )
-    except Exception as exc:
-        watch_error = f"{type(exc).__name__}: {exc}"[:400]
-        logger.warning("Watch planning skipped: %s", watch_error, exc_info=True)
+
+            candidates = list_watches_in_topic(root) if project_path else list_watches(root)
+
+            for watch in candidates:
+                if not watch.enabled:
+                    continue
+                cadence = (watch.cadence or "weekdays").strip().lower()
+                if cadence in {"weekdays", "weekday"} and weekend:
+                    continue
+                try:
+                    validate_watch(watch)
+                except WatchError:
+                    continue
+                if today_brief_exists(watch.project_path, watch_id=watch.id):
+                    continue
+                goals.append(
+                    ReviewGoal(
+                        goal=build_watch_goal(watch),
+                        kind="watch",
+                        source=watch.project_path,
+                        watch_id=watch.id,
+                    )
+                )
+        except Exception as exc:
+            watch_error = f"{type(exc).__name__}: {exc}"[:400]
+            logger.warning("Watch planning skipped: %s", watch_error, exc_info=True)
 
     def _room_for_other() -> bool:
         return sum(1 for g in goals if g.kind != "watch") < max_g

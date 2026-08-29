@@ -1,5 +1,5 @@
 import { setTheme as setTauriTheme } from "@tauri-apps/api/app";
-import type { EffectiveTheme, ThemePreference } from "./theme-prefs";
+import type { EffectiveTheme, PaletteId, ThemePreference } from "./theme-prefs";
 
 export const THEME_CHANGE_EVENT = "nous-theme-change";
 
@@ -10,6 +10,11 @@ function isTauri(): boolean {
 function updateColorSchemeMeta(theme: EffectiveTheme): void {
   const meta = document.querySelector('meta[name="color-scheme"]');
   if (meta) meta.setAttribute("content", theme);
+}
+
+export function applyPalette(palette: PaletteId): void {
+  if (typeof document === "undefined") return;
+  document.documentElement.dataset.palette = palette;
 }
 
 export function applyEffectiveTheme(theme: EffectiveTheme): void {
@@ -23,6 +28,11 @@ export function applyEffectiveTheme(theme: EffectiveTheme): void {
 
   updateColorSchemeMeta(theme);
   window.dispatchEvent(new CustomEvent(THEME_CHANGE_EVENT, { detail: { theme } }));
+}
+
+export function applyTheme(palette: PaletteId, theme: EffectiveTheme): void {
+  applyPalette(palette);
+  applyEffectiveTheme(theme);
 }
 
 export async function syncNativeTheme(

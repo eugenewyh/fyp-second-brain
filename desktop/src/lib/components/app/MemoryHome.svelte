@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { app } from "$lib/stores/app.svelte";
   import GraphView from "./GraphView.svelte";
 </script>
 
@@ -7,7 +8,7 @@
     <span class="title">Memory</span>
   </header>
   <div class="memory-body">
-    <GraphView />
+    <GraphView initialTopicPath={app.memoryTopicFilter} />
   </div>
 </div>
 

@@ -1,0 +1,62 @@
+/* Mono — clean grayscale */
+
+[data-palette="mono"] {
+  --radius: 0.5rem;
+  --background: oklch(1 0 180);
+  --foreground: oklch(0.141 0.004 285.824);
+  --muted: oklch(0.968 0.001 286.375);
+  --muted-foreground: oklch(0.552 0.014 285.942);
+  --popover: oklch(1 0 180);
+  --popover-foreground: oklch(0.141 0.004 285.824);
+  --card: oklch(1 0 180);
+  --card-foreground: oklch(0.141 0.004 285.824);
+  --border: oklch(0.92 0.004 286.32);
+  --input: oklch(0.92 0.004 286.32);
+  --primary: oklch(0.21 0.006 285.883);
+  --primary-foreground: oklch(0.985 0 180);
+  --secondary: oklch(0.968 0.001 286.375);
+  --secondary-foreground: oklch(0.21 0.006 285.883);
+  --accent: oklch(0.968 0.001 286.375);
+  --accent-foreground: oklch(0.21 0.006 285.883);
+  --destructive: oklch(0.637 0.208 25.326);
+  --destructive-foreground: oklch(0.985 0 180);
+  --ring: oklch(0.21 0.006 285.883);
+  --chart-1: oklch(0.677 0.157 35.19);
+  --chart-2: oklch(0.631 0.101 183.491);
+  --chart-3: oklch(0.379 0.044 225.539);
+  --chart-4: oklch(0.834 0.119 88.146);
+  --chart-5: oklch(0.783 0.126 58.749);
+  --accent-live: oklch(0.21 0.006 285.883);
+  --accent-live-hover: oklch(0.28 0.008 286);
+  --accent-on-live: oklch(0.985 0 180);
+}
+
+[data-palette="mono"][data-theme="dark"] {
+  --background: oklch(0.141 0.004 285.824);
+  --foreground: oklch(0.985 0 180);
+  --muted: oklch(0.274 0.005 286.033);
+  --muted-foreground: oklch(0.712 0.013 286.068);
+  --popover: oklch(0.141 0.004 285.824);
+  --popover-foreground: oklch(0.985 0 180);
+  --card: oklch(0.141 0.004 285.824);
+  --card-foreground: oklch(0.985 0 180);
+  --border: oklch(0.274 0.005 286.033);
+  --input: oklch(0.274 0.005 286.033);
+  --primary: oklch(0.985 0 180);
+  --primary-foreground: oklch(0.21 0.006 285.883);
+  --secondary: oklch(0.274 0.005 286.033);
+  --secondary-foreground: oklch(0.985 0 180);
+  --accent: oklch(0.274 0.005 286.033);
+  --accent-foreground: oklch(0.985 0 180);
+  --destructive: oklch(0.396 0.133 25.721);
+  --destructive-foreground: oklch(0.985 0 180);
+  --ring: oklch(0.871 0.005 286.285);
+  --chart-1: oklch(0.529 0.193 262.129);
+  --chart-2: oklch(0.698 0.134 165.463);
+  --chart-3: oklch(0.723 0.15 60.631);
+  --chart-4: oklch(0.619 0.204 312.728);
+  --chart-5: oklch(0.612 0.209 6.386);
+  --accent-live: oklch(0.871 0.005 286.285);
+  --accent-live-hover: oklch(0.92 0.004 286);
+  --accent-on-live: oklch(0.141 0.004 285.824);
+}

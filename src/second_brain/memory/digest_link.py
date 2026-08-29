@@ -15,6 +15,7 @@ from typing import Any
 from second_brain.config import SUPPORTED_EXTENSIONS
 from second_brain.ingestion.loaders import load_file
 from second_brain.ingestion.pipeline import ingest_file
+from second_brain.ingestion.sections import ensure_section_summaries, infer_project_from_source
 from second_brain.memory.claims import (
     MAX_CLAIMS_PER_DUMP,
     ClaimCard,
@@ -409,6 +410,11 @@ def digest_and_link(
             ingest_file(saved)
         except Exception:
             logger.exception("Ingest failed for %s", saved)
+    else:
+        try:
+            ensure_section_summaries(saved, project_path=project_path or infer_project_from_source(saved))
+        except Exception:
+            logger.debug("Section summaries skipped for %s", saved, exc_info=True)
 
     try:
         recall_for_query(

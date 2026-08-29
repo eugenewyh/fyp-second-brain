@@ -23,6 +23,12 @@
   import { fade, fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
 
+  function openMemoryForChat() {
+    const path = assistant.activeProjectPath();
+    app.openMemory({ topicPath: path });
+    if (path) workspace.setActiveTopic(path);
+  }
+
   let noteExcerpt = $state("");
   let groqConfigured = $state(false);
   let llmProvider = $state("groq");
@@ -219,7 +225,7 @@
     const clarifyCount = assistant.clarifyCount();
     const history = assistant.managerHistory();
 
-    let kind: "ask" | "dispatch" = "dispatch";
+    let kind: "ask" | "dispatch" | "meta" = "dispatch";
     let job: ManagerJob = "answer";
     let refuseMessage = "";
     let instruction = text;
@@ -278,6 +284,13 @@
         assistant.appendUser(text || "Attached files", sessionId);
         assistant.appendManager(managerText, sessionId);
         assistant.bumpClarify();
+        return;
+      }
+
+      if (kind === "meta") {
+        assistant.appendUser(text || "Attached files", sessionId);
+        assistant.appendManager(managerText, sessionId);
+        assistant.resetInterview();
         return;
       }
 
@@ -590,7 +603,7 @@
             assistant.setForcedJob("file");
             app.openSheet("ingest");
           }}
-          onViewMemory={() => app.openMemory()}
+          onViewMemory={openMemoryForChat}
         />
       </div>
 

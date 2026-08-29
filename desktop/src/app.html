@@ -7,9 +7,13 @@
     <meta name="color-scheme" content="light dark" />
     <script>
       (function () {
-        var key = "nous-theme-preference";
-        var pref = localStorage.getItem(key);
+        var modeKey = "nous-theme-preference";
+        var paletteKey = "nous-theme-palette";
+        var pref = localStorage.getItem(modeKey);
         if (pref !== "light" && pref !== "dark" && pref !== "system") pref = "system";
+        var palette = localStorage.getItem(paletteKey);
+        if (palette !== "nous" && palette !== "ember" && palette !== "mono") palette = "nous";
+        document.documentElement.dataset.palette = palette;
         var dark =
           pref === "dark" ||
           (pref === "system" &&

@@ -137,17 +137,7 @@ export interface ChatResult {
   }[] | null;
 }
 
-export type ActJob = "file" | "answer" | "research" | "refuse";
-
-export interface ActDecision {
-  job: ActJob;
-  reason: string;
-  matching_claim_count: number;
-  topic: string;
-  refuse_message: string | null;
-}
-
-export type ManagerKind = "ask" | "dispatch";
+export type ManagerKind = "ask" | "dispatch" | "meta";
 export type ManagerJob =
   | "file"
   | "answer"
@@ -166,6 +156,8 @@ export interface ManagerTurn {
   instruction: string | null;
   retrieval_scope: "local" | "hybrid" | "web" | null;
   reason: string;
+  route_tier?: string;
+  confidence?: number;
   refuse_message: string | null;
   matching_claim_count: number;
   topic: string;
@@ -616,21 +608,6 @@ export const api = {
         also_project_paths: opts?.alsoProjectPaths ?? [],
       }),
     }),
-  act: (body: {
-    message: string;
-    projectPath?: string | null;
-    sessionId?: string | null;
-    hasAttachments?: boolean;
-  }) =>
-    apiFetch<ActDecision>("/api/act", {
-      method: "POST",
-      body: JSON.stringify({
-        message: body.message,
-        project_path: body.projectPath ?? null,
-        session_id: body.sessionId ?? null,
-        has_attachments: body.hasAttachments ?? false,
-      }),
-    }),
   managerTurn: (body: {
     message: string;
     projectPath?: string | null;
@@ -1071,6 +1048,20 @@ export const api = {
       written: { path: string; watch_id: string; day: string }[];
       errors?: string[];
     }>("/api/cloud-watch/pull", { method: "POST" }),
+  cloudWatchSyncAll: () =>
+    apiFetch<{
+      ok: boolean;
+      skipped?: boolean;
+      reason?: string;
+      count: number;
+      synced: string[];
+      errors?: string[];
+    }>("/api/cloud-watch/sync-all", { method: "POST" }),
+  cloudWatchDelegate: (delegated: boolean) =>
+    apiFetch<{ ok: boolean; delegated: boolean }>("/api/cloud-watch/delegate", {
+      method: "POST",
+      body: JSON.stringify({ delegated }),
+    }),
   updateSettings: (values: Record<string, string>) =>
     apiFetch<{ updated: string[]; values: Record<string, string> }>("/api/settings", {
       method: "PUT",

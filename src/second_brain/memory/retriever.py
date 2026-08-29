@@ -2,9 +2,10 @@ from pathlib import Path
 
 from langchain_core.documents import Document
 
-from second_brain.config import RETRIEVAL_TOP_K
+from second_brain.config import DEEP_ASK_RERANK, RETRIEVAL_TOP_K
 from second_brain.memory.chroma_store import get_collection
 from second_brain.memory.embeddings import get_embeddings
+from second_brain.memory.rerank import rerank_documents
 
 
 def _normalize_path_prefix(project_path: str | None) -> str | None:
@@ -56,6 +57,7 @@ def retrieve(
     top_k: int = RETRIEVAL_TOP_K,
     project_path: str | None = None,
     also_project_paths: list[str] | None = None,
+    source_path_filter: str | None = None,
 ) -> list[Document]:
     collection = get_collection()
     if collection.count() == 0:
@@ -65,8 +67,11 @@ def retrieve(
     query_embedding = embeddings_model.embed_query(query)
 
     prefixes = _prefix_list(project_path, also_project_paths)
-    # Over-fetch when filtering by project so we still return ~top_k in-scope hits
-    fetch_k = min(collection.count(), top_k * 4 * max(1, len(prefixes)) if prefixes else top_k)
+    # Over-fetch when filtering by project or pinned source
+    scope_multiplier = max(1, len(prefixes))
+    if source_path_filter:
+        scope_multiplier *= 4
+    fetch_k = min(collection.count(), top_k * 4 * scope_multiplier if prefixes or source_path_filter else top_k)
 
     try:
         results = collection.query(
@@ -87,6 +92,9 @@ def retrieve(
         raise
 
     documents: list[Document] = []
+    if source_path_filter:
+        from second_brain.rag.ask_depth import source_path_matches
+
     for text, metadata, distance in zip(
         results["documents"][0],
         results["metadatas"][0],
@@ -98,9 +106,18 @@ def retrieve(
         doc = Document(page_content=text, metadata=doc_metadata)
         if prefixes and not _doc_in_any_project(doc, prefixes):
             continue
+        if source_path_filter:
+            sp = doc_metadata.get("source_path") or doc_metadata.get("source") or ""
+            if not source_path_matches(str(sp), source_path_filter):
+                continue
         documents.append(doc)
-        if len(documents) >= top_k:
+        if len(documents) >= top_k * 4:
             break
+
+    if DEEP_ASK_RERANK and len(documents) > top_k:
+        documents = rerank_documents(query, documents, top_k=top_k)
+    elif len(documents) > top_k:
+        documents = documents[:top_k]
 
     return documents
 

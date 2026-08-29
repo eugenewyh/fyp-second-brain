@@ -20,6 +20,9 @@ _DEFAULT_CLOUD_WATCH_URL = (os.getenv("NOUS_CLOUD_WATCH_DEFAULT_URL") or "").str
 # Per-request session token from desktop (Authorization header), not .env
 _session_token: ContextVar[str] = ContextVar("cloud_watch_session_token", default="")
 
+# When True, local daily review skips watch goals — cloud cron runs them instead.
+_cloud_watches_delegated = False
+
 
 def set_session_token(token: str | None) -> None:
     _session_token.set((token or "").strip())
@@ -27,6 +30,15 @@ def set_session_token(token: str | None) -> None:
 
 def get_session_token() -> str:
     return (_session_token.get() or "").strip()
+
+
+def set_cloud_watches_delegated(delegated: bool) -> None:
+    global _cloud_watches_delegated
+    _cloud_watches_delegated = bool(delegated)
+
+
+def cloud_watches_delegated() -> bool:
+    return _cloud_watches_delegated
 
 
 def cloud_watch_service_url() -> str:
@@ -171,6 +183,32 @@ def me() -> dict[str, Any]:
     return _request("GET", "/v1/me")
 
 
+def build_cloud_sync_payload(project_path: str | Path, watch_id: str | None) -> dict[str, Any]:
+    """Build the PUT /v1/watches payload from a local watch folder."""
+    from second_brain.agent.watch import last_brief_excerpt, load_watch
+    from second_brain.memory.learning import read_project_memory_tail
+
+    path = Path(project_path).expanduser()
+    watch = load_watch(path, watch_id)
+    if watch is None:
+        raise RuntimeError("Watch not found.")
+    return {
+        "watch_id": watch.id,
+        "topic": path.name,
+        "name": watch.name or path.name,
+        "focus": watch.focus or "",
+        "include": watch.include or "",
+        "exclude": watch.exclude or "",
+        "trusted_sources": watch.trusted_sources or "",
+        "enabled": bool(watch.enabled),
+        "cadence": watch.cadence or "weekdays",
+        "hour": int(watch.hour or 9),
+        "timezone": "Asia/Singapore",
+        "last_brief_excerpt": last_brief_excerpt(path, watch_id=watch.id, limit=900),
+        "project_tail": read_project_memory_tail(str(path), max_lines=16),
+    }
+
+
 def sync_watch_to_cloud(payload: dict[str, Any]) -> dict[str, Any]:
     watch_id = (payload.get("watch_id") or "").strip()
     if not watch_id or watch_id == "legacy":
@@ -190,6 +228,33 @@ def sync_watch_to_cloud(payload: dict[str, Any]) -> dict[str, Any]:
         "project_tail": (payload.get("project_tail") or "")[:2000],
     }
     return _request("PUT", f"/v1/watches/{watch_id}", body=body)
+
+
+def sync_all_watches_to_cloud(*, documents_dir: Path | None = None) -> dict[str, Any]:
+    """Push every active named watch to Cloud Watch."""
+    from second_brain.agent.watch import list_watches, validate_watch
+
+    if not cloud_watch_configured():
+        return {"ok": False, "skipped": True, "reason": "not_configured", "synced": [], "errors": []}
+
+    synced: list[str] = []
+    errors: list[str] = []
+    for watch in list_watches(documents_dir):
+        if not watch.enabled or not watch.id or watch.id in {"legacy", "draft"}:
+            continue
+        try:
+            validate_watch(watch)
+        except Exception as e:
+            errors.append(f"{watch.id}: {e}"[:200])
+            continue
+        try:
+            payload = build_cloud_sync_payload(watch.project_path, watch.id)
+            sync_watch_to_cloud(payload)
+            synced.append(watch.id)
+        except Exception as e:
+            logger.warning("Cloud Watch sync failed for %s: %s", watch.id, e)
+            errors.append(f"{watch.id}: {e}"[:200])
+    return {"ok": True, "synced": synced, "count": len(synced), "errors": errors}
 
 
 def pull_pending_briefs(*, documents_dir: Path | None = None) -> dict[str, Any]:

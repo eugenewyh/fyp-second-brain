@@ -225,6 +225,10 @@ class CloudWatchLlmRequest(BaseModel):
     llm_model: str = ""
 
 
+class CloudWatchDelegateRequest(BaseModel):
+    delegated: bool = False
+
+
 class ActRequest(BaseModel):
     """Supervisor: pick file / answer / research / refuse."""
 
@@ -254,8 +258,6 @@ class ManagerTurnRequest(BaseModel):
     clarify_count: int = 0
     history: list[ManagerHistoryItem] = Field(default_factory=list)
     topics: list[TopicRefBody] = Field(default_factory=list)
-    workspace_empty: bool | None = None
-    agent: str | None = None
     # Shift+Tab / plus menu: answer | research | file — policy still clamps
     forced_job: str | None = None
 
@@ -463,8 +465,6 @@ def manager_turn(req: ManagerTurnRequest):
         clarify_count=req.clarify_count,
         history=[{"role": h.role, "content": h.content} for h in req.history],
         topics=[t.model_dump() for t in req.topics],
-        workspace_empty=req.workspace_empty,
-        agent=req.agent,
         forced_job=req.forced_job,
     ).to_dict()
 
@@ -1345,28 +1345,12 @@ def watches_steer(req: WatchSteerRequest):
 
 
 def _cloud_sync_payload(project_path: str, watch_id: str | None) -> dict:
-    from second_brain.agent.watch import last_brief_excerpt, load_watch
-    from second_brain.memory.learning import read_project_memory_tail
+    from second_brain.agent.cloud_watch_sync import build_cloud_sync_payload
 
-    path = Path(project_path).expanduser()
-    watch = load_watch(path, watch_id)
-    if watch is None:
-        raise HTTPException(404, "Watch not found.")
-    return {
-        "watch_id": watch.id,
-        "topic": path.name,
-        "name": watch.name or path.name,
-        "focus": watch.focus or "",
-        "include": watch.include or "",
-        "exclude": watch.exclude or "",
-        "trusted_sources": watch.trusted_sources or "",
-        "enabled": bool(watch.enabled),
-        "cadence": watch.cadence or "weekdays",
-        "hour": int(watch.hour or 9),
-        "timezone": "Asia/Singapore",
-        "last_brief_excerpt": last_brief_excerpt(path, watch_id=watch.id, limit=900),
-        "project_tail": read_project_memory_tail(str(path), max_lines=16),
-    }
+    try:
+        return build_cloud_sync_payload(project_path, watch_id)
+    except RuntimeError as e:
+        raise HTTPException(404, str(e)) from e
 
 
 def _apply_cloud_watch_bearer(authorization: str | None) -> None:
@@ -1411,6 +1395,30 @@ def cloud_watch_pull(authorization: str | None = Header(default=None)):
     except RuntimeError as e:
         raise HTTPException(502, str(e)) from e
     return {"ok": True, **result}
+
+
+@app.post("/api/cloud-watch/sync-all")
+def cloud_watch_sync_all(authorization: str | None = Header(default=None)):
+    """Push all active named watches to Cloud Watch."""
+    from second_brain.agent.cloud_watch_sync import cloud_watch_configured, sync_all_watches_to_cloud
+
+    _apply_cloud_watch_bearer(authorization)
+    if not cloud_watch_configured():
+        return {"ok": False, "skipped": True, "reason": "not_configured", "count": 0, "synced": []}
+    try:
+        result = sync_all_watches_to_cloud()
+    except RuntimeError as e:
+        raise HTTPException(502, str(e)) from e
+    return {"ok": True, **result}
+
+
+@app.post("/api/cloud-watch/delegate")
+def cloud_watch_delegate(req: CloudWatchDelegateRequest):
+    """When delegated=True, local scheduler skips watch goals (cloud cron runs them)."""
+    from second_brain.agent.cloud_watch_sync import set_cloud_watches_delegated
+
+    set_cloud_watches_delegated(req.delegated)
+    return {"ok": True, "delegated": req.delegated}
 
 
 @app.get("/api/cloud-watch/status")

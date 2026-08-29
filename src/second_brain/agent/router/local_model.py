@@ -1,9 +1,4 @@
-"""Local job router — TF-IDF + logistic regression for Manager Auto mode.
-
-Trained offline via ``scripts/train_job_router.py``; bundled model at
-``data/job_router/model.json``. Falls back to None when missing so supervisor
-heuristics / Gemini lite still run.
-"""
+"""Local job router — TF-IDF + logistic regression for Auto mode."""
 
 from __future__ import annotations
 
@@ -14,12 +9,13 @@ import re
 from pathlib import Path
 
 from second_brain.agent.policy import Job
+from second_brain.agent.router.features import enrich_router_text
 
 logger = logging.getLogger(__name__)
 
 _TOKEN = re.compile(r"[a-z0-9']+")
 _MODEL_PATH = (
-    Path(__file__).resolve().parents[3] / "data" / "job_router" / "model.json"
+    Path(__file__).resolve().parents[4] / "data" / "job_router" / "model.json"
 )
 
 _model_cache: dict | None = None
@@ -29,10 +25,11 @@ def _tokenize(text: str) -> list[str]:
     return _TOKEN.findall((text or "").lower())
 
 
-def _ngrams(tokens: list[str]) -> list[str]:
+def _ngrams(tokens: list[str], *, max_n: int = 2) -> list[str]:
     out = list(tokens)
-    for i in range(len(tokens) - 1):
-        out.append(f"{tokens[i]} {tokens[i + 1]}")
+    for n in range(2, max_n + 1):
+        for i in range(len(tokens) - n + 1):
+            out.append(" ".join(tokens[i : i + n]))
     return out
 
 
@@ -52,16 +49,11 @@ def _load_model() -> dict | None:
         return None
 
 
-def _enrich(text: str, *, matching_claim_count: int, has_attachments: bool) -> str:
-    claim_bucket = "c0" if matching_claim_count <= 0 else "c1" if matching_claim_count <= 2 else "c3"
-    attach = 1 if has_attachments else 0
-    return f"{text.strip()} claims={claim_bucket} attach={attach}"
-
-
 def _vectorize(enriched: str, model: dict) -> list[float]:
     vocab: dict[str, int] = model["vocabulary"]
     idf: list[float] = model["idf"]
-    tokens = _ngrams(_tokenize(enriched))
+    max_n = int(model.get("ngram_max") or 2)
+    tokens = _ngrams(_tokenize(enriched), max_n=max_n)
     tf: dict[int, int] = {}
     for tok in tokens:
         idx = vocab.get(tok)
@@ -85,26 +77,41 @@ def _softmax(scores: list[float]) -> list[float]:
     return [e / total for e in exps]
 
 
+def _min_confidence(model: dict, job: str) -> float:
+    thresholds = model.get("class_thresholds") or {}
+    default = float(model.get("min_confidence") or 0.42)
+    return float(thresholds.get(job, default))
+
+
 def route_job(
     message: str,
     *,
     matching_claim_count: int = 0,
     has_attachments: bool = False,
-    min_confidence: float = 0.42,
+    min_confidence: float | None = None,
 ) -> tuple[Job | None, str, float]:
     """Predict job from bundled model. Returns (job, reason, confidence)."""
     model = _load_model()
     text = (message or "").strip()
     if not model or not text:
         return None, "", 0.0
+    if has_attachments:
+        return "file", "attachments", 1.0
 
-    enriched = _enrich(text, matching_claim_count=matching_claim_count, has_attachments=has_attachments)
+    enriched = enrich_router_text(
+        text,
+        matching_claim_count=matching_claim_count,
+        has_attachments=has_attachments,
+    )
     vec = _vectorize(enriched, model)
     classes: list[str] = model["classes"]
     coef: list[list[float]] = model["coef"]
     intercept: list[float] = model["intercept"]
 
-    logits = [sum(c * v for c, v in zip(row, vec, strict=True)) + b for row, b in zip(coef, intercept, strict=True)]
+    logits = [
+        sum(c * v for c, v in zip(row, vec, strict=True)) + b
+        for row, b in zip(coef, intercept, strict=True)
+    ]
     probs = _softmax(logits)
     if not probs:
         return None, "", 0.0
@@ -112,7 +119,8 @@ def route_job(
     best_i = max(range(len(probs)), key=lambda i: probs[i])
     conf = probs[best_i]
     job = classes[best_i]
-    if conf < min_confidence or job not in {"file", "answer", "research", "refuse"}:
+    threshold = min_confidence if min_confidence is not None else _min_confidence(model, job)
+    if conf < threshold or job not in {"file", "answer", "research", "refuse"}:
         return None, "", conf
     return job, f"router ({conf:.0%})", conf  # type: ignore[return-value]
 

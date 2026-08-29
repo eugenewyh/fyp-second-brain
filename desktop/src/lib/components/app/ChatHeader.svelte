@@ -1,6 +1,8 @@
 <script lang="ts">
   import { DEFAULT_SESSION_TITLE } from "$lib/stores/session-title";
   import { app } from "$lib/stores/app.svelte";
+  import { assistant } from "$lib/stores/assistant.svelte";
+  import { workspace } from "$lib/stores/workspace.svelte";
 
   interface Props {
     chatTitle?: string | null;
@@ -19,6 +21,12 @@
   const muted = $derived(
     unbound || !chatTitle?.trim() || chatTitle.trim() === DEFAULT_SESSION_TITLE,
   );
+
+  function openMemoryForChat() {
+    const path = assistant.activeProjectPath();
+    app.openMemory({ topicPath: path });
+    if (path) workspace.setActiveTopic(path);
+  }
 </script>
 
 <header class="chat-header" data-tauri-drag-region>
@@ -33,7 +41,7 @@
         class="remember-chip"
         title="Open Memory for this topic"
         data-testid="header-memory"
-        onclick={() => app.openMemory()}
+        onclick={openMemoryForChat}
       >
         Remembers {remembered}
       </button>

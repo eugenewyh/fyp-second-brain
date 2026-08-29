@@ -1,0 +1,33 @@
+# Path A — hosted Nous Auth (Neon + Resend + Render free tier)
+# Dashboard: New → Blueprint → connect this repo, or create Web Service manually (rootDir: auth).
+#
+# Set secret env vars in Render before first deploy (see auth/.env.production.example).
+
+services:
+  - type: web
+    name: nous-auth
+    runtime: node
+    rootDir: auth
+    plan: free
+    buildCommand: npm install && npm run migrate && npm run migrate:devices
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: AUTH_DEV_LOG_OTP
+        value: "0"
+      - key: TRUSTED_ORIGINS
+        value: http://localhost:1420,tauri://localhost,http://tauri.localhost
+      - key: DATABASE_URL
+        sync: false
+      - key: BETTER_AUTH_SECRET
+        sync: false
+      - key: BETTER_AUTH_URL
+        sync: false
+      - key: AUTH_INTERNAL_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        sync: false

@@ -9,18 +9,21 @@
     "migrate": "npx @better-auth/cli@latest migrate --config ./src/auth.ts --yes",
     "migrate:devices": "tsx src/migrate-devices.ts"
   },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "@hono/node-server": "^1.14.3",
     "better-auth": "^1.3.4",
     "dotenv": "^16.5.0",
     "hono": "^4.8.3",
     "pg": "^8.16.0",
-    "resend": "^4.6.0"
+    "resend": "^4.6.0",
+    "tsx": "^4.20.3"
   },
   "devDependencies": {
     "@types/node": "^22.15.30",
     "@types/pg": "^8.15.4",
-    "tsx": "^4.20.3",
     "typescript": "^5.8.3"
   }
 }

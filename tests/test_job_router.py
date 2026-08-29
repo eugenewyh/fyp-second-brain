@@ -10,7 +10,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from second_brain.agent.job_router import model_loaded, route_job  # noqa: E402
+from second_brain.agent.router.local_model import model_loaded, route_job  # noqa: E402
 
 
 @pytest.fixture

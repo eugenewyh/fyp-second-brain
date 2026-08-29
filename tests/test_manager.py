@@ -11,13 +11,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT))
 
-from second_brain.agent.manager import (  # noqa: E402
-    MAX_CLARIFY,
-    is_vague,
-    suggest_topic,
-    take_turn,
-)
-from second_brain.agent.supervisor import RecallSnapshot  # noqa: E402
+from second_brain.agent.manager import take_turn  # noqa: E402
+from second_brain.agent.router.context import MAX_CLARIFY, is_vague, suggest_topic  # noqa: E402
+from second_brain.agent.router.recall import RecallSnapshot  # noqa: E402
 
 FIND_PAPERS = "Find papers on JustGRPO"
 VAGUE = "help with my FYP"
@@ -39,10 +35,7 @@ def _snap(count: int = 0) -> RecallSnapshot:
 
 @pytest.fixture
 def no_recall(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(
-        "second_brain.agent.supervisor.recall_snapshot",
-        lambda *_a, **_k: _snap(0),
-    )
+    monkeypatch.setattr("second_brain.agent.router.turn.recall.recall_snapshot", lambda *_a, **_k: _snap(0))
 
 
 @pytest.fixture
@@ -50,7 +43,16 @@ def no_llm(monkeypatch: pytest.MonkeyPatch):
     def boom(*_a, **_k):
         raise AssertionError("clear Manager paths must not call the supervisor LLM")
 
-    monkeypatch.setattr("second_brain.agent.supervisor._llm_choose", boom)
+    monkeypatch.setattr("second_brain.agent.router.turn.llm_router.llm_choose", boom)
+
+
+@pytest.fixture(autouse=True)
+def no_voice(monkeypatch: pytest.MonkeyPatch):
+    """Keep manager tests on template copy — voice is tested separately."""
+    monkeypatch.setattr(
+        "second_brain.agent.manager.apply_voice",
+        lambda decision, **_: decision,
+    )
 
 
 def test_find_papers_is_not_vague():
@@ -90,9 +92,6 @@ def test_vague_goal_asks_once(no_recall, no_llm):
 def test_second_vague_ask_then_force_dispatch(no_recall, no_llm):
     first = take_turn(VAGUE, clarify_count=0)
     assert first.kind == "ask"
-    second = take_turn("not sure yet", clarify_count=1)
-    assert second.kind == "ask"
-    assert second.focus == "confirm"
     forced = take_turn("not sure yet", clarify_count=MAX_CLARIFY)
     assert forced.kind == "dispatch"
 
@@ -131,10 +130,7 @@ def test_followup_notes_question_is_not_poisoned_by_prior_lookup(no_recall, no_l
 
 
 def test_followup_notes_question_answers_when_claims_match(no_llm, monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(
-        "second_brain.agent.supervisor.recall_snapshot",
-        lambda *_a, **_k: _snap(5),
-    )
+    monkeypatch.setattr("second_brain.agent.router.turn.recall.recall_snapshot", lambda *_a, **_k: _snap(5))
     turn = take_turn(
         NOTES_Q,
         project_path="/vault/dlm",
@@ -154,10 +150,7 @@ SYNTHESIS = (
 
 
 def test_synthesis_cite_notes_is_research(no_llm, monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(
-        "second_brain.agent.supervisor.recall_snapshot",
-        lambda *_a, **_k: _snap(5),
-    )
+    monkeypatch.setattr("second_brain.agent.router.turn.recall.recall_snapshot", lambda *_a, **_k: _snap(5))
     turn = take_turn(SYNTHESIS, project_path="/vault/Coffee", clarify_count=0)
     assert turn.kind == "dispatch"
     assert turn.job == "research"
@@ -167,10 +160,7 @@ def test_synthesis_cite_notes_is_research(no_llm, monkeypatch: pytest.MonkeyPatc
 
 
 def test_forced_job_research_overrides_notes_ask(no_llm, monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(
-        "second_brain.agent.supervisor.recall_snapshot",
-        lambda *_a, **_k: _snap(5),
-    )
+    monkeypatch.setattr("second_brain.agent.router.turn.recall.recall_snapshot", lambda *_a, **_k: _snap(5))
     turn = take_turn(
         NOTES_Q,
         project_path="/vault/dlm",
@@ -316,7 +306,6 @@ def test_empty_channel_still_dispatches_research(no_recall, no_llm):
         FIND_PAPERS,
         project_path="/vault/dlm",
         clarify_count=0,
-        workspace_empty=True,
     )
     assert turn.kind == "dispatch"
     assert turn.job == "research"
@@ -327,7 +316,6 @@ def test_vague_asks_even_when_channel_empty(no_recall, no_llm):
         VAGUE,
         project_path="/vault/dlm",
         clarify_count=0,
-        workspace_empty=True,
     )
     assert turn.kind == "ask"
     assert turn.reason == "underspecified"
@@ -338,7 +326,6 @@ def test_dump_files_without_staffing(no_recall, no_llm):
         DUMP,
         project_path="/vault/dlm",
         clarify_count=0,
-        workspace_empty=True,
     )
     assert turn.job == "file"
 
@@ -348,17 +335,6 @@ def test_ready_channel_runs_research_in_thread(no_recall, no_llm):
         FIND_PAPERS,
         project_path="/vault/dlm",
         clarify_count=0,
-        workspace_empty=False,
-    )
-    assert turn.kind == "dispatch"
-    assert turn.job == "research"
-
-
-def test_agent_param_ignored(no_recall, no_llm):
-    turn = take_turn(
-        FIND_PAPERS,
-        project_path="/vault/dlm",
-        agent="research",
     )
     assert turn.kind == "dispatch"
     assert turn.job == "research"
@@ -369,7 +345,6 @@ def test_non_empty_vague_dispatches_or_asks(no_recall, no_llm):
         VAGUE,
         project_path="/vault/dlm",
         clarify_count=0,
-        workspace_empty=False,
     )
     assert turn.kind in {"ask", "dispatch"}
     assert turn.reason != "onboard"

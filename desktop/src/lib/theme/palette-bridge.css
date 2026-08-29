@@ -1,0 +1,101 @@
+/*
+ * Map shadcn palette tokens → Nous semantic tokens used across the app.
+ * Palette files set --background, --foreground, etc.; this layer derives the rest.
+ */
+
+[data-palette] {
+  --bg: var(--background);
+  --pane-bg: var(--muted);
+  --paper: var(--background);
+  --bg-elevated: var(--card);
+  --surface: var(--card);
+  --surface-hover: color-mix(in oklch, var(--foreground) 6%, transparent);
+
+  --border-subtle: color-mix(in oklch, var(--border) 65%, var(--background));
+  --border-active: var(--input);
+
+  --text: var(--foreground);
+  --text-muted: var(--muted-foreground);
+  --text-faint: color-mix(in oklch, var(--muted-foreground) 72%, var(--background));
+
+  --selection-bg: var(--muted);
+  --selection-hover: color-mix(in oklch, var(--foreground) 6%, transparent);
+  --input-bg: var(--input);
+  --input-border: var(--input);
+
+  --accent: var(--primary-foreground);
+  --accent-hover: color-mix(in oklch, var(--primary-foreground) 88%, var(--foreground));
+  --accent-muted: color-mix(in oklch, var(--primary) 12%, transparent);
+  --accent-contrast: var(--primary-foreground);
+  --accent-soft: var(--primary);
+  --accent-live-dim: color-mix(in oklch, var(--accent-live) 12%, transparent);
+  --accent-link: var(--accent-live);
+  --focus-ring: color-mix(in oklch, var(--accent-live) 32%, transparent);
+
+  --success: oklch(0.55 0.12 162);
+  --success-dim: color-mix(in oklch, var(--success) 12%, transparent);
+  --warning: oklch(0.65 0.14 75);
+  --warning-dim: color-mix(in oklch, var(--warning) 14%, transparent);
+  --error: var(--destructive);
+  --error-dim: color-mix(in oklch, var(--destructive) 10%, transparent);
+  --info: var(--accent-live);
+  --info-dim: color-mix(in oklch, var(--accent-live) 10%, transparent);
+
+  --status-pending: var(--text-faint);
+  --status-running: var(--accent-live);
+  --status-done: var(--success);
+  --status-iterating: var(--warning);
+  --status-error: var(--error);
+
+  --bubble-user: var(--secondary);
+  --control-fill: color-mix(in oklch, var(--foreground) 5%, transparent);
+  --chrome-action-hover: var(--selection-hover);
+
+  --shadow-sm: 0 2px 4px 0 color-mix(in oklch, var(--foreground) 8%, transparent);
+  --shadow-md:
+    0 4px 12px 0 color-mix(in oklch, var(--foreground) 4%, transparent),
+    0 2px 8px 0 color-mix(in oklch, var(--foreground) 6%, transparent);
+  --shadow-lg:
+    0 0 1px 0 color-mix(in oklch, var(--foreground) 18%, transparent),
+    0 12px 32px 0 color-mix(in oklch, var(--foreground) 10%, transparent);
+  --shadow-nous: var(--shadow-md);
+  --stroke-nous: color-mix(in oklch, var(--foreground) 10%, transparent);
+  --shadow-composer: var(--shadow-md);
+
+  --overlay-backdrop: color-mix(in oklch, var(--foreground) 28%, transparent);
+  --control-knob: var(--background);
+  --graph-label-bg: color-mix(in oklch, var(--pane-bg) 88%, transparent);
+  --dot-idle: var(--text-faint);
+  --dot-active: var(--accent-live);
+}
+
+[data-palette][data-theme="dark"] {
+  --surface-hover: color-mix(in oklch, var(--foreground) 9%, transparent);
+  --selection-bg: color-mix(in oklch, var(--foreground) 9%, var(--background));
+  --selection-hover: color-mix(in oklch, var(--foreground) 9%, transparent);
+  --bubble-user: color-mix(in oklch, var(--foreground) 12%, var(--background));
+  --accent-muted: color-mix(in oklch, var(--primary) 14%, transparent);
+  --accent-live-dim: color-mix(in oklch, var(--accent-live) 16%, transparent);
+  --focus-ring: color-mix(in oklch, var(--accent-live) 40%, transparent);
+  --success: oklch(0.7 0.12 162);
+  --success-dim: color-mix(in oklch, var(--success) 14%, transparent);
+  --warning: oklch(0.78 0.14 75);
+  --warning-dim: color-mix(in oklch, var(--warning) 12%, transparent);
+  --error-dim: color-mix(in oklch, var(--destructive) 12%, transparent);
+  --info-dim: color-mix(in oklch, var(--accent-live) 14%, transparent);
+  --control-fill: color-mix(in oklch, var(--foreground) 7%, transparent);
+  --shadow-sm: 0 2px 4px 0 color-mix(in oklch, oklch(0 0 0) 35%, transparent);
+  --shadow-md:
+    0 0 1px 0 color-mix(in oklch, var(--foreground) 8%, transparent),
+    0 8px 24px 0 color-mix(in oklch, oklch(0 0 0) 35%, transparent);
+  --shadow-lg:
+    0 0 1px 0 color-mix(in oklch, var(--foreground) 10%, transparent),
+    0 16px 40px 0 color-mix(in oklch, oklch(0 0 0) 45%, transparent);
+  --overlay-backdrop: color-mix(in oklch, oklch(0 0 0) 50%, transparent);
+  --control-knob: var(--foreground);
+  color-scheme: dark;
+}
+
+[data-palette]:not([data-theme="dark"]) {
+  color-scheme: light;
+}

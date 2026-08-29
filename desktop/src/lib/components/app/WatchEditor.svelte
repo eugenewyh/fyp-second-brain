@@ -375,11 +375,18 @@
           <div class="card-main">
             <p class="card-title">Weekday mornings</p>
             <p class="hint">
-              When this schedule is active, Nous writes a brief on weekday mornings while the app is open.
-              If Nous was closed, catch-up runs after the scheduled hour when you reopen.
-              Use Run for an extra look today (rewrites today’s brief).
-              {#if connection.cloudWatchConfigured}
-                Cloud Scheduled Research runs around 9am even if this Mac is asleep.
+              {#if connection.cloudWatchesDelegated}
+                When this schedule is active, Cloud Scheduled Research writes a brief on weekday mornings around
+                9am — even if this Mac is asleep. Briefs appear here when you open Nous. Use Run for an extra look
+                today (rewrites today’s brief).
+              {:else if connection.cloudWatchAvailable}
+                When this schedule is active, Nous writes a brief on weekday mornings while the app is open.
+                Sign in under Settings → Account to run in the cloud while offline.
+                Use Run for an extra look today (rewrites today’s brief).
+              {:else}
+                When this schedule is active, Nous writes a brief on weekday mornings while the app is open.
+                If Nous was closed, catch-up runs after the scheduled hour when you reopen.
+                Use Run for an extra look today (rewrites today’s brief).
               {/if}
             </p>
           </div>

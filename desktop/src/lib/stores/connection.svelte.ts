@@ -27,6 +27,9 @@ class ConnectionStore {
   cloudWatchConfigured = $state(false);
   cloudWatchEmail = $state("");
   cloudWatchHasKey = $state(false);
+  /** Last cloud brief pull timestamp (ms). */
+  #lastCloudPull = 0;
+  #cloudPullTimer: ReturnType<typeof setInterval> | null = null;
 
   /** Avoid retry loops for the same reindex fingerprint until forced. */
   #healKey = "";
@@ -37,6 +40,59 @@ class ConnectionStore {
 
   setBriefsToday(count: number) {
     this.briefsToday = Math.max(0, Math.floor(count));
+  }
+
+  /** Push active watches to cloud and pull pending briefs when signed in. */
+  async syncCloudWatches(opts?: { syncAll?: boolean }) {
+    if (!this.cloudWatchConfigured) {
+      try {
+        await api.cloudWatchDelegate(false);
+      } catch {
+        /* sidecar may be down */
+      }
+      this.#stopCloudPullTimer();
+      return;
+    }
+    try {
+      await api.cloudWatchDelegate(true);
+      if (opts?.syncAll !== false) {
+        await api.cloudWatchSyncAll();
+      }
+      await this.#pullCloudBriefs();
+      this.#ensureCloudPullTimer();
+    } catch {
+      /* background refresh — caller may surface errors */
+    }
+  }
+
+  async #pullCloudBriefs() {
+    const pulled = await api.cloudWatchPull();
+    this.#lastCloudPull = Date.now();
+    if (pulled.count > 0) {
+      const listed = await api.listWatches();
+      this.briefsToday = listed.watches.filter((w) => w.has_brief_today).length;
+    }
+    return pulled;
+  }
+
+  #ensureCloudPullTimer() {
+    if (this.#cloudPullTimer || !this.cloudWatchConfigured) return;
+    this.#cloudPullTimer = setInterval(() => {
+      if (!this.cloudWatchConfigured || !this.connected) return;
+      void this.#pullCloudBriefs().catch(() => {});
+    }, 15 * 60 * 1000);
+  }
+
+  #stopCloudPullTimer() {
+    if (this.#cloudPullTimer) {
+      clearInterval(this.#cloudPullTimer);
+      this.#cloudPullTimer = null;
+    }
+  }
+
+  /** True when signed in and cloud handles weekday morning briefs. */
+  get cloudWatchesDelegated(): boolean {
+    return this.cloudWatchAvailable && this.cloudWatchConfigured && this.cloudWatchHasKey;
   }
 
   /** True when Ask/Agent vault search should be blocked. */
@@ -89,11 +145,9 @@ class ConnectionStore {
               /* Models key missing or sync failed */
             }
           }
-          const pulled = await api.cloudWatchPull();
-          if (pulled.count > 0) {
-            const listed = await api.listWatches();
-            this.briefsToday = listed.watches.filter((w) => w.has_brief_today).length;
-          }
+          await this.syncCloudWatches();
+        } else {
+          await this.syncCloudWatches({ syncAll: false });
         }
       } catch {
         this.cloudWatchAvailable = false;
@@ -113,6 +167,7 @@ class ConnectionStore {
       this.cloudWatchConfigured = false;
       this.cloudWatchEmail = "";
       this.cloudWatchHasKey = false;
+      this.#stopCloudPullTimer();
     }
   }
 

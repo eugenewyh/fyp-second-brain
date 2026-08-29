@@ -43,7 +43,8 @@
     topic: TYPE_STYLE.topic.stroke,
   };
 
-  let { scoped = false }: { scoped?: boolean } = $props();
+  let { scoped = false, initialTopicPath = null }: { scoped?: boolean; initialTopicPath?: string | null } =
+    $props();
 
   let tree = $state<VaultNode[]>([]);
   let bodies = $state<Record<string, string>>({});
@@ -58,7 +59,7 @@
   let showLearnings = $state(true);
   let showDigests = $state(true);
   let showTopics = $state(true);
-  let topicFilter = $state<string | null>(scoped ? workspace.activeTopicPath : null);
+  let topicFilter = $state<string | null>(scoped ? workspace.activeTopicPath : initialTopicPath);
 
   $effect(() => {
     if (scoped) topicFilter = workspace.activeTopicPath;

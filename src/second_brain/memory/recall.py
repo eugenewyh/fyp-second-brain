@@ -7,13 +7,21 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from second_brain.config import RETRIEVAL_TOP_K
+from second_brain.config import (
+    DEEP_ASK_CHUNK_EXCERPT,
+    DEEP_ASK_CLAIM_LIMIT,
+    DEEP_ASK_MEMORY_CHARS,
+    DEEP_ASK_TOP_K,
+    RETRIEVAL_TOP_K,
+)
 from second_brain.memory.learning import (
     agent_memory_path,
     project_memory_path,
     _safe_session_id,
 )
 from second_brain.memory.retriever import retrieve
+from second_brain.ingestion.sections import format_section_outline, load_section_index
+from second_brain.rag.ask_depth import AskDepth
 
 logger = logging.getLogger(__name__)
 
@@ -136,13 +144,18 @@ def _topic_claim_and_project_blocks(
     sources: list[str],
     budget: int,
     contested_out: list[dict[str, Any]] | None = None,
+    pinned_source: str | None = None,
+    claim_limit: int = 5,
 ) -> tuple[int, int]:
     """Append claims + project.md for one folder. Returns (budget, claim_count)."""
     claim_count = 0
     try:
-        from second_brain.memory.claims import claims_matching_query
+        from second_brain.memory.claims import claims_for_source, claims_matching_query
 
-        matched = claims_matching_query(query, project_path, limit=5)
+        if pinned_source:
+            matched = claims_for_source(project_path, pinned_source, limit=claim_limit or None)
+        else:
+            matched = claims_matching_query(query, project_path, limit=claim_limit)
         if matched:
             claim_count = len(matched)
             lines = []
@@ -191,17 +204,30 @@ def recall_for_query(
     top_k: int = 6,
     prior_context: str | None = None,
     also_project_paths: list[str] | None = None,
+    depth: AskDepth = "quick",
+    pinned_source: str | None = None,
 ) -> MemoryContext:
     """Retrieve compact prior understanding for planner injection.
 
     Preference: chat memory → matching claims → project.md → Chroma vault hits.
+    Comprehensive depth with a pinned source loads all claims from that file first.
     """
     if not query or not query.strip():
         return MemoryContext()
 
+    comprehensive = depth == "comprehensive"
+    max_chars = DEEP_ASK_MEMORY_CHARS if comprehensive else MAX_MEMORY_CHARS
+    chunk_excerpt = DEEP_ASK_CHUNK_EXCERPT if comprehensive else 400
+    retrieve_k = DEEP_ASK_TOP_K if comprehensive else top_k
+    claim_limit = (
+        DEEP_ASK_CLAIM_LIMIT
+        if comprehensive and pinned_source
+        else (15 if comprehensive else 5)
+    )
+
     blocks: list[str] = []
     sources: list[str] = []
-    budget = MAX_MEMORY_CHARS
+    budget = max_chars
     has_chat_memory = False
     claim_count = 0
     contested_claims: list[dict[str, Any]] = []
@@ -235,6 +261,8 @@ def recall_for_query(
         sources=sources,
         budget=budget,
         contested_out=contested_claims,
+        pinned_source=pinned_source,
+        claim_limit=claim_limit,
     )
     claim_count += n
     extra_paths = [
@@ -252,21 +280,45 @@ def recall_for_query(
             sources=sources,
             budget=budget,
             contested_out=contested_claims,
+            claim_limit=claim_limit if not pinned_source else 5,
         )
         claim_count += n
+
+    if pinned_source:
+        pin_name = Path(pinned_source).name
+        budget = _append_block(
+            blocks,
+            sources,
+            f"[Pinned source]\n{pin_name}",
+            pinned_source,
+            budget,
+        )
+        if comprehensive:
+            section_index = load_section_index(pinned_source, project_path=project_path)
+            if section_index and section_index.sections:
+                outline = format_section_outline(section_index, max_chars=min(4000, budget))
+                if outline:
+                    budget = _append_block(
+                        blocks,
+                        sources,
+                        outline,
+                        f"{pinned_source}#sections",
+                        budget,
+                    )
 
     try:
         docs = retrieve(
             query,
-            top_k=max(top_k, RETRIEVAL_TOP_K),
+            top_k=max(retrieve_k, RETRIEVAL_TOP_K),
             project_path=project_path,
             also_project_paths=extra_paths or None,
+            source_path_filter=pinned_source,
         )
     except Exception:
         logger.exception("Memory recall failed")
         docs = []
 
-    docs = _prefer_agent_memory(docs, session_id=sid)[:top_k]
+    docs = _prefer_agent_memory(docs, session_id=sid)[:retrieve_k]
 
     for i, doc in enumerate(docs, start=1):
         source = doc.metadata.get("source", "unknown")
@@ -274,8 +326,8 @@ def recall_for_query(
         if path and any(str(path) == s for s in sources):
             continue
         excerpt = (doc.page_content or "").strip().replace("\n", " ")
-        if len(excerpt) > 400:
-            excerpt = excerpt[:400] + "…"
+        if len(excerpt) > chunk_excerpt:
+            excerpt = excerpt[:chunk_excerpt] + "…"
         block = f"[{i}] {source}: {excerpt}"
         if len(block) > budget:
             break

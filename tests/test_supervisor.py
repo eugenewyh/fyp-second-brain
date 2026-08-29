@@ -44,16 +44,13 @@ def _snap(count: int = 0, previews: list[str] | None = None) -> RecallSnapshot:
 
 @pytest.fixture
 def no_recall(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(
-        "second_brain.agent.supervisor.recall_snapshot",
-        lambda *_a, **_k: _snap(0),
-    )
+    monkeypatch.setattr("second_brain.agent.router.turn.recall.recall_snapshot", lambda *_a, **_k: _snap(0))
 
 
 @pytest.fixture
 def matching_recall(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(
-        "second_brain.agent.supervisor.recall_snapshot",
+        "second_brain.agent.router.turn.recall.recall_snapshot",
         lambda *_a, **_k: _snap(5, ["Constrained decoding for diffusion LMs."]),
     )
 
@@ -156,7 +153,7 @@ def test_learn_intent_skips_llm_when_notes_match(matching_recall, monkeypatch):
     def boom(*_a, **_k):
         raise AssertionError("learn intent must skip the LLM")
 
-    monkeypatch.setattr("second_brain.agent.supervisor._llm_choose", boom)
+    monkeypatch.setattr("second_brain.agent.router.turn.llm_router.llm_choose", boom)
     q = "teach everything about lec10"
     assert has_learn_intent(q)
     decision = decide_act(q, project_path="/vault/Student notes", choose_fn=lambda *_a: "file")
@@ -168,7 +165,7 @@ def test_sglang_dump_files_even_when_claims_exist(matching_recall, monkeypatch):
     def boom(*_a, **_k):
         raise AssertionError("belief dumps must skip the LLM")
 
-    monkeypatch.setattr("second_brain.agent.supervisor._llm_choose", boom)
+    monkeypatch.setattr("second_brain.agent.router.turn.llm_router.llm_choose", boom)
     decision = decide_act(SGLANG_DUMP, project_path="/vault/dlm", choose_fn=lambda *_a: "research")
     assert decision.job == "file"
     assert decision.matching_claim_count == 5
@@ -192,7 +189,7 @@ def test_find_papers_is_research(no_recall, monkeypatch):
     def boom(*_a, **_k):
         raise AssertionError("search intent must skip the LLM")
 
-    monkeypatch.setattr("second_brain.agent.supervisor._llm_choose", boom)
+    monkeypatch.setattr("second_brain.agent.router.turn.llm_router.llm_choose", boom)
     decision = decide_act(FIND_PAPERS, project_path="/vault/dlm", choose_fn=lambda *_a: "refuse")
     assert decision.job == "research"
 
@@ -201,7 +198,7 @@ def test_synthesis_over_notes_skips_llm(matching_recall, monkeypatch):
     def boom(*_a, **_k):
         raise AssertionError("synthesis+claims must skip the LLM")
 
-    monkeypatch.setattr("second_brain.agent.supervisor._llm_choose", boom)
+    monkeypatch.setattr("second_brain.agent.router.turn.llm_router.llm_choose", boom)
     q = (
         "Synthesise my stance on home espresso: grind vs dose, milk steaming, "
         "and what I'd buy next. Cite my notes."
@@ -226,8 +223,8 @@ def test_ambiguous_falls_back_to_llm(matching_recall, monkeypatch):
         calls["n"] += 1
         return "answer", "ambiguous"
 
-    monkeypatch.setattr("second_brain.agent.job_router.route_job", lambda *_a, **_k: (None, "", 0.0))
-    monkeypatch.setattr("second_brain.agent.supervisor._llm_choose", fake_choose)
+    monkeypatch.setattr("second_brain.agent.router.turn.local_model.route_job", lambda *_a, **_k: (None, "", 0.0))
+    monkeypatch.setattr("second_brain.agent.router.turn.llm_router.llm_choose", fake_choose)
     decision = decide_act("What about the checkpoint?", project_path="/vault/dlm")
     assert calls["n"] == 1
     assert decision.job == "answer"
@@ -237,7 +234,7 @@ def test_forced_job_skips_llm(matching_recall, monkeypatch):
     def boom(*_a, **_k):
         raise AssertionError("forced job must skip the LLM")
 
-    monkeypatch.setattr("second_brain.agent.supervisor._llm_choose", boom)
+    monkeypatch.setattr("second_brain.agent.router.turn.llm_router.llm_choose", boom)
     decision = decide_act(
         "According to my notes, what matters?",
         project_path="/vault/dlm",
@@ -249,7 +246,7 @@ def test_forced_job_skips_llm(matching_recall, monkeypatch):
 
 def test_attachments_file_via_supervisor(no_recall, monkeypatch):
     monkeypatch.setattr(
-        "second_brain.agent.supervisor._llm_choose",
+        "second_brain.agent.router.turn.llm_router.llm_choose",
         lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("attachments skip the LLM")),
     )
     decision = decide_act("What is this?", has_attachments=True, choose_fn=lambda *_a: "research")
@@ -264,12 +261,9 @@ def test_fallback_files_multi_sentence_dump():
 
 def test_act_http_attachments_and_espresso(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr("sidecar.server.start_scheduler", lambda **_kwargs: None)
+    monkeypatch.setattr("second_brain.agent.router.turn.recall.recall_snapshot", lambda *_a, **_k: _snap(0))
     monkeypatch.setattr(
-        "second_brain.agent.supervisor.recall_snapshot",
-        lambda *_a, **_k: _snap(0),
-    )
-    monkeypatch.setattr(
-        "second_brain.agent.supervisor._llm_choose",
+        "second_brain.agent.router.turn.llm_router.llm_choose",
         lambda *_a, **_k: ("research", "greedy"),
     )
     from fastapi.testclient import TestClient

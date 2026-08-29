@@ -1,75 +1,2820 @@
 [
-  {"text": "Find papers on JustGRPO", "job": "research", "claims": 0, "attachments": false},
-  {"text": "Look up indoor plant care for low-light apartments", "job": "research", "claims": 0, "attachments": false},
-  {"text": "Research indoor plant care for beginners — watering and soil", "job": "research", "claims": 0, "attachments": false},
-  {"text": "Research specialty coffee roasting — light vs dark roast", "job": "research", "claims": 0, "attachments": false},
-  {"text": "Investigate the latest on diffusion language models", "job": "research", "claims": 0, "attachments": false},
-  {"text": "Write a report on transformer efficiency for my FYP", "job": "research", "claims": 0, "attachments": false},
-  {"text": "Compare pour-over vs espresso for home use", "job": "research", "claims": 0, "attachments": false},
-  {"text": "What are the latest papers on constrained decoding?", "job": "research", "claims": 0, "attachments": false},
-  {"text": "Search the web for houseplant watering mistakes", "job": "research", "claims": 0, "attachments": false},
-  {"text": "Go deeper on constrained decoding with more sources", "job": "research", "claims": 3, "attachments": false},
-  {"text": "Synthesise my stance on home espresso: grind vs dose. Cite my notes.", "job": "research", "claims": 4, "attachments": false},
-  {"text": "Literature review on multi-agent RAG systems", "job": "research", "claims": 0, "attachments": false},
-  {"text": "Explore state of the art in personal knowledge management", "job": "research", "claims": 0, "attachments": false},
-  {"text": "File a report on indoor plants for my demo vault", "job": "research", "claims": 0, "attachments": false},
-  {"text": "What's new in Groq inference chips?", "job": "research", "claims": 0, "attachments": false},
-  {"text": "Find sources on monstera care in tropical climates", "job": "research", "claims": 0, "attachments": false},
-  {"text": "Research the best soil mix for succulents", "job": "research", "claims": 0, "attachments": false},
-  {"text": "Deep dive into LangGraph agent patterns", "job": "research", "claims": 1, "attachments": false},
-  {"text": "Survey recent work on hallucination mitigation in RAG", "job": "research", "claims": 0, "attachments": false},
-  {"text": "Compile a report on watch brief automation", "job": "research", "claims": 0, "attachments": false},
-
-  {"text": "What do I already know about coffee?", "job": "answer", "claims": 5, "attachments": false},
-  {"text": "According to my notes, what grind size do I prefer?", "job": "answer", "claims": 3, "attachments": false},
-  {"text": "From my notes, summarize my plant watering routine", "job": "answer", "claims": 4, "attachments": false},
-  {"text": "What do my notes say about diffusion LMs?", "job": "answer", "claims": 6, "attachments": false},
-  {"text": "What do I care about with DLMs?", "job": "answer", "claims": 5, "attachments": false},
-  {"text": "Based on my library, what mistakes did I make with espresso?", "job": "answer", "claims": 2, "attachments": false},
-  {"text": "What about the checkpoint?", "job": "answer", "claims": 4, "attachments": false},
-  {"text": "Explain my stance on parallel decoding from memory", "job": "answer", "claims": 3, "attachments": false},
-  {"text": "Cite my notes on watering frequency", "job": "answer", "claims": 2, "attachments": false},
-  {"text": "What did I teach Nous about plants?", "job": "answer", "claims": 3, "attachments": false},
-
-  {"text": "What is the best espresso machine for a small kitchen?", "job": "refuse", "claims": 0, "attachments": false},
-  {"text": "How do I fix a yellow monstera leaf?", "job": "refuse", "claims": 0, "attachments": false},
-  {"text": "What do I know about plants?", "job": "refuse", "claims": 0, "attachments": false},
-  {"text": "According to my notes, what do I care about in DLMs?", "job": "refuse", "claims": 0, "attachments": false},
-  {"text": "Summarize my thesis chapter 3", "job": "refuse", "claims": 0, "attachments": false},
-  {"text": "What's the weather in KL today?", "job": "refuse", "claims": 0, "attachments": false},
-  {"text": "Who won the World Cup?", "job": "refuse", "claims": 0, "attachments": false},
-  {"text": "What is diffusion?", "job": "refuse", "claims": 0, "attachments": false},
-  {"text": "Explain transformers", "job": "refuse", "claims": 0, "attachments": false},
-  {"text": "Help me with my homework", "job": "refuse", "claims": 0, "attachments": false},
-
-  {"text": "I now think grind size matters more than the machine for espresso.", "job": "file", "claims": 0, "attachments": false},
-  {"text": "I still don't trust tok/s without GPU and batch size named.", "job": "file", "claims": 0, "attachments": false},
-  {"text": "Here are my notes on indoor plants:\n\nWater weekly. Bright indirect light.", "job": "file", "claims": 0, "attachments": false},
-  {"text": "Monstera likes humidity around 60%. I mist mine twice a week.", "job": "file", "claims": 0, "attachments": false},
-  {"text": "My coffee routine: 18g in, 36g out, 28 seconds.", "job": "file", "claims": 0, "attachments": false},
-  {"text": "Notes from today's reading — constrained decoding reduces invalid JSON.", "job": "file", "claims": 2, "attachments": false},
-  {"text": "Attached are my lecture notes on agents", "job": "file", "claims": 0, "attachments": true},
-  {"text": "What is this?", "job": "file", "claims": 0, "attachments": true},
-
-  {"text": "Research indoor plant care for low-light apartments — watering, soil, and common mistakes for beginners.", "job": "research", "claims": 0, "attachments": false},
-  {"text": "Look up specialty coffee for beginners", "job": "research", "claims": 0, "attachments": false},
-  {"text": "Find papers on arXiv about diffusion LMs", "job": "research", "claims": 0, "attachments": false},
-  {"text": "Research how to care for snake plants", "job": "research", "claims": 0, "attachments": false},
-  {"text": "Investigate best practices for FYP report structure", "job": "research", "claims": 0, "attachments": false},
-  {"text": "What are the latest developments in multi-agent systems?", "job": "research", "claims": 0, "attachments": false},
-  {"text": "Pros and cons of local-first vs cloud AI assistants", "job": "research", "claims": 0, "attachments": false},
-  {"text": "Run a report on houseplant pests and treatment", "job": "research", "claims": 0, "attachments": false},
-  {"text": "Research watering schedules for tropical plants in apartments", "job": "research", "claims": 0, "attachments": false},
-  {"text": "Explore personal knowledge management tools for students", "job": "research", "claims": 0, "attachments": false},
-
-  {"text": "What does my notes say about espresso temperature?", "job": "answer", "claims": 1, "attachments": false},
-  {"text": "From my library, what plants tolerate low light?", "job": "answer", "claims": 2, "attachments": false},
-  {"text": "Recall what I taught about diffusion checkpoints", "job": "answer", "claims": 4, "attachments": false},
-
-  {"text": "Should I buy a burr grinder?", "job": "refuse", "claims": 0, "attachments": false},
-  {"text": "Is 9Bar enough for espresso?", "job": "refuse", "claims": 0, "attachments": false},
-  {"text": "What is JustGRPO?", "job": "refuse", "claims": 0, "attachments": false},
-
-  {"text": "I think constrained decoding is the right default for tool use.", "job": "file", "claims": 0, "attachments": false},
-  {"text": "Pasted notes:\n\nDLM uses iterative refinement. SGLang ships schema constraints.", "job": "file", "claims": 0, "attachments": false}
+  {
+    "text": "Find papers on JustGRPO",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Look up indoor plant care for low-light apartments",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Research indoor plant care for beginners \u2014 watering and soil",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Research specialty coffee roasting \u2014 light vs dark roast",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Investigate the latest on diffusion language models",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Write a report on transformer efficiency for my FYP",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Compare pour-over vs espresso for home use",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "What are the latest papers on constrained decoding?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Search the web for houseplant watering mistakes",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Go deeper on constrained decoding with more sources",
+    "job": "research",
+    "claims": 3,
+    "attachments": false
+  },
+  {
+    "text": "Synthesise my stance on home espresso: grind vs dose. Cite my notes.",
+    "job": "research",
+    "claims": 4,
+    "attachments": false
+  },
+  {
+    "text": "Literature review on multi-agent RAG systems",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Explore state of the art in personal knowledge management",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "File a report on indoor plants for my demo vault",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "What's new in Groq inference chips?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Find sources on monstera care in tropical climates",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Research the best soil mix for succulents",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Deep dive into LangGraph agent patterns",
+    "job": "research",
+    "claims": 1,
+    "attachments": false
+  },
+  {
+    "text": "Survey recent work on hallucination mitigation in RAG",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Compile a report on watch brief automation",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "What do I already know about coffee?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false
+  },
+  {
+    "text": "According to my notes, what grind size do I prefer?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false
+  },
+  {
+    "text": "From my notes, summarize my plant watering routine",
+    "job": "answer",
+    "claims": 4,
+    "attachments": false
+  },
+  {
+    "text": "What do my notes say about diffusion LMs?",
+    "job": "answer",
+    "claims": 6,
+    "attachments": false
+  },
+  {
+    "text": "What do I care about with DLMs?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false
+  },
+  {
+    "text": "Based on my library, what mistakes did I make with espresso?",
+    "job": "answer",
+    "claims": 2,
+    "attachments": false
+  },
+  {
+    "text": "What about the checkpoint?",
+    "job": "answer",
+    "claims": 4,
+    "attachments": false
+  },
+  {
+    "text": "Explain my stance on parallel decoding from memory",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false
+  },
+  {
+    "text": "Cite my notes on watering frequency",
+    "job": "answer",
+    "claims": 2,
+    "attachments": false
+  },
+  {
+    "text": "What did I teach Nous about plants?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false
+  },
+  {
+    "text": "What is the best espresso machine for a small kitchen?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "How do I fix a yellow monstera leaf?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "What do I know about plants?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "According to my notes, what do I care about in DLMs?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Summarize my thesis chapter 3",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "What's the weather in KL today?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Who won the World Cup?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "What is diffusion?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Explain transformers",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Help me with my homework",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "I now think grind size matters more than the machine for espresso.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "I still don't trust tok/s without GPU and batch size named.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Here are my notes on indoor plants:\n\nWater weekly. Bright indirect light.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Monstera likes humidity around 60%. I mist mine twice a week.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "My coffee routine: 18g in, 36g out, 28 seconds.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Notes from today's reading \u2014 constrained decoding reduces invalid JSON.",
+    "job": "file",
+    "claims": 2,
+    "attachments": false
+  },
+  {
+    "text": "Attached are my lecture notes on agents",
+    "job": "file",
+    "claims": 0,
+    "attachments": true
+  },
+  {
+    "text": "What is this?",
+    "job": "file",
+    "claims": 0,
+    "attachments": true
+  },
+  {
+    "text": "Research indoor plant care for low-light apartments \u2014 watering, soil, and common mistakes for beginners.",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Look up specialty coffee for beginners",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Find papers on arXiv about diffusion LMs",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Research how to care for snake plants",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Investigate best practices for FYP report structure",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "What are the latest developments in multi-agent systems?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Pros and cons of local-first vs cloud AI assistants",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Run a report on houseplant pests and treatment",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Research watering schedules for tropical plants in apartments",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Explore personal knowledge management tools for students",
+    "job": "research",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "What does my notes say about espresso temperature?",
+    "job": "answer",
+    "claims": 1,
+    "attachments": false
+  },
+  {
+    "text": "From my library, what plants tolerate low light?",
+    "job": "answer",
+    "claims": 2,
+    "attachments": false
+  },
+  {
+    "text": "Recall what I taught about diffusion checkpoints",
+    "job": "answer",
+    "claims": 4,
+    "attachments": false
+  },
+  {
+    "text": "Should I buy a burr grinder?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Is 9Bar enough for espresso?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "What is JustGRPO?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "I think constrained decoding is the right default for tool use.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Pasted notes:\n\nDLM uses iterative refinement. SGLang ships schema constraints.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false
+  },
+  {
+    "text": "Research indoor plant care for beginners",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research specialty coffee roasting for beginners",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research diffusion language models for beginners",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research multi-agent RAG for beginners",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research personal knowledge management for beginners",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research houseplant pests for beginners",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research espresso extraction for beginners",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research constrained decoding for beginners",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research LangGraph agents for beginners",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research FYP report structure for beginners",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research snake plant care for beginners",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research pour-over technique for beginners",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research JustGRPO for beginners",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research hallucination mitigation for beginners",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research watch brief automation for beginners",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up indoor plant care best practices",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up specialty coffee roasting best practices",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up diffusion language models best practices",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up multi-agent RAG best practices",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up personal knowledge management best practices",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up houseplant pests best practices",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up espresso extraction best practices",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up constrained decoding best practices",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up LangGraph agents best practices",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up FYP report structure best practices",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up snake plant care best practices",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up pour-over technique best practices",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up JustGRPO best practices",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up hallucination mitigation best practices",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up watch brief automation best practices",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Find papers on indoor plant care",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Find papers on specialty coffee roasting",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Find papers on diffusion language models",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Find papers on multi-agent RAG",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Find papers on personal knowledge management",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Find papers on houseplant pests",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Find papers on espresso extraction",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Find papers on constrained decoding",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Find papers on LangGraph agents",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Find papers on FYP report structure",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Find papers on snake plant care",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Find papers on pour-over technique",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Find papers on hallucination mitigation",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Find papers on watch brief automation",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Investigate indoor plant care for my FYP",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Investigate specialty coffee roasting for my FYP",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Investigate diffusion language models for my FYP",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Investigate multi-agent RAG for my FYP",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Investigate personal knowledge management for my FYP",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Investigate houseplant pests for my FYP",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Investigate espresso extraction for my FYP",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Investigate constrained decoding for my FYP",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Investigate LangGraph agents for my FYP",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Investigate FYP report structure for my FYP",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Investigate snake plant care for my FYP",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Investigate pour-over technique for my FYP",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Investigate JustGRPO for my FYP",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Investigate hallucination mitigation for my FYP",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Investigate watch brief automation for my FYP",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Write a report on indoor plant care",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Write a report on specialty coffee roasting",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Write a report on diffusion language models",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Write a report on multi-agent RAG",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Write a report on personal knowledge management",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Write a report on houseplant pests",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Write a report on espresso extraction",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Write a report on constrained decoding",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Write a report on LangGraph agents",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Write a report on FYP report structure",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Write a report on snake plant care",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Write a report on pour-over technique",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Write a report on JustGRPO",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Write a report on hallucination mitigation",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Write a report on watch brief automation",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Compare indoor plant care approaches vs baselines",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Compare specialty coffee roasting approaches vs baselines",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Compare diffusion language models approaches vs baselines",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Compare multi-agent RAG approaches vs baselines",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Compare personal knowledge management approaches vs baselines",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Compare houseplant pests approaches vs baselines",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Compare espresso extraction approaches vs baselines",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Compare constrained decoding approaches vs baselines",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Compare LangGraph agents approaches vs baselines",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Compare FYP report structure approaches vs baselines",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Compare snake plant care approaches vs baselines",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Compare pour-over technique approaches vs baselines",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Compare JustGRPO approaches vs baselines",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Compare hallucination mitigation approaches vs baselines",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Compare watch brief automation approaches vs baselines",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What are the latest developments in indoor plant care?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What are the latest developments in specialty coffee roasting?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What are the latest developments in diffusion language models?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What are the latest developments in multi-agent RAG?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What are the latest developments in personal knowledge management?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What are the latest developments in houseplant pests?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What are the latest developments in espresso extraction?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What are the latest developments in constrained decoding?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What are the latest developments in LangGraph agents?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What are the latest developments in FYP report structure?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What are the latest developments in snake plant care?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What are the latest developments in pour-over technique?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What are the latest developments in JustGRPO?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What are the latest developments in hallucination mitigation?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What are the latest developments in watch brief automation?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explore state of the art in indoor plant care",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explore state of the art in specialty coffee roasting",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explore state of the art in diffusion language models",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explore state of the art in multi-agent RAG",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explore state of the art in houseplant pests",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explore state of the art in espresso extraction",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explore state of the art in constrained decoding",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explore state of the art in LangGraph agents",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explore state of the art in FYP report structure",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explore state of the art in snake plant care",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explore state of the art in pour-over technique",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explore state of the art in JustGRPO",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explore state of the art in hallucination mitigation",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explore state of the art in watch brief automation",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Deep dive into indoor plant care with sources",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Deep dive into specialty coffee roasting with sources",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Deep dive into diffusion language models with sources",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Deep dive into multi-agent RAG with sources",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Deep dive into personal knowledge management with sources",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Deep dive into houseplant pests with sources",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Deep dive into espresso extraction with sources",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Deep dive into constrained decoding with sources",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Deep dive into LangGraph agents with sources",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Deep dive into FYP report structure with sources",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Deep dive into snake plant care with sources",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Deep dive into pour-over technique with sources",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Deep dive into JustGRPO with sources",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Deep dive into hallucination mitigation with sources",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Deep dive into watch brief automation with sources",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Survey recent work on indoor plant care",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Survey recent work on specialty coffee roasting",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Survey recent work on diffusion language models",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Survey recent work on multi-agent RAG",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Survey recent work on personal knowledge management",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Survey recent work on houseplant pests",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Survey recent work on espresso extraction",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Survey recent work on constrained decoding",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Survey recent work on LangGraph agents",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Survey recent work on FYP report structure",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Survey recent work on snake plant care",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Survey recent work on pour-over technique",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Survey recent work on JustGRPO",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Survey recent work on hallucination mitigation",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Survey recent work on watch brief automation",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Go deeper on indoor plant care with more sources",
+    "job": "research",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Synthesise my stance on indoor plant care. Cite my notes.",
+    "job": "research",
+    "claims": 4,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Go deeper on specialty coffee roasting with more sources",
+    "job": "research",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Synthesise my stance on specialty coffee roasting. Cite my notes.",
+    "job": "research",
+    "claims": 4,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Go deeper on diffusion language models with more sources",
+    "job": "research",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Synthesise my stance on diffusion language models. Cite my notes.",
+    "job": "research",
+    "claims": 4,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Go deeper on multi-agent RAG with more sources",
+    "job": "research",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Synthesise my stance on multi-agent RAG. Cite my notes.",
+    "job": "research",
+    "claims": 4,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Go deeper on personal knowledge management with more sources",
+    "job": "research",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Synthesise my stance on personal knowledge management. Cite my notes.",
+    "job": "research",
+    "claims": 4,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Go deeper on houseplant pests with more sources",
+    "job": "research",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Synthesise my stance on houseplant pests. Cite my notes.",
+    "job": "research",
+    "claims": 4,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Go deeper on espresso extraction with more sources",
+    "job": "research",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Synthesise my stance on espresso extraction. Cite my notes.",
+    "job": "research",
+    "claims": 4,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Synthesise my stance on constrained decoding. Cite my notes.",
+    "job": "research",
+    "claims": 4,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "According to my notes, what do I think about indoor plant care?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "According to my notes, what do I think about specialty coffee roasting?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "According to my notes, what do I think about diffusion language models?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "According to my notes, what do I think about multi-agent RAG?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "According to my notes, what do I think about personal knowledge management?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "According to my notes, what do I think about houseplant pests?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "According to my notes, what do I think about espresso extraction?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "According to my notes, what do I think about constrained decoding?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "According to my notes, what do I think about LangGraph agents?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "According to my notes, what do I think about FYP report structure?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "From my notes, summarize indoor plant care",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "From my notes, summarize specialty coffee roasting",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "From my notes, summarize diffusion language models",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "From my notes, summarize multi-agent RAG",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "From my notes, summarize personal knowledge management",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "From my notes, summarize houseplant pests",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "From my notes, summarize espresso extraction",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "From my notes, summarize constrained decoding",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "From my notes, summarize LangGraph agents",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "From my notes, summarize FYP report structure",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What do my notes say about indoor plant care?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What do my notes say about specialty coffee roasting?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What do my notes say about diffusion language models?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What do my notes say about multi-agent RAG?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What do my notes say about personal knowledge management?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What do my notes say about houseplant pests?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What do my notes say about espresso extraction?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What do my notes say about constrained decoding?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What do my notes say about LangGraph agents?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What do my notes say about FYP report structure?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Based on my library, what mistakes did I make with indoor plant care?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Based on my library, what mistakes did I make with specialty coffee roasting?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Based on my library, what mistakes did I make with diffusion language models?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Based on my library, what mistakes did I make with multi-agent RAG?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Based on my library, what mistakes did I make with personal knowledge management?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Based on my library, what mistakes did I make with houseplant pests?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Based on my library, what mistakes did I make with espresso extraction?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Based on my library, what mistakes did I make with constrained decoding?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Based on my library, what mistakes did I make with LangGraph agents?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Based on my library, what mistakes did I make with FYP report structure?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What about indoor plant care?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What about specialty coffee roasting?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What about diffusion language models?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What about multi-agent RAG?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What about personal knowledge management?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What about houseplant pests?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What about espresso extraction?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What about constrained decoding?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What about LangGraph agents?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What about FYP report structure?",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Explain my stance on indoor plant care from memory",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Explain my stance on specialty coffee roasting from memory",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Explain my stance on diffusion language models from memory",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Explain my stance on multi-agent RAG from memory",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Explain my stance on personal knowledge management from memory",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Explain my stance on houseplant pests from memory",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Explain my stance on espresso extraction from memory",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Explain my stance on constrained decoding from memory",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Explain my stance on LangGraph agents from memory",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Explain my stance on FYP report structure from memory",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Teach me everything about indoor plant care",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Teach me everything about specialty coffee roasting",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Teach me everything about diffusion language models",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Teach me everything about multi-agent RAG",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Teach me everything about personal knowledge management",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Teach me everything about houseplant pests",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Teach me everything about espresso extraction",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Teach me everything about constrained decoding",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Teach me everything about LangGraph agents",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Teach me everything about FYP report structure",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Walk me through indoor plant care from my notes",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Walk me through specialty coffee roasting from my notes",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Walk me through diffusion language models from my notes",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Walk me through multi-agent RAG from my notes",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Walk me through personal knowledge management from my notes",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Walk me through houseplant pests from my notes",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Walk me through espresso extraction from my notes",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Walk me through constrained decoding from my notes",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Walk me through LangGraph agents from my notes",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Walk me through FYP report structure from my notes",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What is the best monstera for a small kitchen?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What is the best burr grinder for a small kitchen?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What is the best JustGRPO for a small kitchen?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What is the best transformers for a small kitchen?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What is the best World Cup for a small kitchen?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What is the best KL for a small kitchen?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What is the best homework for a small kitchen?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "How do I fix a yellow espresso machine leaf?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "How do I fix a yellow burr grinder leaf?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "How do I fix a yellow JustGRPO leaf?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "How do I fix a yellow transformers leaf?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "How do I fix a yellow World Cup leaf?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "How do I fix a yellow KL leaf?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "How do I fix a yellow homework leaf?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Should I buy a espresso machine?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Should I buy a monstera?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Should I buy a JustGRPO?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Should I buy a transformers?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Should I buy a World Cup?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Should I buy a KL?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Should I buy a homework?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What is espresso machine?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What is monstera?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What is burr grinder?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What is transformers?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What is World Cup?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What is KL?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What is homework?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explain espresso machine",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explain monstera",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explain burr grinder",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explain JustGRPO",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explain World Cup",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explain KL",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explain homework",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Who won the espresso machine?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Who won the monstera?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Who won the burr grinder?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Who won the JustGRPO?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Who won the transformers?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Who won the KL?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Who won the homework?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What's the weather in espresso machine?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What's the weather in monstera?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What's the weather in burr grinder?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What's the weather in JustGRPO?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What's the weather in transformers?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What's the weather in World Cup?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What's the weather in KL?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What's the weather in homework?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Help me with my espresso machine",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Help me with my monstera",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Help me with my burr grinder",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Help me with my JustGRPO",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Help me with my transformers",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Help me with my World Cup",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Help me with my KL",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Summarize my thesis chapter on espresso machine",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Summarize my thesis chapter on monstera",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Summarize my thesis chapter on burr grinder",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Summarize my thesis chapter on JustGRPO",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Summarize my thesis chapter on transformers",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Summarize my thesis chapter on World Cup",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Summarize my thesis chapter on KL",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Summarize my thesis chapter on homework",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What does my notes say about espresso temperature?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "I now think grind size matters more than the machine.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "I now think constrained decoding reduces invalid JSON.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "I now think water weekly with bright indirect light.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "I now think 18g in, 36g out, 28 seconds.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "I now think parallel decode that breaks JSON is a fail.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "I still believe grind size matters more than the machine.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "I still believe constrained decoding reduces invalid JSON.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "I still believe water weekly with bright indirect light.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "I still believe 18g in, 36g out, 28 seconds.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "I still believe parallel decode that breaks JSON is a fail.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "My notes on coffee:\n\ngrind size matters more than the machine",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "My notes on plants:\n\ngrind size matters more than the machine",
+    "job": "file",
+    "claims": 2,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "My notes on coffee:\n\nconstrained decoding reduces invalid JSON",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "My notes on plants:\n\nconstrained decoding reduces invalid JSON",
+    "job": "file",
+    "claims": 2,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "My notes on coffee:\n\nwater weekly with bright indirect light",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "My notes on plants:\n\nwater weekly with bright indirect light",
+    "job": "file",
+    "claims": 2,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "My notes on coffee:\n\n18g in, 36g out, 28 seconds",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "My notes on plants:\n\n18g in, 36g out, 28 seconds",
+    "job": "file",
+    "claims": 2,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "My notes on coffee:\n\nparallel decode that breaks JSON is a fail",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "My notes on plants:\n\nparallel decode that breaks JSON is a fail",
+    "job": "file",
+    "claims": 2,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "Notes from today's reading \u2014 grind size matters more than the machine",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Notes from today's reading \u2014 constrained decoding reduces invalid JSON",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Notes from today's reading \u2014 water weekly with bright indirect light",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Notes from today's reading \u2014 18g in, 36g out, 28 seconds",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Notes from today's reading \u2014 parallel decode that breaks JSON is a fail",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Attached lecture notes batch 0",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  },
+  {
+    "text": "Attached lecture notes batch 1",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  },
+  {
+    "text": "Attached lecture notes batch 2",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  },
+  {
+    "text": "Attached lecture notes batch 3",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  },
+  {
+    "text": "Attached lecture notes batch 4",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  },
+  {
+    "text": "Attached lecture notes batch 5",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  },
+  {
+    "text": "Attached lecture notes batch 6",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  },
+  {
+    "text": "Attached lecture notes batch 7",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  },
+  {
+    "text": "Attached lecture notes batch 8",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  },
+  {
+    "text": "Attached lecture notes batch 9",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  },
+  {
+    "text": "Attached lecture notes batch 10",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  },
+  {
+    "text": "Attached lecture notes batch 11",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  }
 ]

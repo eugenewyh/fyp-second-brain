@@ -1,0 +1,33 @@
+{
+  "n_eval": 412,
+  "baselines": {
+    "regex_only": {
+      "accuracy": 0.8810679611650486,
+      "macro_f1": 0.8045658870490168,
+      "n": 412
+    },
+    "local_model": {
+      "accuracy": 0.9902912621359223,
+      "macro_f1": 0.9861637957320517,
+      "n": 412,
+      "coverage": 0.9927184466019418
+    },
+    "gemini_json": {
+      "accuracy": 0.7839805825242718,
+      "macro_f1": 0.7387096854966254,
+      "n": 412
+    },
+    "full_pipeline": {
+      "accuracy": 0.7330097087378641,
+      "macro_f1": 0.6358704445253408,
+      "n": 412
+    }
+  },
+  "pipeline_tier_distribution": {
+    "rule": 260,
+    "local": 141,
+    "llm": 1,
+    "fallback": 10
+  },
+  "gemini_call_rate_on_auto": 0.0024271844660194173
+}

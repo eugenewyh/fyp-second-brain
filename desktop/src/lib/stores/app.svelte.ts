@@ -35,6 +35,8 @@ class AppStore {
   /** Incremented when opening the Watch tab so the list is shown. */
   watchListNonce = $state(0);
   artifactsFilter = $state<ArtifactsFilter>("all");
+  /** When set, Memory graph opens filtered to this workspace folder. */
+  memoryTopicFilter = $state<string | null>(null);
   /** Preferred Settings tab when opening the sheet. */
   settingsTab = $state<"appearance" | "models" | "account">("appearance");
 
@@ -94,7 +96,8 @@ class AppStore {
     this.watchListNonce += 1;
   }
 
-  openMemory() {
+  openMemory(opts?: { topicPath?: string | null }) {
+    this.memoryTopicFilter = opts?.topicPath ?? null;
     this.mode = "graph";
     this.sheet = "memory";
   }

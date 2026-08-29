@@ -1,7 +1,6 @@
 <script lang="ts">
   import { tick } from "svelte";
-  import { fade, fly, slide } from "svelte/transition";
-  import { cubicOut } from "svelte/easing";
+  import { fade, fly } from "svelte/transition";
   import { app } from "$lib/stores/app.svelte";
   import { assistant } from "$lib/stores/assistant.svelte";
   import {
@@ -11,17 +10,7 @@
     type WorkspaceSession,
   } from "$lib/assistant/workspace-chats";
   import { ThinkingOrb } from "svelte-thinking-orbs";
-  import { ChevronRight, Hash, MessageSquare, Pin, Plus, X } from "@lucide/svelte";
-
-  const reduceMotion =
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  const slideOpts = {
-    duration: reduceMotion ? 0 : 200,
-    easing: cubicOut,
-    axis: "y" as const,
-  };
+  import { ChevronRight, Folder, FolderOpen, MessageSquare, Pin, Plus, X } from "@lucide/svelte";
 
   interface Props {
     groups: WorkspaceGroup[];
@@ -313,11 +302,18 @@
         title={group.name}
         aria-expanded={open}
       >
-        <span class="twist" class:open aria-hidden="true">
-          <ChevronRight size={12} strokeWidth={2} />
-        </span>
-        <span class="lead-icon" aria-hidden="true">
-          <Hash size={13} strokeWidth={1.75} />
+        <span class="lead-icon workspace-lead" aria-hidden="true">
+          <span class="lead-mark default" class:is-open={open}>
+            <span class="folder-state closed">
+              <Folder size={13} strokeWidth={1.75} />
+            </span>
+            <span class="folder-state open">
+              <FolderOpen size={13} strokeWidth={1.75} />
+            </span>
+          </span>
+          <span class="lead-mark chevron" class:open>
+            <ChevronRight size={12} strokeWidth={2} />
+          </span>
         </span>
         {#if renaming}
           <input
@@ -344,9 +340,6 @@
               <Pin size={11} strokeWidth={2} />
             </span>
           {/if}
-          {#if chats.length > 0}
-            <span class="meta">{chats.length}</span>
-          {/if}
         {/if}
         <button
           type="button"
@@ -362,11 +355,12 @@
         </button>
       </div>
 
-      {#if open && !renaming}
-        <ul
-          class="chats"
-          transition:slide={slideOpts}
-        >
+      <div
+        class="chats-panel"
+        class:open={open && !renaming}
+        aria-hidden={!open || renaming}
+      >
+        <ul class="chats">
           {#each chats as session (session.id)}
             {@const chatActive = session.id === activeSessionId && app.isHome}
             {@const chatRun = sessionRunning(session)}
@@ -418,7 +412,7 @@
             <li class="empty-chats">No chats yet</li>
           {/each}
         </ul>
-      {/if}
+      </div>
     </li>
   {/each}
 </ul>
@@ -595,7 +589,13 @@
   }
 
   .workspace {
-    padding: 0 0.4rem 0 0.2rem;
+    padding: 0 0.4rem 0 0.35rem;
+    user-select: none;
+  }
+
+  .workspace:focus,
+  .workspace:focus-visible {
+    outline: none;
   }
 
   .workspace:hover,
@@ -618,38 +618,74 @@
     transform: translateX(2px);
   }
 
-  .twist {
+  .workspace-lead {
+    position: relative;
+    width: 16px;
+    height: 16px;
+  }
+
+  .workspace-lead .lead-mark {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 14px;
-    height: 14px;
-    padding: 0;
-    margin: 0;
-    border: none;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
+    width: 16px;
+    height: 16px;
     color: var(--text-faint);
-    cursor: pointer;
-    flex-shrink: 0;
     transition:
       color var(--dur-control) var(--ease-out),
-      transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      transform var(--dur-expand) var(--ease-out),
+      opacity var(--dur-med) var(--ease-out);
   }
 
-  .twist.open {
+  .workspace-lead .lead-mark.chevron {
+    display: none;
+  }
+
+  .workspace-lead .lead-mark.chevron.open {
     transform: rotate(90deg);
   }
 
-  .twist:hover {
-    color: var(--text);
-    background: transparent;
+  .workspace-lead .lead-mark.default {
+    position: relative;
   }
 
-  .twist:focus-visible {
-    outline: none;
-    color: var(--text);
+  .workspace-lead .folder-state {
+    position: absolute;
+    inset: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      opacity var(--dur-expand) var(--ease-out),
+      transform var(--dur-expand) var(--ease-out);
+  }
+
+  .workspace-lead .folder-state.closed {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .workspace-lead .folder-state.open {
+    opacity: 0;
+    transform: scale(0.88) translateY(1px);
+  }
+
+  .workspace-lead .lead-mark.default.is-open .folder-state.closed {
+    opacity: 0;
+    transform: scale(0.88) translateY(-1px);
+  }
+
+  .workspace-lead .lead-mark.default.is-open .folder-state.open {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+
+  .workspace:hover .workspace-lead .lead-mark.default {
+    display: none;
+  }
+
+  .workspace:hover .workspace-lead .lead-mark.chevron {
+    display: inline-flex;
   }
 
   .lead-icon {
@@ -666,8 +702,9 @@
     color: var(--accent-live, var(--text));
   }
 
+  .workspace:hover .workspace-lead .lead-mark,
+  .workspace.active .workspace-lead .lead-mark,
   .workspace:hover .lead-icon,
-  .workspace.active .lead-icon,
   .chat:hover .lead-icon,
   .chat.active .lead-icon {
     color: var(--text-muted);
@@ -726,6 +763,8 @@
     justify-content: center;
     width: 20px;
     height: 20px;
+    min-width: 20px;
+    min-height: 20px;
     padding: 0;
     border: none;
     border-radius: var(--radius-xs);
@@ -736,15 +775,35 @@
     flex-shrink: 0;
   }
 
-  .new-chat-btn:hover {
+  .new-chat-btn:hover,
+  .new-chat-btn:focus,
+  .new-chat-btn:focus-visible {
     color: var(--text);
-    background: var(--selection-bg);
+    background: transparent;
+    outline: none;
+  }
+
+  .chats-panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      grid-template-rows var(--dur-expand) var(--ease-out),
+      opacity var(--dur-expand) var(--ease-out);
+  }
+
+  .chats-panel.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .chats {
     list-style: none;
     margin: 0 0 0.15rem;
     padding: 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     gap: 1px;
@@ -772,11 +831,11 @@
     background: var(--selection-bg);
   }
 
-  /* Full-width highlight; indent content under workspace # (twist + gap) */
+  /* Full-width highlight; indent chats under workspace label */
   .chat {
     flex: 1;
     min-width: 0;
-    padding: 0 0.4rem 0 calc(16px + 0.4rem + 0.2rem);
+    padding: 0 0.4rem 0 calc(0.35rem + 16px + 0.4rem);
     background: transparent;
   }
 
@@ -803,6 +862,8 @@
     justify-content: center;
     width: 20px;
     height: 20px;
+    min-width: 20px;
+    min-height: 20px;
     padding: 0;
     border: none;
     border-radius: var(--radius-xs);
@@ -813,9 +874,12 @@
     flex-shrink: 0;
   }
 
-  .chat-del:hover {
+  .chat-del:hover,
+  .chat-del:focus,
+  .chat-del:focus-visible {
     color: var(--text);
-    background: var(--selection-bg);
+    background: transparent;
+    outline: none;
   }
 
   .empty-chats {
@@ -933,14 +997,25 @@
     .menu,
     .pin-mark.pop,
     .workspace.pin-pop,
-    .twist {
+    .workspace-lead .lead-mark,
+    .workspace-lead .folder-state,
+    .chats-panel {
       animation: none;
       transition: none;
       transform: none;
     }
 
-    .twist.open {
+    .workspace-lead .lead-mark.chevron.open {
       transform: none;
+    }
+
+    .chats-panel.open {
+      opacity: 1;
+      grid-template-rows: 1fr;
+    }
+
+    .chats-panel:not(.open) {
+      display: none;
     }
   }
 </style>

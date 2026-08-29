@@ -8,6 +8,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from second_brain.config import CHUNK_OVERLAP, CHUNK_SIZE
 from second_brain.ingestion.loaders import load_directory, load_file
+from second_brain.ingestion.sections import ensure_section_summaries, infer_project_from_source
 from second_brain.memory.chroma_store import upsert_documents
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,12 @@ def ingest_file(file_path: Path) -> int:
     documents = load_file(file_path)
     if not documents:
         return 0
+
+    try:
+        project = infer_project_from_source(file_path)
+        ensure_section_summaries(file_path, project_path=project)
+    except Exception:
+        logger.debug("Section summaries skipped for %s", file_path, exc_info=True)
 
     chunks = split_documents(documents)
     count = upsert_documents(chunks)

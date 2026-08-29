@@ -1,10 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   loadThemePreference,
+  loadPalettePreference,
   resolveEffectiveTheme,
   saveThemePreference,
+  savePalettePreference,
   THEME_DEFAULT,
+  PALETTE_DEFAULT,
+  PALETTE_STORAGE_KEY,
   THEME_STORAGE_KEY,
+  isPaletteId,
 } from "./theme-prefs";
 
 describe("theme-prefs", () => {
@@ -62,5 +67,23 @@ describe("theme-prefs", () => {
     }));
 
     expect(resolveEffectiveTheme("system")).toBe("light");
+  });
+
+  it("defaults palette to nous when storage is empty", () => {
+    expect(loadPalettePreference()).toBe(PALETTE_DEFAULT);
+    expect(PALETTE_DEFAULT).toBe("nous");
+  });
+
+  it("round-trips palette through localStorage", () => {
+    savePalettePreference("ember");
+    expect(localStorage.getItem(PALETTE_STORAGE_KEY)).toBe("ember");
+    expect(loadPalettePreference()).toBe("ember");
+  });
+
+  it("falls back to nous for invalid palette values", () => {
+    localStorage.setItem(PALETTE_STORAGE_KEY, "cyberpunk");
+    expect(loadPalettePreference()).toBe("nous");
+    expect(isPaletteId("cyberpunk")).toBe(false);
+    expect(isPaletteId("mono")).toBe(true);
   });
 });

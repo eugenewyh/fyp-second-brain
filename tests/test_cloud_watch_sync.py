@@ -14,6 +14,7 @@ from second_brain.agent.cloud_watch_sync import (  # noqa: E402
     _friendly_http_error,
     cloud_watch_configured,
     pull_pending_briefs,
+    set_cloud_watches_delegated,
     set_session_token,
     sync_watch_to_cloud,
 )
@@ -151,6 +152,55 @@ def test_pull_writes_and_acks(tmp_path: Path, monkeypatch):
     assert out["count"] == 1
     assert (tmp_path / "Coffee" / "watches" / "papers" / "briefs" / "2026-08-26.md").is_file()
     assert any("/ack" in c for c in calls)
+
+
+def test_sync_all_watches_to_cloud(monkeypatch):
+    monkeypatch.setenv("CLOUD_WATCH_URL", "http://example.test")
+    set_session_token("user-session")
+    set_cloud_watches_delegated(False)
+
+    calls: list[str] = []
+
+    class FakeResp:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self):
+            return json.dumps({"watch_id": "papers", "enabled": True}).encode()
+
+    def fake_urlopen(req, timeout=30.0):
+        calls.append(req.full_url if hasattr(req, "full_url") else str(req.get_full_url()))
+        return FakeResp()
+
+    fake_watch = type(
+        "W",
+        (),
+        {
+            "enabled": True,
+            "id": "papers",
+            "project_path": "/tmp/Coffee",
+        },
+    )()
+
+    with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+        with patch("second_brain.agent.watch.list_watches", return_value=[fake_watch]):
+            with patch("second_brain.agent.watch.validate_watch"):
+                with patch(
+                    "second_brain.agent.cloud_watch_sync.build_cloud_sync_payload",
+                    return_value={
+                        "watch_id": "papers",
+                        "topic": "Coffee",
+                        "enabled": True,
+                    },
+                ):
+                    from second_brain.agent.cloud_watch_sync import sync_all_watches_to_cloud
+
+                    out = sync_all_watches_to_cloud()
+    assert out["count"] == 1
+    assert out["synced"] == ["papers"]
 
 
 def test_requires_session_token(monkeypatch):

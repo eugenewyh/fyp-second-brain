@@ -1,16 +1,23 @@
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from second_brain.agent.supervisor import REFUSE_MESSAGE
-from second_brain.config import RETRIEVAL_TOP_K
+from second_brain.agent.router.copy import REFUSE_MESSAGE
+from second_brain.config import DEEP_ASK_STUDY_CACHE, DEEP_ASK_TOP_K, RETRIEVAL_TOP_K
 from second_brain.memory.llm import invoke_llm
 from second_brain.memory.recall import memory_is_useful, recall_for_query
 from second_brain.memory.retriever import retrieve
+from second_brain.ingestion.sections import load_section_index
+from second_brain.rag.ask_depth import AskDepth, ask_depth, resolve_pinned_source
+from second_brain.rag.map_reduce import map_reduce_explain, needs_map_reduce
+from second_brain.rag.study_cache import get_cached_study_guide, save_study_guide
 from second_brain.rag.prompts import (
     CHAT_CONTEXT_BLOCK,
     CHAT_SYSTEM_PROMPT,
     CHAT_USER_WITH_CONTEXT,
+    DEEP_CHAT_SYSTEM_PROMPT,
+    DEEP_CHAT_USER_WITH_CONTEXT,
     RAG_SYSTEM_PROMPT,
     RAG_USER_TEMPLATE,
     format_context,
@@ -105,9 +112,10 @@ def _last_user_message(messages: list[ChatMessage]) -> str | None:
     return None
 
 
-def build_chat_system_content(context: ChatContext | None) -> str:
+def build_chat_system_content(context: ChatContext | None, *, comprehensive: bool = False) -> str:
+    base = DEEP_CHAT_SYSTEM_PROMPT if comprehensive else CHAT_SYSTEM_PROMPT
     if not context or not any([context.note_path, context.selected_text, context.note_excerpt]):
-        return CHAT_SYSTEM_PROMPT
+        return base
 
     selected_block = ""
     if context.selected_text and context.selected_text.strip():
@@ -126,7 +134,20 @@ def build_chat_system_content(context: ChatContext | None) -> str:
         selected_block=selected_block,
         excerpt_block=excerpt_block,
     ).strip()
-    return f"{CHAT_SYSTEM_PROMPT}\n\n{context_block}"
+    return f"{base}\n\n{context_block}"
+
+
+def _ask_plan(
+    question: str,
+    context: ChatContext | None,
+    project_path: str | None,
+    top_k: int,
+) -> tuple[AskDepth, str | None, int]:
+    depth = ask_depth(question)
+    note_path = context.note_path if context else None
+    pinned = resolve_pinned_source(question, project_path, note_path=note_path)
+    retrieve_k = DEEP_ASK_TOP_K if depth == "comprehensive" else top_k
+    return depth, pinned, retrieve_k
 
 
 def _history_messages(messages: list[ChatMessage]) -> list[HumanMessage | AIMessage]:
@@ -166,12 +187,16 @@ def chat_with_context(
         )
 
     ephemeral = _has_ephemeral_context(context)
+    depth, pinned_source, retrieve_k = _ask_plan(question, context, project_path, top_k)
+    comprehensive = depth == "comprehensive"
     memory = recall_for_query(
         question,
         project_path=project_path,
         session_id=session_id,
-        top_k=top_k,
+        top_k=retrieve_k,
         also_project_paths=also_project_paths,
+        depth=depth,
+        pinned_source=pinned_source,
     )
     on_topic: bool | None = None
     if project_path and not ephemeral:
@@ -194,21 +219,73 @@ def chat_with_context(
             thin_memory=True,
         )
 
+    if comprehensive and pinned_source and DEEP_ASK_STUDY_CACHE:
+        cached = get_cached_study_guide(
+            question,
+            pinned_source,
+            project_path=project_path,
+        )
+        if cached:
+            return RAGResponse(
+                question=question,
+                answer=cached,
+                sources=[],
+                contested_claims=list(memory.contested_claims or []),
+            )
+
+    section_index = (
+        load_section_index(pinned_source, project_path=project_path)
+        if pinned_source
+        else None
+    )
+    use_map_reduce = needs_map_reduce(
+        memory,
+        section_index,
+        comprehensive=comprehensive,
+    )
+
     try:
         documents = retrieve(
             question,
-            top_k=top_k,
+            top_k=retrieve_k,
             project_path=project_path,
             also_project_paths=also_project_paths,
+            source_path_filter=pinned_source,
         )
     except Exception:
         documents = []
     citations = _build_citations(documents)
+
+    if use_map_reduce and section_index and pinned_source:
+        answer = map_reduce_explain(
+            question,
+            section_index=section_index,
+            memory=memory,
+            source_label=Path(pinned_source).name,
+        )
+        if answer.strip():
+            if comprehensive and pinned_source and DEEP_ASK_STUDY_CACHE:
+                save_study_guide(
+                    question,
+                    pinned_source,
+                    answer,
+                    project_path=project_path,
+                )
+            return RAGResponse(
+                question=question,
+                answer=answer,
+                sources=citations,
+                contested_claims=list(memory.contested_claims or []),
+            )
+
     context_text = format_context(documents)
     memory_text = memory.text or "(none)"
 
+    user_template = DEEP_CHAT_USER_WITH_CONTEXT if comprehensive else CHAT_USER_WITH_CONTEXT
+    llm_role = "main" if comprehensive else "fast"
+
     llm_messages: list[SystemMessage | HumanMessage | AIMessage] = [
-        SystemMessage(content=build_chat_system_content(context)),
+        SystemMessage(content=build_chat_system_content(context, comprehensive=comprehensive)),
     ]
 
     prior = messages[:-1] if messages and messages[-1].role == "user" else messages
@@ -216,7 +293,7 @@ def chat_with_context(
 
     llm_messages.append(
         HumanMessage(
-            content=CHAT_USER_WITH_CONTEXT.format(
+            content=user_template.format(
                 memory=memory_text,
                 context=context_text,
                 question=question,
@@ -224,8 +301,15 @@ def chat_with_context(
         )
     )
 
-    response = invoke_llm(llm_messages, role="fast")
+    response = invoke_llm(llm_messages, role=llm_role)
     answer = response.content if isinstance(response.content, str) else str(response.content)
+    if comprehensive and pinned_source and DEEP_ASK_STUDY_CACHE and answer.strip():
+        save_study_guide(
+            question,
+            pinned_source,
+            answer,
+            project_path=project_path,
+        )
     return RAGResponse(
         question=question,
         answer=answer,

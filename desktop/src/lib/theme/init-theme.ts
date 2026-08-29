@@ -1,13 +1,17 @@
-import { applyEffectiveTheme, syncNativeTheme } from "./apply-theme";
+import { applyTheme, syncNativeTheme } from "./apply-theme";
 import {
+  loadPalettePreference,
   loadThemePreference,
   resolveEffectiveTheme,
+  savePalettePreference,
   saveThemePreference,
   type EffectiveTheme,
+  type PaletteId,
   type ThemePreference,
 } from "./theme-prefs";
 
 let preference: ThemePreference = "system";
+let palette: PaletteId = "nous";
 let effective: EffectiveTheme = "light";
 let systemMedia: MediaQueryList | null = null;
 let systemListener: ((event: MediaQueryListEvent) => void) | null = null;
@@ -28,7 +32,7 @@ function bindSystemListener(): void {
   systemListener = () => {
     if (preference !== "system") return;
     effective = resolveEffectiveTheme("system");
-    applyEffectiveTheme(effective);
+    applyTheme(palette, effective);
     void syncNativeTheme("system", effective);
   };
   systemMedia.addEventListener("change", systemListener);
@@ -36,12 +40,16 @@ function bindSystemListener(): void {
 
 function applyCurrent(): void {
   effective = resolveEffectiveTheme(preference);
-  applyEffectiveTheme(effective);
+  applyTheme(palette, effective);
   void syncNativeTheme(preference, effective);
 }
 
 export function getThemePreference(): ThemePreference {
   return preference;
+}
+
+export function getPalettePreference(): PaletteId {
+  return palette;
 }
 
 export function getEffectiveTheme(): EffectiveTheme {
@@ -50,6 +58,7 @@ export function getEffectiveTheme(): EffectiveTheme {
 
 export function initTheme(): void {
   preference = loadThemePreference();
+  palette = loadPalettePreference();
   bindSystemListener();
   applyCurrent();
 }
@@ -58,5 +67,11 @@ export function setThemePreference(next: ThemePreference): void {
   preference = next;
   saveThemePreference(next);
   bindSystemListener();
+  applyCurrent();
+}
+
+export function setPalettePreference(next: PaletteId): void {
+  palette = next;
+  savePalettePreference(next);
   applyCurrent();
 }

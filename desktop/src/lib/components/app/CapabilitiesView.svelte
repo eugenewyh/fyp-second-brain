@@ -99,7 +99,9 @@
       name: "Daily autonomous review",
       category: "Memory",
       description:
-        "Scheduled review of new vault notes and active schedules. Runs only while Nous is open; catch-up fires after the scheduled hour.",
+        connection.cloudWatchesDelegated
+          ? "Scheduled review of new vault notes locally; active schedules run in the cloud on weekday mornings."
+          : "Scheduled review of new vault notes and active schedules. Runs only while Nous is open; catch-up fires after the scheduled hour.",
       enabled: dailyReviewEnabled && connection.connected,
       toggleable: true,
     },

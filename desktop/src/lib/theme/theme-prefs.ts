@@ -2,7 +2,15 @@ export type ThemePreference = "light" | "dark" | "system";
 export type EffectiveTheme = "light" | "dark";
 
 export const THEME_STORAGE_KEY = "nous-theme-preference";
+export const PALETTE_STORAGE_KEY = "nous-theme-palette";
 export const THEME_DEFAULT: ThemePreference = "system";
+export const PALETTE_DEFAULT = "nous" as const;
+
+export type PaletteId = "nous" | "ember" | "mono";
+
+export function isPaletteId(value: string | null | undefined): value is PaletteId {
+  return value === "nous" || value === "ember" || value === "mono";
+}
 
 export function isThemePreference(value: string | null | undefined): value is ThemePreference {
   return value === "light" || value === "dark" || value === "system";
@@ -27,6 +35,17 @@ export function loadThemePreference(): ThemePreference {
 export function saveThemePreference(pref: ThemePreference): void {
   if (typeof localStorage === "undefined") return;
   localStorage.setItem(THEME_STORAGE_KEY, pref);
+}
+
+export function loadPalettePreference(): PaletteId {
+  if (typeof localStorage === "undefined") return PALETTE_DEFAULT;
+  const raw = localStorage.getItem(PALETTE_STORAGE_KEY);
+  return isPaletteId(raw) ? raw : PALETTE_DEFAULT;
+}
+
+export function savePalettePreference(palette: PaletteId): void {
+  if (typeof localStorage === "undefined") return;
+  localStorage.setItem(PALETTE_STORAGE_KEY, palette);
 }
 
 export function themePreferenceLabel(pref: ThemePreference): string {

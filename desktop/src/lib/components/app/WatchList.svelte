@@ -317,8 +317,16 @@
     <div>
       <h1>Scheduled Research</h1>
       <p class="sub">
-        Recurring research briefs for your topics. Active schedules run on weekday mornings while Nous is open;
-        if the app was closed, catch-up runs after the scheduled hour when you reopen. Or Run anytime.
+        {#if connection.cloudWatchesDelegated}
+          Recurring research briefs for your topics. Active schedules run on weekday mornings in the cloud —
+          even when this Mac is asleep. Briefs sync when you open Nous. Or Run anytime.
+        {:else if connection.cloudWatchAvailable}
+          Recurring research briefs for your topics. Sign in under Settings → Account so weekday mornings run in
+          the cloud while you're offline. Without an account, briefs run while Nous is open. Or Run anytime.
+        {:else}
+          Recurring research briefs for your topics. Active schedules run on weekday mornings while Nous is open;
+          if the app was closed, catch-up runs after the scheduled hour when you reopen. Or Run anytime.
+        {/if}
       </p>
     </div>
     <div class="hero-actions">
