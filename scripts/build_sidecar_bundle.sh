@@ -13,6 +13,17 @@ if [[ ! -f "$REQ" ]]; then
 fi
 
 if [[ -z "${NOUS_NVIDIA_API_KEY:-}" ]]; then
+  if [[ -f "$ROOT/.env" ]]; then
+    set -a
+    # shellcheck disable=SC1091
+    source "$ROOT/.env"
+    set +a
+  fi
+fi
+
+NOUS_NVIDIA_API_KEY="${NOUS_NVIDIA_API_KEY:-${NVIDIA_API_KEY:-${LLM_API_KEY:-}}}"
+
+if [[ -z "${NOUS_NVIDIA_API_KEY:-}" ]]; then
   echo "NOUS_NVIDIA_API_KEY is required for release builds (Nous-included NVIDIA access)."
   echo "Export it or add to .env before running package_release.sh"
   exit 1

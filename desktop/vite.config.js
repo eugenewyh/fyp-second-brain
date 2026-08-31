@@ -7,10 +7,17 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(async () => ({
   plugins: [sveltekit()],
 
-  // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
-  //
-  // 1. prevent Vite from obscuring rust errors
+  // Tauri custom protocol serves from file root — relative asset paths required.
+  base: "./",
+
   clearScreen: false,
+  envPrefix: ["VITE_", "TAURI_ENV_*"],
+  build: {
+    target:
+      process.env.TAURI_ENV_PLATFORM === "windows" ? "chrome105" : "safari13",
+    minify: process.env.TAURI_ENV_DEBUG ? false : "esbuild",
+    sourcemap: !!process.env.TAURI_ENV_DEBUG,
+  },
   // 2. tauri expects a fixed port, fail if that port is not available
   server: {
     port: 1420,

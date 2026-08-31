@@ -1,2 +1,1 @@
-# Generated release artifacts live here (see scripts/build_sidecar_bundle.sh).
-# Dev builds use the repo .venv instead when sidecar/server.py is missing.
+# Placeholder — release build writes venv + src here (gitignored except this file).

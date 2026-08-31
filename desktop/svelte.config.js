@@ -10,8 +10,14 @@ const config = {
   preprocess: vitePreprocess(),
   kit: {
     adapter: adapter({
-      fallback: "index.html",
+      // Single-route app: prerender `/` only (see +layout.ts). No fallback — fallback
+      // forces absolute /_app paths that break Tauri production webview.
+      strict: true,
     }),
+    // Required for Tauri production — absolute /_app/... paths cause a white screen.
+    paths: {
+      relative: true,
+    },
   },
 };
 

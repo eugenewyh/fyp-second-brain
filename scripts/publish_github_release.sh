@@ -9,6 +9,8 @@ cd "$ROOT"
 VERSION="$(python3 -c "import json; print(json.load(open('desktop/src-tauri/tauri.conf.json'))['version'])")"
 TAG="v${VERSION}"
 SKIP_BUILD=0
+SKIP_TESTS=0
+REPLACE=0
 NOTES_FILE=""
 DRAFT=0
 
@@ -20,6 +22,8 @@ Options:
   --tag TAG           Git tag (default: v<version> from tauri.conf.json, e.g. v0.1.0)
   --notes-file PATH   Release notes markdown (default: .github/release_notes/<tag>.md or TEMPLATE)
   --skip-build        Do not run package_release.sh; upload existing artifacts only
+  --skip-tests        Skip pytest during package_release.sh
+  --replace           Upload assets to an existing release (same tag)
   --draft             Create a draft release
   -h, --help          Show this help
 
@@ -41,6 +45,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --skip-build)
       SKIP_BUILD=1
+      shift
+      ;;
+    --skip-tests)
+      SKIP_TESTS=1
+      shift
+      ;;
+    --replace)
+      REPLACE=1
       shift
       ;;
     --draft)
@@ -66,6 +78,7 @@ fi
 
 if [[ "$SKIP_BUILD" -eq 0 ]]; then
   echo "==> Building release artifacts..."
+  export SKIP_TESTS
   bash "$ROOT/scripts/package_release.sh"
 fi
 
@@ -120,15 +133,23 @@ else
 fi
 
 echo "==> Pushing tag $TAG"
-git push github "$TAG"
-
-GH_ARGS=(release create "$TAG" "${ASSETS[@]}" --title "$TITLE" --notes-file "$NOTES_FILE")
-if [[ "$DRAFT" -eq 1 ]]; then
-  GH_ARGS+=(--draft)
+if git rev-parse "$TAG" >/dev/null 2>&1; then
+  git push github "$TAG" 2>/dev/null || git push github "$TAG" --force
+else
+  git push github "$TAG"
 fi
 
-echo "==> Creating GitHub release..."
-gh "${GH_ARGS[@]}"
+if [[ "$REPLACE" -eq 1 ]] || gh release view "$TAG" >/dev/null 2>&1; then
+  echo "==> Uploading assets to existing release $TAG..."
+  gh release upload "$TAG" "${ASSETS[@]}" --clobber
+else
+  GH_ARGS=(release create "$TAG" "${ASSETS[@]}" --title "$TITLE" --notes-file "$NOTES_FILE")
+  if [[ "$DRAFT" -eq 1 ]]; then
+    GH_ARGS+=(--draft)
+  fi
+  echo "==> Creating GitHub release..."
+  gh "${GH_ARGS[@]}"
+fi
 
 echo ""
 echo "Done: https://github.com/eugenewyh/fyp-second-brain/releases/tag/${TAG}"
