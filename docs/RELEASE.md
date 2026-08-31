@@ -20,7 +20,36 @@ User data is stored outside the app bundle:
 
 ## For maintainers (publish a release)
 
-### 1. Build artifacts
+### Quick ship (recommended)
+
+One command bumps the patch version, builds, tags, and uploads to GitHub Releases:
+
+```bash
+export NOUS_NVIDIA_API_KEY=nvapi-...   # or set in .env
+./scripts/ship_release.sh --message "Fix empty-topic routing"
+```
+
+**Replace the current release** (same version, new `.dmg` — e.g. after a fix you want on `latest`):
+
+```bash
+./scripts/ship_release.sh --replace --no-bump --skip-tests --message "Hotfix: Chroma query"
+```
+
+Users re-download from [releases/latest](https://github.com/eugenewyh/fyp-second-brain/releases/latest). Their vault and settings are unchanged.
+
+| Flag | Use when |
+|------|----------|
+| `--message "…"` | Short release notes (auto-written to `.github/release_notes/vX.Y.Z.md`) |
+| `--replace --no-bump` | Rebuild and overwrite assets for the current version |
+| `--skip-tests` | Faster iteration (still runs full Tauri build) |
+| `--version 0.2.0` | Jump to a specific semver |
+| `--bump minor` | `0.1.1` → `0.2.0` |
+
+There is **no in-app auto-update** yet — shipping a new GitHub Release is how you (and evaluators) get the new build.
+
+### Manual steps (same result)
+
+#### 1. Build artifacts
 
 macOS (on a Mac):
 

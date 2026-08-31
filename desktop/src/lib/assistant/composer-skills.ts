@@ -17,8 +17,8 @@ export const COMPOSER_SKILLS: ComposerSkill[] = [
   {
     id: "auto",
     label: "Auto",
-    hint: "Manager picks Teach, Ask, or Research",
-    placeholder: "Teach, ask from memory, or research…",
+    hint: "Checks memory first, looks outside if needed",
+    placeholder: "Ask anything — memory first, then outside sources…",
     job: null,
   },
   {
@@ -68,15 +68,15 @@ export const COACH_STEPS = [
   },
   {
     n: "2",
-    title: "Teach first",
-    body: "Paste notes or add files. Files on the shelf are not memory until Teach turns them into claims.",
+    title: "Teach when you have notes",
+    body: "Paste notes or add files when you want claims saved in this topic — optional before asking.",
   },
   {
     n: "3",
-    title: "Then Ask — or Research",
-    body: "Ask from remembered claims. Research looks outside and can write back. For recurring briefs, use Scheduled Research in the sidebar.",
+    title: "Ask anything",
+    body: "Auto checks memory first. If nothing matches, Nous looks outside and can write back. Use Ask for memory-only; Research for a full agent run.",
   },
 ] as const;
 
 export const THIN_MEMORY_REFUSE =
-  "I don't have notes on this topic yet. Teach something here first — then Ask from what you saved.";
+  "Nothing in memory matches that. Teach notes here, or switch to Auto to look outside.";

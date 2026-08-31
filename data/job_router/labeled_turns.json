@@ -181,19 +181,19 @@
   },
   {
     "text": "What is the best espresso machine for a small kitchen?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false
   },
   {
     "text": "How do I fix a yellow monstera leaf?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false
   },
   {
     "text": "What do I know about plants?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false
   },
@@ -205,31 +205,31 @@
   },
   {
     "text": "Summarize my thesis chapter 3",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false
   },
   {
     "text": "What's the weather in KL today?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false
   },
   {
     "text": "Who won the World Cup?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false
   },
   {
     "text": "What is diffusion?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false
   },
   {
     "text": "Explain transformers",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false
   },
@@ -367,19 +367,19 @@
   },
   {
     "text": "Should I buy a burr grinder?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false
   },
   {
     "text": "Is 9Bar enough for espresso?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false
   },
   {
     "text": "What is JustGRPO?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false
   },
@@ -2098,350 +2098,350 @@
   },
   {
     "text": "What is the best monstera for a small kitchen?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "What is the best burr grinder for a small kitchen?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "What is the best JustGRPO for a small kitchen?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "What is the best transformers for a small kitchen?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "What is the best World Cup for a small kitchen?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "What is the best KL for a small kitchen?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "What is the best homework for a small kitchen?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "How do I fix a yellow espresso machine leaf?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "How do I fix a yellow burr grinder leaf?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "How do I fix a yellow JustGRPO leaf?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "How do I fix a yellow transformers leaf?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "How do I fix a yellow World Cup leaf?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "How do I fix a yellow KL leaf?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "How do I fix a yellow homework leaf?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Should I buy a espresso machine?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Should I buy a monstera?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Should I buy a JustGRPO?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Should I buy a transformers?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Should I buy a World Cup?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Should I buy a KL?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Should I buy a homework?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "What is espresso machine?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "What is monstera?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "What is burr grinder?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "What is transformers?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "What is World Cup?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "What is KL?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "What is homework?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Explain espresso machine",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Explain monstera",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Explain burr grinder",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Explain JustGRPO",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Explain World Cup",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Explain KL",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Explain homework",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Who won the espresso machine?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Who won the monstera?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Who won the burr grinder?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Who won the JustGRPO?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Who won the transformers?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Who won the KL?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Who won the homework?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "What's the weather in espresso machine?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "What's the weather in monstera?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "What's the weather in burr grinder?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "What's the weather in JustGRPO?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "What's the weather in transformers?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "What's the weather in World Cup?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "What's the weather in KL?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "What's the weather in homework?",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
@@ -2497,56 +2497,56 @@
   },
   {
     "text": "Summarize my thesis chapter on espresso machine",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Summarize my thesis chapter on monstera",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Summarize my thesis chapter on burr grinder",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Summarize my thesis chapter on JustGRPO",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Summarize my thesis chapter on transformers",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Summarize my thesis chapter on World Cup",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Summarize my thesis chapter on KL",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
   },
   {
     "text": "Summarize my thesis chapter on homework",
-    "job": "refuse",
+    "job": "research",
     "claims": 0,
     "attachments": false,
     "phase": "empty"
@@ -2816,5 +2816,768 @@
     "claims": 0,
     "attachments": true,
     "phase": "empty"
+  },
+  {
+    "text": "Can you tell me what is OCEAN personality?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What is the Big Five personality model?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explain constrained decoding for diffusion language models",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "How does GRPO work?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Teach me everything about snake plant care",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "According to my notes, what grind size do I prefer?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "From my notes, summarize my espresso workflow",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "According to my notes, what do I think about indoor plant care?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "According to my notes, what do I think about specialty coffee roasting?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "According to my notes, what do I think about diffusion language models?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "According to my notes, what do I think about multi-agent RAG?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "According to my notes, what do I think about personal knowledge management?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "According to my notes, what do I think about houseplant pests?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "According to my notes, what do I think about espresso extraction?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "According to my notes, what do I think about constrained decoding?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "According to my notes, what do I think about LangGraph agents?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "According to my notes, what do I think about FYP report structure?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "According to my notes, what do I think about snake plant care?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "According to my notes, what do I think about pour-over technique?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "From my notes, what did I decide on indoor plant care?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "From my notes, what did I decide on specialty coffee roasting?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "From my notes, what did I decide on diffusion language models?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "From my notes, what did I decide on multi-agent RAG?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "From my notes, what did I decide on personal knowledge management?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "From my notes, what did I decide on houseplant pests?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "From my notes, what did I decide on espresso extraction?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "From my notes, what did I decide on constrained decoding?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "From my notes, what did I decide on LangGraph agents?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "From my notes, what did I decide on FYP report structure?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "From my notes, what did I decide on snake plant care?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "From my notes, what did I decide on pour-over technique?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What do my notes say about indoor plant care?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What do my notes say about specialty coffee roasting?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What do my notes say about diffusion language models?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What do my notes say about multi-agent RAG?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What do my notes say about personal knowledge management?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What do my notes say about houseplant pests?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What do my notes say about espresso extraction?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What do my notes say about constrained decoding?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What do my notes say about LangGraph agents?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What do my notes say about FYP report structure?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What do my notes say about snake plant care?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What do my notes say about pour-over technique?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Based on my library, what mistakes did I make with indoor plant care?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Based on my library, what mistakes did I make with specialty coffee roasting?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Based on my library, what mistakes did I make with diffusion language models?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Based on my library, what mistakes did I make with multi-agent RAG?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Based on my library, what mistakes did I make with personal knowledge management?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Based on my library, what mistakes did I make with houseplant pests?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Based on my library, what mistakes did I make with espresso extraction?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Based on my library, what mistakes did I make with constrained decoding?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Based on my library, what mistakes did I make with LangGraph agents?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Based on my library, what mistakes did I make with FYP report structure?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Based on my library, what mistakes did I make with snake plant care?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Based on my library, what mistakes did I make with pour-over technique?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Cite my notes on indoor plant care",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Cite my notes on specialty coffee roasting",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Cite my notes on diffusion language models",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Cite my notes on multi-agent RAG",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Cite my notes on personal knowledge management",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Cite my notes on houseplant pests",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Cite my notes on espresso extraction",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Cite my notes on constrained decoding",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Cite my notes on LangGraph agents",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Cite my notes on FYP report structure",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Cite my notes on snake plant care",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Cite my notes on pour-over technique",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What is the best OCEAN personality for a small kitchen?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What is the best constrained decoding for a small kitchen?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What is the best snake plant care for a small kitchen?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "How do I fix a yellow OCEAN personality leaf?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "How do I fix a yellow constrained decoding leaf?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "How do I fix a yellow snake plant care leaf?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Should I buy a OCEAN personality?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Should I buy a constrained decoding?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Should I buy a snake plant care?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What is OCEAN personality?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What is constrained decoding?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What is snake plant care?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explain OCEAN personality",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explain constrained decoding",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Explain snake plant care",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Can you tell me what espresso machine is?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Can you tell me what monstera is?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Can you tell me what burr grinder is?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Can you tell me what JustGRPO is?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Can you tell me what transformers is?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Can you tell me what OCEAN personality is?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Can you tell me what constrained decoding is?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Can you tell me what snake plant care is?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "How does espresso machine work?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "How does monstera work?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "How does burr grinder work?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "How does JustGRPO work?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "How does transformers work?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "How does OCEAN personality work?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "How does constrained decoding work?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "How does snake plant care work?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Why does espresso machine matter for beginners?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Why does monstera matter for beginners?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Why does burr grinder matter for beginners?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Why does JustGRPO matter for beginners?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Why does transformers matter for beginners?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Why does OCEAN personality matter for beginners?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Why does constrained decoding matter for beginners?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Why does snake plant care matter for beginners?",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "From my notes, summarize my espresso workflow",
+    "job": "answer",
+    "claims": 4,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What do my notes say about plant watering?",
+    "job": "answer",
+    "claims": 4,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Based on my library, what did I learn about GRPO?",
+    "job": "answer",
+    "claims": 4,
+    "attachments": false,
+    "phase": "ready"
   }
 ]

@@ -1,33 +1,33 @@
 {
-  "n_eval": 412,
+  "n_eval": 518,
   "baselines": {
     "regex_only": {
-      "accuracy": 0.8810679611650486,
-      "macro_f1": 0.8045658870490168,
-      "n": 412
+      "accuracy": 0.8667953667953668,
+      "macro_f1": 0.7855212880311239,
+      "n": 518
     },
     "local_model": {
-      "accuracy": 0.9902912621359223,
-      "macro_f1": 0.9861637957320517,
-      "n": 412,
-      "coverage": 0.9927184466019418
+      "accuracy": 1.0,
+      "macro_f1": 1.0,
+      "n": 518,
+      "coverage": 0.972972972972973
     },
     "gemini_json": {
-      "accuracy": 0.7839805825242718,
-      "macro_f1": 0.7387096854966254,
-      "n": 412
+      "accuracy": 0.8667953667953668,
+      "macro_f1": 0.7855212880311239,
+      "n": 518,
+      "configured": true
     },
     "full_pipeline": {
-      "accuracy": 0.7330097087378641,
-      "macro_f1": 0.6358704445253408,
-      "n": 412
+      "accuracy": 0.9555984555984556,
+      "macro_f1": 0.9525033234482054,
+      "n": 518
     }
   },
   "pipeline_tier_distribution": {
-    "rule": 260,
-    "local": 141,
-    "llm": 1,
-    "fallback": 10
+    "rule": 446,
+    "local": 71,
+    "fallback": 1
   },
-  "gemini_call_rate_on_auto": 0.0024271844660194173
+  "gemini_call_rate_on_auto": 0.0
 }

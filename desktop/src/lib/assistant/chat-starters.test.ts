@@ -84,9 +84,9 @@ describe("landingPhase", () => {
 });
 
 describe("visibleStarterIds", () => {
-  it("leads empty topics with Teach; full set when ready", () => {
+    it("leads empty topics with Teach + Research; full set when ready", () => {
     expect(visibleStarterIds("bootstrap")).toEqual([]);
-    expect(visibleStarterIds("seed")).toEqual(["teach"]);
+    expect(visibleStarterIds("seed")).toEqual(["teach", "research"]);
     expect(visibleStarterIds("ready")).toEqual(["teach", "ask", "research"]);
   });
 });
@@ -96,9 +96,9 @@ describe("landingHero", () => {
     expect(landingHero("bootstrap").title).toContain("Set up");
   });
 
-  it("teaches the Teach → Ask loop on seed", () => {
+  it("explains ask-first flow on seed", () => {
     expect(landingHero("seed").title).toContain("Teach");
-    expect(landingHero("seed").sub.toLowerCase()).toContain("memory");
+    expect(landingHero("seed").sub.toLowerCase()).toMatch(/look outside|ask/);
   });
 });
 

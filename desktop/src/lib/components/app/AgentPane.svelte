@@ -62,7 +62,7 @@
       ? "Backend offline — reconnect to send…"
       : showSetupLanding
         ? landingPlaceholder
-        : "Teach, ask from memory, or start research…",
+        : "Ask anything — memory first, then outside sources…",
   );
   const missionTurn = $derived(assistant.getMissionTurn());
   const showDetails = $derived(
@@ -224,6 +224,9 @@
 
     const clarifyCount = assistant.clarifyCount();
     const history = assistant.managerHistory();
+    const userContent =
+      clarifyCount > 0 ? text : text || (hasAttachments ? "Files" : "");
+    assistant.appendUser(userContent || "Attached files", sessionId);
 
     let kind: "ask" | "dispatch" | "meta" = "dispatch";
     let job: ManagerJob = "answer";
@@ -281,22 +284,17 @@
       }
 
       if (kind === "ask") {
-        assistant.appendUser(text || "Attached files", sessionId);
         assistant.appendManager(managerText, sessionId);
         assistant.bumpClarify();
         return;
       }
 
       if (kind === "meta") {
-        assistant.appendUser(text || "Attached files", sessionId);
         assistant.appendManager(managerText, sessionId);
         assistant.resetInterview();
         return;
       }
 
-      const inInterview = clarifyCount > 0;
-      if (!inInterview) assistant.appendUser(text || (hasAttachments ? "Files" : ""), sessionId);
-      else assistant.appendUser(text, sessionId);
       assistant.resetInterview();
       if (managerText && job !== "refuse") {
         assistant.appendManager(managerText, sessionId);
@@ -541,8 +539,7 @@
     <div
       class="new-chat-stage"
       data-testid="agent-landing"
-      in:fade={{ duration: 180, easing: cubicOut }}
-      out:fade={{ duration: 140, easing: cubicOut }}
+      out:fade={{ duration: 80, easing: cubicOut }}
     >
       <div class="new-chat-inner">
         {#if showSetupLanding}
@@ -589,10 +586,7 @@
       </div>
     </div>
   {:else}
-    <div
-      class="stage-row"
-      in:fade={{ duration: 180, easing: cubicOut }}
-    >
+    <div class="stage-row">
       <div class="stage-area">
         <ChatThread
           onOpenPath={openPath}
@@ -632,7 +626,7 @@
       {/if}
     </div>
 
-    <div in:fly={{ y: 16, duration: 240, easing: cubicOut }}>
+    <div class="dock-enter">
       <ComposerDock
         {offline}
         {noteTitle}

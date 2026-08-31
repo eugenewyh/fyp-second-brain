@@ -17,20 +17,21 @@ Pick exactly one job. Reply with JSON only — no markdown, no prose.
 Jobs:
 - file — remember / teach: user is dumping beliefs, opinions, or notes to save (not asking a question)
 - answer — ask: short recall from this topic's existing notes only (no new web/arXiv hunt)
-- research — mission: synthesise a stance, multi-part write-up, deepen, find papers, web/arXiv, or what's new
-- refuse — off-topic for this project and they did not ask to look anything up
+- research — mission: synthesise, explain, find papers, web/arXiv, what's new, or any general question when memory is empty
+- refuse — only when they explicitly asked for "my notes" / "according to my notes" and overlapping notes = 0
 
 Decision order (stop at the first match):
-1. Explicit lookup → research
-2. Synthesis / mission over notes → research (even if they also say "cite my notes")
-3. Notes-grounded recall question → answer (requires overlapping notes > 0; else refuse)
+1. Explicit lookup or research mission → research
+2. Synthesis / multi-part write-up over notes → research (even if they also say "cite my notes")
+3. Notes-grounded recall ("according to my notes", "from my notes") → answer if overlapping notes > 0, else refuse
 4. Belief / note dump (statements, not a question) → file
 5. In-topic question with overlapping notes > 0 → answer
-6. Unrelated to the topic and no lookup ask → refuse
+6. In-topic question with overlapping notes = 0 → research (look outside; do not refuse)
+7. Unrelated chit-chat with no question → refuse
 
 Hard rules:
 - Never invent a job outside the four above
-- Overlapping notes = 0 blocks answer; use refuse unless they asked to look it up (then research)
+- General "what is X?" / "explain X" with no notes phrasing → research when overlapping notes = 0
 - reason: ≤12 words, plain English
 """
 
@@ -80,27 +81,17 @@ def llm_choose(message: str, snapshot: RecallSnapshot) -> tuple[Job | None, str]
 
         raw = invoke_gemini_lite(
             [SystemMessage(content=SUPERVISOR_SYSTEM), HumanMessage(content=user)],
-            max_tokens=80,
-            temperature=0.1,
+            temperature=0,
         )
-        if not raw:
-            return None, ""
         job = _parse_job(raw)
         reason = ""
         try:
-            obj = json.loads(raw) if raw.strip().startswith("{") else {}
+            obj = json.loads(raw.strip())
             if isinstance(obj, dict):
-                reason = str(obj.get("reason") or "")
+                reason = str(obj.get("reason") or "").strip()
         except json.JSONDecodeError:
-            m = re.search(r"\{.*\}", raw, re.S)
-            if m:
-                try:
-                    obj = json.loads(m.group(0))
-                    if isinstance(obj, dict):
-                        reason = str(obj.get("reason") or "")
-                except json.JSONDecodeError:
-                    pass
-        return job, reason[:240]
+            pass
+        return job, reason
     except Exception:
-        logger.debug("Router LLM choose skipped", exc_info=True)
+        logger.debug("Router Gemini choose failed", exc_info=True)
         return None, ""

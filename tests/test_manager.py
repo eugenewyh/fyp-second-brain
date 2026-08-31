@@ -224,8 +224,22 @@ def test_watch_intent_dispatches_watch(no_recall, no_llm):
     assert turn.job == "watch"
 
 
-def test_off_topic_still_refused(no_recall, no_llm):
-    turn = take_turn(ESPRESSO, project_path="/vault/dlm", clarify_count=0)
+def test_empty_memory_question_researches(no_recall, no_llm):
+    turn = take_turn(
+        "Can you tell me what is OCEAN personality?",
+        project_path="/vault/dlm",
+        clarify_count=0,
+    )
+    assert turn.kind == "dispatch"
+    assert turn.job == "research"
+
+
+def test_notes_intent_on_empty_still_refuses(no_recall, no_llm):
+    turn = take_turn(
+        "According to my notes, what is the best espresso machine?",
+        project_path="/vault/dlm",
+        clarify_count=0,
+    )
     assert turn.kind == "dispatch"
     assert turn.job == "refuse"
     assert turn.refuse_message

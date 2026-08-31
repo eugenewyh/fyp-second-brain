@@ -1,9 +1,9 @@
 /** Workspace = topic folder; many Manager chats may share that memory. */
 
 export const ONBOARD_OPENER =
-  "This topic has nothing in memory yet. Teach notes or files first — then Ask from what I remember, or Research to look outside. Recurring briefs live in Scheduled Research.";
+  "Nothing saved in this topic yet. Ask anything — Nous checks memory first, then looks outside if needed. Paste notes to Teach when you want claims saved here.";
 
 export function channelComposerPlaceholder(onboarding: boolean): string {
-  if (onboarding) return "Paste notes or attach files to Teach this topic…";
-  return "Teach, ask from memory, or research…";
+  if (onboarding) return "Ask anything — memory first, then outside sources…";
+  return "Ask anything — memory first, then outside sources…";
 }

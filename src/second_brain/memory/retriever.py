@@ -87,7 +87,7 @@ def _vector_candidates(
         results = collection.query(
             query_embeddings=[query_embedding],
             n_results=fetch_k,
-            include=["documents", "metadatas", "distances", "ids"],
+            include=["documents", "metadatas", "distances"],
         )
     except Exception as e:
         from second_brain.memory.chroma_store import is_hnsw_corruption_error

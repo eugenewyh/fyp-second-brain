@@ -218,12 +218,7 @@
 
   <div class="sessions ui-scroll">
     {#if workspaceGroups.length === 0}
-      <div class="empty-block">
-        <p class="empty">No workspaces yet</p>
-        <button type="button" class="empty-action" onclick={newWorkspace}>
-          New workspace
-        </button>
-      </div>
+      <p class="empty">No workspaces yet</p>
     {:else if search.trim() &&
       workspaceGroups.every(
         (g) =>
@@ -411,29 +406,6 @@
     margin: 0.5rem 0.45rem;
     font-size: var(--text-sm);
     color: var(--text-faint);
-  }
-
-  .empty-block {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.35rem;
-  }
-
-  .empty-action {
-    margin: 0 0.45rem;
-    padding: 0.2rem 0.5rem;
-    border: none;
-    border-radius: var(--radius-feedback);
-    background: var(--selection-bg);
-    color: var(--text);
-    font-size: var(--text-sm);
-    font-weight: var(--font-medium);
-    cursor: pointer;
-  }
-
-  .empty-action:hover {
-    background: var(--chrome-action-hover);
   }
 
   .footer {

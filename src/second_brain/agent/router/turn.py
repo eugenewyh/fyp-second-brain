@@ -18,6 +18,7 @@ from second_brain.agent.router.context import (
 from second_brain.agent.policy import (
     Job,
     apply_policy,
+    empty_topic_question,
     fallback_job,
     force_file,
     has_learn_intent,
@@ -154,8 +155,10 @@ def _propose_job(
         return "research", "synthesis over notes", "rule", 1.0
     if has_notes_intent(text):
         return "answer", "asked from notes", "rule", 1.0
-    if has_learn_intent(text):
+    if has_learn_intent(text) and snapshot.matching_claim_count > 0:
         return "answer", "wants explanation from notes", "rule", 1.0
+    if snapshot.matching_claim_count <= 0 and empty_topic_question(text):
+        return "research", "empty topic question", "rule", 1.0
     if not is_question(text) and fallback_job(
         text=text,
         matching_claim_count=snapshot.matching_claim_count,
@@ -226,6 +229,13 @@ def _dispatch_from_routing(
     copy = DISPATCH_COPY.get(job, job)
     if refuse:
         copy = refuse
+    elif (
+        job == "research"
+        and snapshot.matching_claim_count <= 0
+        and not has_search_intent(blob)
+        and not has_research_intent(blob)
+    ):
+        copy = "Nothing saved on this topic yet — I'll look outside."
     names = [n for n in (also_topics or []) if n]
     if names and job in {"answer", "research"}:
         extra = ", ".join(names)

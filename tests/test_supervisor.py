@@ -87,8 +87,8 @@ def test_synthesis_cite_notes_is_research_policy():
 
 
 def test_research_denied_without_search_or_matches():
-    assert research_allowed(ESPRESSO, matching_claim_count=0) is False
-    assert apply_policy("research", text=ESPRESSO, matching_claim_count=0) == "refuse"
+    assert research_allowed(ESPRESSO, matching_claim_count=0) is True
+    assert apply_policy("research", text=ESPRESSO, matching_claim_count=0) == "research"
 
 
 def test_research_allowed_with_search_intent_and_zero_matches():
@@ -105,7 +105,27 @@ def test_research_allowed_with_research_intent_and_zero_matches():
     assert apply_policy("refuse", text=text, matching_claim_count=0) == "research"
 
 
+def test_forced_ask_on_empty_still_refuses():
+    assert apply_policy(
+        "answer",
+        text=ESPRESSO,
+        matching_claim_count=0,
+        forced=True,
+    ) == "refuse"
+
+
 def test_forced_research_on_empty_topic():
+    assert apply_policy(
+        "research",
+        text=ESPRESSO,
+        matching_claim_count=0,
+        forced=True,
+    ) == "research"
+
+
+def test_notes_intent_on_empty_still_refuses():
+    q = "According to my notes, what grind size do I prefer?"
+    assert apply_policy("answer", text=q, matching_claim_count=0) == "refuse"
     assert apply_policy(
         "research",
         text=ESPRESSO,
@@ -127,23 +147,23 @@ def test_attachments_always_file():
     assert apply_policy("answer", text="What is this?", matching_claim_count=0, has_attachments=True) == "file"
 
 
-def test_answer_with_zero_matches_refuses():
-    assert apply_policy("answer", text=ESPRESSO, matching_claim_count=0) == "refuse"
+def test_answer_with_zero_matches_escalates_to_research():
+    assert apply_policy("answer", text=ESPRESSO, matching_claim_count=0) == "research"
     assert apply_policy("answer", text=IN_TOPIC, matching_claim_count=4) == "answer"
 
 
 def test_file_on_question_without_attachments_coerced():
-    assert apply_policy("file", text=ESPRESSO, matching_claim_count=0) == "refuse"
+    assert apply_policy("file", text=ESPRESSO, matching_claim_count=0) == "research"
     assert apply_policy("file", text=IN_TOPIC, matching_claim_count=3) == "answer"
 
 
-def test_learn_intent_routes_to_answer_not_file():
+def test_learn_intent_on_empty_routes_to_research():
     from second_brain.agent.policy import has_learn_intent
 
     q = "teach everything about lec10"
     assert has_learn_intent(q)
     assert apply_policy("file", text=q, matching_claim_count=5) == "answer"
-    assert apply_policy("answer", text=q, matching_claim_count=0) == "refuse"
+    assert apply_policy("answer", text=q, matching_claim_count=0) == "research"
     assert fallback_job(text=q, matching_claim_count=5) == "answer"
 
 
@@ -171,12 +191,10 @@ def test_sglang_dump_files_even_when_claims_exist(matching_recall, monkeypatch):
     assert decision.matching_claim_count == 5
 
 
-def test_espresso_policy_denies_greedy_research(no_recall):
+def test_espresso_auto_researches_when_memory_empty(no_recall):
     decision = decide_act(ESPRESSO, project_path="/vault/dlm", choose_fn=lambda *_a: "research")
-    assert decision.job == "refuse"
-    assert decision.refuse_message == REFUSE_MESSAGE
-    assert "teach" in (decision.refuse_message or "").lower()
-    assert "notes" in (decision.refuse_message or "").lower()
+    assert decision.job == "research"
+    assert decision.refuse_message is None
 
 
 def test_in_topic_question_answers_from_notes(matching_recall):
@@ -255,7 +273,7 @@ def test_attachments_file_via_supervisor(no_recall, monkeypatch):
 
 def test_fallback_files_multi_sentence_dump():
     assert fallback_job(text=SGLANG_DUMP, matching_claim_count=0) == "file"
-    assert fallback_job(text=ESPRESSO, matching_claim_count=0) == "refuse"
+    assert fallback_job(text=ESPRESSO, matching_claim_count=0) == "research"
     assert fallback_job(text=IN_TOPIC, matching_claim_count=3) == "answer"
 
 
@@ -280,6 +298,4 @@ def test_act_http_attachments_and_espresso(monkeypatch: pytest.MonkeyPatch):
         espresso = client.post("/api/act", json={"message": ESPRESSO, "project_path": "/vault/dlm"})
         assert espresso.status_code == 200
         body = espresso.json()
-        assert body["job"] == "refuse"
-        assert body["refuse_message"]
-        assert "don't have notes" in body["refuse_message"].lower() or "teach" in body["refuse_message"].lower()
+        assert body["job"] == "research"

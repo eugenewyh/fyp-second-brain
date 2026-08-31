@@ -97,27 +97,48 @@ def main() -> None:
             add(stem.format(topic=topic), "answer", claims=5)
 
     refuse_stems = [
+        "According to my notes, what do I think about {topic}?",
+        "From my notes, what did I decide on {topic}?",
+        "What do my notes say about {topic}?",
+        "Based on my library, what mistakes did I make with {topic}?",
+        "Cite my notes on {topic}",
+    ]
+    for stem in refuse_stems:
+        for topic in topics[:12]:
+            add(stem.format(topic=topic), "refuse", claims=0)
+
+    question_stems = [
         "What is the best {thing} for a small kitchen?",
         "How do I fix a yellow {thing} leaf?",
         "Should I buy a {thing}?",
         "What is {thing}?",
         "Explain {thing}",
-        "Who won the {thing}?",
-        "What's the weather in {thing}?",
-        "Help me with my {thing}",
-        "Summarize my thesis chapter on {thing}",
+        "Can you tell me what {thing} is?",
+        "How does {thing} work?",
+        "Why does {thing} matter for beginners?",
     ]
-    things = ["espresso machine", "monstera", "burr grinder", "JustGRPO", "transformers", "World Cup", "KL", "homework"]
-    for stem in refuse_stems:
+    things = [
+        "espresso machine",
+        "monstera",
+        "burr grinder",
+        "JustGRPO",
+        "transformers",
+        "OCEAN personality",
+        "constrained decoding",
+        "snake plant care",
+    ]
+    for stem in question_stems:
         for thing in things:
-            add(stem.format(thing=thing), "refuse", claims=0)
+            add(stem.format(thing=thing), "research", claims=0)
 
     for q in [
-        "According to my notes, what do I care about in DLMs?",
-        "What do I know about plants?",
-        "What does my notes say about espresso temperature?",
+        "According to my notes, what grind size do I prefer?",
+        "From my notes, summarize my espresso workflow",
+        "What do my notes say about plant watering?",
+        "Based on my library, what did I learn about GRPO?",
     ]:
-        add(q, "refuse", claims=0)
+        add(q, "answer", claims=4)
+        add(q, "answer", claims=2)
 
     file_stems = [
         "I now think {claim}.",

@@ -108,17 +108,26 @@ def sentence_count(text: str) -> int:
     return max(len(parts), 1 if (text or "").strip() else 0)
 
 
+def empty_topic_question(text: str) -> bool:
+    """General question on an empty topic — look outside (matches router training)."""
+    t = (text or "").strip()
+    if not t or has_notes_intent(t):
+        return False
+    return is_question(t) or has_learn_intent(t)
+
+
 def research_allowed(text: str, *, matching_claim_count: int) -> bool:
-    """Research with explicit lookup, mission phrasing, in-topic deepen, or synthesis."""
+    """Research with explicit lookup, mission phrasing, deepen, synthesis, or empty-topic ask."""
     if has_search_intent(text) or has_research_intent(text):
         return True
     if matching_claim_count > 0 and (
         _DEEPEN.search(text or "") or has_synthesis_intent(text)
     ):
         return True
-    # Notes-grounded simple recall stays Ask — not Research.
-    if (has_notes_intent(text) or has_learn_intent(text)) and not has_synthesis_intent(text):
+    if has_notes_intent(text) and not has_synthesis_intent(text):
         return False
+    if matching_claim_count <= 0 and empty_topic_question(text):
+        return True
     return False
 
 
@@ -136,10 +145,9 @@ def apply_policy(
     has_attachments: bool = False,
     forced: bool = False,
 ) -> Job:
-    """Clamp a proposed job to what policy allows.
+    """Clamp a proposed job to hard invariants (forced skills, attachments, notes-only).
 
-    When ``forced`` is True (Shift+Tab / plus menu), keep the user's job unless
-    attachments force Teach or Ask/Research has nothing to retrieve.
+    Auto routing is owned by rules + the local router model; policy only blocks impossible jobs.
     """
     if force_file(text=text, has_attachments=has_attachments):
         return "file"
@@ -148,36 +156,40 @@ def apply_policy(
             return "file"
         if job == "answer" and matching_claim_count <= 0:
             return "refuse"
-        # Composer Research chip / forced research — user consent to look outside.
         if job == "research":
             return "research"
         return job
     if has_search_intent(text) or has_research_intent(text):
         return "research"
-    # Notes-grounded synthesis → research; plain recall → answer.
-    if has_notes_intent(text) or has_learn_intent(text):
+    if has_notes_intent(text):
         if matching_claim_count <= 0:
             return "refuse"
-        if job == "research" and research_allowed(text, matching_claim_count=matching_claim_count):
-            return "research"
         if has_synthesis_intent(text):
             return "research"
         return "answer"
-    if job == "research":
-        if research_allowed(text, matching_claim_count=matching_claim_count):
+    if has_learn_intent(text):
+        if matching_claim_count <= 0:
             return "research"
-        return "refuse"
+        return "answer"
     if job == "answer":
         if matching_claim_count > 0:
             return "answer"
-        return "refuse"
+        return "research" if research_allowed(text, matching_claim_count=0) else "refuse"
+    if job == "research":
+        return "research" if research_allowed(text, matching_claim_count=matching_claim_count) else "refuse"
     if job == "file":
         if (is_question(text) or has_learn_intent(text)) and not has_attachments:
             if has_synthesis_intent(text) and matching_claim_count > 0:
                 return "research"
-            return "answer" if matching_claim_count > 0 else "refuse"
+            if matching_claim_count > 0:
+                return "answer"
+            if empty_topic_question(text):
+                return "research"
+            return "refuse"
         return "file"
-    return "refuse"
+    if job == "refuse" and research_allowed(text, matching_claim_count=matching_claim_count):
+        return "research"
+    return job if job in {"file", "answer", "research", "refuse"} else "refuse"
 
 
 def fallback_job(
@@ -193,11 +205,13 @@ def fallback_job(
         return "research"
     if has_synthesis_intent(text) and matching_claim_count > 0:
         return "research"
-    if has_notes_intent(text) or has_learn_intent(text):
+    if has_notes_intent(text):
         return "answer" if matching_claim_count > 0 else "refuse"
+    if has_learn_intent(text):
+        return "answer" if matching_claim_count > 0 else "research"
     if is_question(text):
-        return "answer" if matching_claim_count > 0 else "refuse"
+        return "answer" if matching_claim_count > 0 else "research"
     t = (text or "").strip()
     if len(t) >= 160 or sentence_count(t) >= 2:
         return "file"
-    return "answer" if matching_claim_count > 0 else "refuse"
+    return "answer" if matching_claim_count > 0 else "research"

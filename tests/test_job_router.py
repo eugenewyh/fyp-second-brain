@@ -39,20 +39,32 @@ def test_routes_lookup(require_model):
     assert conf >= 0.42
 
 
-def test_routes_empty_ask_to_refuse(require_model):
-    job, _, _ = route_job(
+def test_routes_empty_ask_to_research(require_model):
+    job, _, conf = route_job(
         "What is the best espresso machine for a small kitchen?",
         matching_claim_count=0,
     )
-    assert job == "refuse"
+    assert job == "research"
+    assert conf >= 0.42
 
 
-def test_routes_notes_recall(require_model):
-    job, _, _ = route_job(
+def test_routes_notes_recall(require_model, monkeypatch):
+    from second_brain.agent.router.recall import RecallSnapshot
+    from second_brain.agent.router.turn import route_act
+
+    def _snap(_msg, _path, also_project_paths=None):
+        return RecallSnapshot(
+            topic="coffee",
+            matching_claim_count=3,
+            claim_previews=["Prefer medium-fine grind for espresso."],
+        )
+
+    monkeypatch.setattr("second_brain.agent.router.turn.recall.recall_snapshot", _snap)
+    decision = route_act(
         "According to my notes, what grind size do I prefer?",
-        matching_claim_count=3,
+        project_path="/vault/coffee",
     )
-    assert job == "answer"
+    assert decision.job == "answer"
 
 
 def test_attachments_bias_file(require_model):

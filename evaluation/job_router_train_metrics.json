@@ -1,22 +1,22 @@
 {
-  "n_labeled": 412,
-  "n_train": 288,
-  "n_val": 62,
-  "n_test": 62,
+  "n_labeled": 521,
+  "n_train": 364,
+  "n_val": 78,
+  "n_test": 79,
   "class_thresholds": {
-    "answer": 0.5,
+    "answer": 0.6,
     "file": 0.25,
-    "refuse": 0.3,
-    "research": 0.3
+    "refuse": 0.325,
+    "research": 0.25
   },
-  "val_macro_f1": 0.9252657505833549,
-  "test_macro_f1": 0.93888326585695,
+  "val_macro_f1": 0.9558608058608059,
+  "test_macro_f1": 0.9373125222431237,
   "test_report": {
     "answer": {
-      "precision": 0.875,
+      "precision": 0.7894736842105263,
       "recall": 1.0,
-      "f1-score": 0.9333333333333333,
-      "support": 14.0
+      "f1-score": 0.8823529411764706,
+      "support": 15.0
     },
     "file": {
       "precision": 1.0,
@@ -25,29 +25,29 @@
       "support": 7.0
     },
     "refuse": {
-      "precision": 0.9166666666666666,
-      "recall": 0.9166666666666666,
-      "f1-score": 0.9166666666666666,
-      "support": 12.0
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 11.0
     },
     "research": {
-      "precision": 1.0,
-      "recall": 0.9655172413793104,
-      "f1-score": 0.9824561403508771,
-      "support": 29.0
+      "precision": 0.9767441860465116,
+      "recall": 0.9130434782608695,
+      "f1-score": 0.9438202247191011,
+      "support": 46.0
     },
-    "accuracy": 0.9516129032258065,
+    "accuracy": 0.9367088607594937,
     "macro avg": {
-      "precision": 0.9479166666666666,
-      "recall": 0.9348316912972086,
-      "f1-score": 0.93888326585695,
-      "support": 62.0
+      "precision": 0.9415544675642595,
+      "recall": 0.9425465838509317,
+      "f1-score": 0.9373125222431237,
+      "support": 79.0
     },
     "weighted avg": {
-      "precision": 0.9556451612903226,
-      "recall": 0.9516129032258065,
-      "f1-score": 0.951926341909364,
-      "support": 62.0
+      "precision": 0.9464852888771828,
+      "recall": 0.9367088607594937,
+      "f1-score": 0.9381337078008123,
+      "support": 79.0
     }
   },
   "test_confusion_matrix": {
@@ -59,7 +59,7 @@
     ],
     "matrix": [
       [
-        14,
+        15,
         0,
         0,
         0
@@ -67,20 +67,20 @@
       [
         0,
         6,
-        1,
-        0
+        0,
+        1
       ],
       [
-        1,
+        0,
         0,
         11,
         0
       ],
       [
-        1,
+        4,
         0,
         0,
-        28
+        42
       ]
     ]
   }

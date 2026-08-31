@@ -78,13 +78,13 @@ export function landingHero(phase: LandingPhase): LandingHero {
       return {
         kicker: "Get started",
         title: "Set up your second brain",
-        sub: "Create a topic workspace, then Teach something to remember. Ask and Research only work after memory exists.",
+        sub: "Create a workspace, then ask anything — Nous checks memory first and looks outside when needed.",
       };
     case "seed":
       return {
         kicker: "How Nous works",
         title: "Teach → Ask → Research",
-        sub: "This topic has nothing in memory yet. Files in the library are a shelf — Teach turns them into claims you can Ask about.",
+        sub: "Nothing saved in this topic yet. Ask a question and Nous will look outside; paste notes when you want to Teach.",
       };
     case "ready":
       return {
@@ -100,8 +100,8 @@ export function visibleStarterIds(phase: LandingPhase): ChatStarterId[] {
     case "bootstrap":
       return [];
     case "seed":
-      // Empty topic: lead with Teach so the core loop is obvious.
-      return ["teach"];
+      // Empty topic: Teach to capture; Research for explicit outside runs.
+      return ["teach", "research"];
     case "ready":
       return ["teach", "ask", "research"];
   }
@@ -112,7 +112,7 @@ export function composerPlaceholder(phase: LandingPhase): string {
     case "bootstrap":
       return "Complete setup to start…";
     case "seed":
-      return "Paste notes or attach files to Teach this topic…";
+      return "Ask anything — checks memory first, then looks outside if needed…";
     case "ready":
       return "Teach, ask from memory, or research…";
   }
