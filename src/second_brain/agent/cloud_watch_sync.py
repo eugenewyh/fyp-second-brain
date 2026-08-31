@@ -43,9 +43,9 @@ def cloud_watches_delegated() -> bool:
 
 def cloud_watch_service_url() -> str:
     try:
-        from second_brain.config import PROJECT_ROOT
+        from second_brain.config import ENV_FILE_PATH, PROJECT_ROOT
 
-        env_path = PROJECT_ROOT / ".env"
+        env_path = ENV_FILE_PATH if ENV_FILE_PATH.is_file() else PROJECT_ROOT / ".env"
         if env_path.is_file():
             for line in env_path.read_text(encoding="utf-8").splitlines():
                 if line.startswith("CLOUD_WATCH_URL="):
@@ -162,9 +162,12 @@ def put_llm(
 def local_llm_credentials() -> tuple[str, str, str]:
     from second_brain.memory.llm import _api_key, _primary_model, _provider
 
-    provider = (_provider() or "groq").strip().lower() or "groq"
+    provider = (_provider() or "nvidia").strip().lower() or "nvidia"
     key = (_api_key() or "").strip()
     model = (_primary_model() or "").strip()
+    # Never sync Nous operator NVIDIA key to Cloud Watch.
+    if provider == "nvidia" and not os.getenv("NVIDIA_API_KEY", "").strip():
+        key = ""
     return provider, key, model
 
 

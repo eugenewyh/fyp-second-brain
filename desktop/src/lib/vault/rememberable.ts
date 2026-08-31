@@ -7,5 +7,5 @@ export function isRememberableNotePath(path: string): boolean {
   if (shouldSkipWatcherIngest(path)) return false;
   const name = path.split(/[\\/]/).pop()?.toLowerCase() ?? "";
   if (SKIP_BASENAMES.has(name)) return false;
-  return /\.(md|txt|pdf)$/i.test(name);
+  return /\.(md|txt|pdf|docx)$/i.test(name);
 }

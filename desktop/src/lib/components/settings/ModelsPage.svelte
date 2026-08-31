@@ -63,12 +63,12 @@
 <section class="st-card">
   <div class="st-card-head">
     <h3 class="st-card-title">Providers</h3>
-    <p class="st-card-sub">Bring your own keys. Only connected providers can run research.</p>
+    <p class="st-card-sub">NVIDIA is included with Nous. Other providers are optional BYOK.</p>
   </div>
 
   <h4 class="list-label">Connected</h4>
   {#if connectedList.length === 0}
-    <p class="empty-line">No providers connected yet.</p>
+    <p class="empty-line">No optional providers connected yet.</p>
   {:else}
     <ul class="provider-list">
       {#each connectedList as p (p.id)}
@@ -81,7 +81,9 @@
                 {#if activeId === p.id}
                   <span class="badge-active">Active</span>
                 {/if}
-                {#if p.recommended}
+                {#if p.bundled}
+                  <span class="badge-soft">Included</span>
+                {:else if p.recommended}
                   <span class="badge-soft">Recommended</span>
                 {/if}
               </div>
@@ -100,9 +102,9 @@
               </button>
             {/if}
             <button type="button" class="btn-ghost" onclick={() => onConfig(p.id)}>
-              Config
+              {p.bundled ? "Advanced" : "Config"}
             </button>
-            {#if p.needsKey}
+            {#if p.needsKey || (p.optionalKey && settingsForm.NVIDIA_API_KEY?.trim())}
               <button
                 type="button"
                 class="btn-ghost danger"
@@ -128,7 +130,9 @@
             <div class="prov-text">
               <div class="prov-name-row">
                 <span class="prov-name">{p.label}</span>
-                {#if p.recommended}
+                {#if p.bundled}
+                  <span class="badge-soft">Included</span>
+                {:else if p.recommended}
                   <span class="badge-soft">Recommended</span>
                 {/if}
               </div>

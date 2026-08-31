@@ -10,8 +10,8 @@
   import "./settings.css";
 
   import {
-    GROQ_DEFAULT_MODEL,
     GROQ_FALLBACK_MODEL,
+    NVIDIA_DEFAULT_MODEL,
     LLM_PROVIDERS,
     type LlmProviderId,
     isProviderConnected,
@@ -49,7 +49,7 @@
 
   let modalOpen = $state(false);
   let modalMode = $state<"connect" | "config">("connect");
-  let modalProvider = $state<LlmProviderId>("groq");
+  let modalProvider = $state<LlmProviderId>("nvidia");
   let modalKey = $state("");
   let modalBaseUrl = $state("");
   let modalModel = $state("");
@@ -57,12 +57,24 @@
   let modalBusy = $state(false);
   let modalError = $state("");
 
-  const activeId = $derived((settingsForm.LLM_PROVIDER ?? "groq") as LlmProviderId);
+  const activeId = $derived((settingsForm.LLM_PROVIDER ?? "nvidia") as LlmProviderId);
   const connectedList = $derived(
-    LLM_PROVIDERS.filter((p) => isProviderConnected(p.id, settingsForm)),
+    LLM_PROVIDERS.filter((p) =>
+      isProviderConnected(p.id, settingsForm, {
+        connected: settings?.connected_providers,
+        llmBundled: settings?.llm_bundled,
+      }),
+    ),
   );
   const availableList = $derived(
-    LLM_PROVIDERS.filter((p) => !isProviderConnected(p.id, settingsForm)),
+    LLM_PROVIDERS.filter(
+      (p) =>
+        !p.bundled &&
+        !isProviderConnected(p.id, settingsForm, {
+          connected: settings?.connected_providers,
+          llmBundled: settings?.llm_bundled,
+        }),
+    ),
   );
   const modalMeta = $derived(providerMeta(modalProvider));
   const modalModels = $derived(modelsForProvider(modalProvider, modalModel));
@@ -75,8 +87,8 @@
     try {
       settings = await api.getSettings();
       settingsForm = { ...settings.values };
-      if (!settingsForm.LLM_PROVIDER) settingsForm.LLM_PROVIDER = "groq";
-      if (!settingsForm.LLM_MODEL) settingsForm.LLM_MODEL = GROQ_DEFAULT_MODEL;
+      if (!settingsForm.LLM_PROVIDER) settingsForm.LLM_PROVIDER = "nvidia";
+      if (!settingsForm.LLM_MODEL) settingsForm.LLM_MODEL = NVIDIA_DEFAULT_MODEL;
       if (!settingsForm.EMBEDDING_PROVIDER) settingsForm.EMBEDDING_PROVIDER = "fastembed";
       if (!settingsForm.EMBEDDING_MODEL) {
         settingsForm.EMBEDDING_MODEL =
@@ -102,8 +114,9 @@
         settingsForm.LLM_FALLBACK_MODEL =
           settingsForm.GROQ_FALLBACK_MODEL || GROQ_FALLBACK_MODEL;
       }
-      if (!settingsForm.LLM_API_KEY && settingsForm.GROQ_API_KEY) {
-        settingsForm.LLM_API_KEY = settingsForm.GROQ_API_KEY;
+      if (!settingsForm.LLM_API_KEY) {
+        settingsForm.LLM_API_KEY =
+          settingsForm.NVIDIA_API_KEY || settingsForm.GROQ_API_KEY || "";
       }
       settingsForm.LLM_MODEL = resolveModelForProvider(
         settingsForm.LLM_PROVIDER,
@@ -118,8 +131,10 @@
 
   async function persist(partial: Record<string, string>) {
     const next = { ...settingsForm, ...partial };
-    if ((next.LLM_PROVIDER ?? "groq") === "groq" && next.GROQ_API_KEY) {
-      next.LLM_API_KEY = next.GROQ_API_KEY;
+    const activeProv = (next.LLM_PROVIDER ?? "nvidia") as LlmProviderId;
+    const keyEnv = providerMeta(activeProv).keyEnv;
+    if (keyEnv && next[keyEnv]) {
+      next.LLM_API_KEY = next[keyEnv];
     }
     if (next.LLM_FALLBACK_MODEL) {
       next.GROQ_FALLBACK_MODEL = next.LLM_FALLBACK_MODEL;
@@ -133,6 +148,7 @@
       "LLM_PROVIDER",
       "LLM_API_KEY",
       "LLM_MODEL",
+      "NVIDIA_API_KEY",
       "GROQ_API_KEY",
       "OPENAI_API_KEY",
       "OPENROUTER_API_KEY",
@@ -207,7 +223,9 @@
 
   async function submitConnect() {
     const m = providerMeta(modalProvider);
-    if (m.needsKey && modalMode === "connect" && !modalKey.trim()) {
+    const keyRequired =
+      m.needsKey && !(m.optionalKey && settings?.connected_providers?.nvidia);
+    if (keyRequired && modalMode === "connect" && !modalKey.trim()) {
       modalError = "API key is required";
       return;
     }
@@ -232,11 +250,15 @@
         if (modalKey.trim()) {
           patch[m.keyEnv] = modalKey.trim();
           patch.LLM_API_KEY = modalKey.trim();
-        } else if (modalMode === "connect") {
+        } else if (modalMode === "connect" && keyRequired) {
           modalError = "API key is required to connect";
           modalBusy = false;
           return;
         }
+      }
+      if (modalProvider === "nvidia") {
+        patch.LLM_BASE_URL =
+          modalBaseUrl.trim() || m.defaultBaseUrl || "https://integrate.api.nvidia.com/v1";
       }
       if (modalProvider === "openrouter") {
         patch.LLM_BASE_URL =
@@ -261,7 +283,13 @@
   }
 
   async function setActive(id: LlmProviderId) {
-    if (!isProviderConnected(id, settingsForm)) return;
+    if (
+      !isProviderConnected(id, settingsForm, {
+        connected: settings?.connected_providers,
+        llmBundled: settings?.llm_bundled,
+      })
+    )
+      return;
     settingsSaving = true;
     settingsMessage = "";
     settingsError = false;
@@ -288,12 +316,21 @@
 
   async function disconnect(id: LlmProviderId) {
     const m = providerMeta(id);
-    if (!m.needsKey) return;
+    if (!m.needsKey && !m.optionalKey) return;
+    const userKey = m.keyEnv ? settingsForm[m.keyEnv]?.trim() : "";
+    if (m.bundled && !userKey) return;
     if (!confirm(`Disconnect ${m.label}? This removes the stored API key.`)) return;
     settingsSaving = true;
     settingsMessage = "";
     settingsError = false;
     try {
+      if (m.bundled && m.optionalKey && userKey) {
+        const patch: Record<string, string> = { NVIDIA_API_KEY: "" };
+        if (settingsForm.LLM_API_KEY?.trim() === userKey) patch.LLM_API_KEY = "";
+        await persist(patch);
+        settingsMessage = `Removed your ${m.label} key — Nous access still active`;
+        return;
+      }
       const patch: Record<string, string> = {};
       if (m.keyEnv) patch[m.keyEnv] = "";
       if (id === "openai_compatible") {
@@ -473,11 +510,13 @@
       </header>
 
       <div class="modal-body">
-        {#if modalMeta.needsKey}
+        {#if modalMeta.needsKey || modalMeta.optionalKey}
           <label class="st-field">
             <span class="st-field-label">
               API key
-              {#if modalMode === "config"}
+              {#if modalMeta.optionalKey}
+                <span class="st-opt">optional</span>
+              {:else if modalMode === "config"}
                 <span class="st-opt">leave blank to keep</span>
               {/if}
             </span>
@@ -519,7 +558,7 @@
           </datalist>
         </label>
 
-        {#if modalMeta.needsKey && modalMeta.defaultFallback}
+        {#if (modalMeta.needsKey || modalMeta.optionalKey) && modalMeta.defaultFallback}
           <label class="st-field">
             <span class="st-field-label">Fallback model <span class="st-opt">optional</span></span>
             <input class="st-control" bind:value={modalFallback} list="modal-fallback" />

@@ -123,7 +123,7 @@
       <button type="button" class="drop" onclick={() => void pickFolders()} disabled={busy}>
         <FolderOpen size={22} strokeWidth={1.75} />
         <span class="drop-title">Choose folders</span>
-        <span class="drop-desc">Markdown, text, and PDFs inside will be filed as claims</span>
+        <span class="drop-desc">Markdown, text, PDFs, and Word (.docx) inside will be filed as claims</span>
       </button>
 
       {#if pending.length}

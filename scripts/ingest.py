@@ -23,7 +23,7 @@ def main():
         "--input", "-i",
         type=Path,
         required=True,
-        help="Directory containing PDF/txt/md files to ingest",
+        help="Directory containing PDF/txt/md/docx files to ingest",
     )
     parser.add_argument(
         "--reset",

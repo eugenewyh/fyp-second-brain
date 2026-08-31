@@ -63,7 +63,7 @@ def decrypt_secret(blob: str, master: str) -> str:
 class UserLlmRow:
     user_id: str
     email: str = ""
-    llm_provider: str = "groq"
+    llm_provider: str = "nvidia"
     llm_api_key_enc: str = ""
     llm_model: str = ""
     created: str = ""
@@ -132,7 +132,7 @@ class Store:
                 CREATE TABLE IF NOT EXISTS user_llm (
                     user_id TEXT PRIMARY KEY,
                     email TEXT NOT NULL DEFAULT '',
-                    llm_provider TEXT NOT NULL DEFAULT 'groq',
+                    llm_provider TEXT NOT NULL DEFAULT 'nvidia',
                     llm_api_key_enc TEXT NOT NULL DEFAULT '',
                     llm_model TEXT NOT NULL DEFAULT '',
                     created TEXT NOT NULL
@@ -350,7 +350,7 @@ class Store:
         return UserLlmRow(
             user_id=r["user_id"],
             email=r["email"] or "",
-            llm_provider=r["llm_provider"] or "groq",
+            llm_provider=r["llm_provider"] or "nvidia",
             llm_api_key_enc=r["llm_api_key_enc"] or "",
             llm_model=r["llm_model"] or "",
             created=r["created"] or "",

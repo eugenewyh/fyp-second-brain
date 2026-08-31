@@ -41,6 +41,7 @@ def _apply_user_llm(user, master_secret: str) -> dict[str, str]:
     prev = {
         "LLM_PROVIDER": os.environ.get("LLM_PROVIDER"),
         "LLM_API_KEY": os.environ.get("LLM_API_KEY"),
+        "NVIDIA_API_KEY": os.environ.get("NVIDIA_API_KEY"),
         "GROQ_API_KEY": os.environ.get("GROQ_API_KEY"),
         "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY"),
         "OPENROUTER_API_KEY": os.environ.get("OPENROUTER_API_KEY"),
@@ -51,10 +52,12 @@ def _apply_user_llm(user, master_secret: str) -> dict[str, str]:
     key = decrypt_secret(user.llm_api_key_enc, master_secret) if user.llm_api_key_enc else ""
     if not key:
         raise RuntimeError("User has no API key configured (BYOK)")
-    provider = (user.llm_provider or "groq").strip().lower() or "groq"
+    provider = (user.llm_provider or "nvidia").strip().lower() or "nvidia"
     os.environ["LLM_PROVIDER"] = provider
     os.environ["LLM_API_KEY"] = key
-    if provider == "groq":
+    if provider == "nvidia":
+        os.environ["NVIDIA_API_KEY"] = key
+    elif provider == "groq":
         os.environ["GROQ_API_KEY"] = key
     elif provider == "openai":
         os.environ["OPENAI_API_KEY"] = key

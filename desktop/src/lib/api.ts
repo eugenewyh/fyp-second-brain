@@ -425,6 +425,8 @@ export interface Settings {
   groq_configured: boolean;
   /** True when current provider can run (ollama always; cloud needs a key). */
   llm_configured?: boolean;
+  /** True when Nous-included NVIDIA access is active (no user key). */
+  llm_bundled?: boolean;
   llm_provider: string;
   /** Which providers have credentials stored (BYOK connect status). */
   connected_providers?: Record<string, boolean>;
@@ -709,7 +711,14 @@ export const api = {
     }),
     createWatch: (
     projectPath: string,
-    body?: { name?: string; focus?: string | null; include?: string | null; enabled?: boolean },
+    body?: {
+      name?: string;
+      focus?: string | null;
+      include?: string | null;
+      enabled?: boolean;
+      cadence?: string | null;
+      hour?: number | null;
+    },
   ) =>
     apiFetch<WatchStatus>("/api/watches", {
       method: "POST",
@@ -719,6 +728,8 @@ export const api = {
         focus: body?.focus ?? null,
         include: body?.include ?? null,
         enabled: body?.enabled ?? false,
+        cadence: body?.cadence ?? null,
+        hour: body?.hour ?? null,
       }),
     }),
     moveWatch: (projectPath: string, destProjectPath: string, watchId?: string | null) =>
@@ -748,6 +759,8 @@ export const api = {
       exclude?: string | null;
       trustedSources?: string | null;
       enabled?: boolean | null;
+      cadence?: string | null;
+      hour?: number | null;
     },
   ) => {
     const payload = {
@@ -759,6 +772,8 @@ export const api = {
       exclude: body.exclude ?? null,
       trusted_sources: body.trustedSources ?? null,
       enabled: body.enabled ?? null,
+      cadence: body.cadence ?? null,
+      hour: body.hour ?? null,
     };
     try {
       return await apiFetch<WatchStatus>("/api/watches/update", {

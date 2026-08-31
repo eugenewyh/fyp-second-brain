@@ -11,7 +11,7 @@ import {
   parentDir,
 } from "./project-edit";
 
-const SUPPORTED_EXTENSIONS = new Set([".md", ".txt", ".pdf"]);
+const SUPPORTED_EXTENSIONS = new Set([".md", ".txt", ".pdf", ".docx"]);
 
 export async function getProjectRoot(): Promise<string> {
   try {

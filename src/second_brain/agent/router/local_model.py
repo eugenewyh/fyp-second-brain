@@ -6,17 +6,15 @@ import json
 import logging
 import math
 import re
-from pathlib import Path
 
 from second_brain.agent.policy import Job
 from second_brain.agent.router.features import enrich_router_text
+from second_brain.config import bundle_root
 
 logger = logging.getLogger(__name__)
 
 _TOKEN = re.compile(r"[a-z0-9']+")
-_MODEL_PATH = (
-    Path(__file__).resolve().parents[4] / "data" / "job_router" / "model.json"
-)
+_MODEL_PATH = bundle_root() / "data" / "job_router" / "model.json"
 
 _model_cache: dict | None = None
 

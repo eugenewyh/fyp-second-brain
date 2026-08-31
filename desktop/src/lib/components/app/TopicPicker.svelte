@@ -12,10 +12,11 @@
     value: string;
     label: string;
     disabled?: boolean;
-    variant?: "plain" | "chip" | "sidebar";
+    variant?: "plain" | "chip" | "sidebar" | "field";
     allowUnbound?: boolean;
     allowCreate?: boolean;
     searchPlaceholder?: string;
+    menuZIndex?: number;
     onSelect: (path: string) => void;
     onNewWorkspace?: () => void;
     onEditWorkspace?: (path: string) => void;
@@ -29,6 +30,7 @@
     allowUnbound = false,
     allowCreate = false,
     searchPlaceholder = "Search topics…",
+    menuZIndex = 40,
     onSelect,
     onNewWorkspace,
     onEditWorkspace,
@@ -220,11 +222,12 @@
   });
 </script>
 
-<div class="picker" class:chip={variant === "chip"} class:rail={variant === "sidebar"}>
+<div class="picker" class:chip={variant === "chip"} class:rail={variant === "sidebar"} class:field={variant === "field"}>
   <button
     type="button"
     class="trigger"
     class:muted={unbound}
+    class:open={open}
     bind:this={triggerEl}
     disabled={disabled}
     aria-haspopup="listbox"
@@ -235,7 +238,9 @@
     onclick={toggle}
   >
     <span class="trigger-label">{currentName}</span>
-    <ChevronDown size={variant === "chip" ? 12 : 14} strokeWidth={2} />
+    <span class="chevron" class:open aria-hidden="true">
+      <ChevronDown size={variant === "chip" ? 12 : 14} strokeWidth={2} />
+    </span>
   </button>
 </div>
 
@@ -248,6 +253,7 @@
     aria-label={entityLabelPlural}
     style:top="{menuPos.top}px"
     style:left="{menuPos.left}px"
+    style:z-index={menuZIndex}
   >
     <label class="search">
       <Search size={13} strokeWidth={2} />
@@ -394,8 +400,8 @@
     color: var(--text-muted);
     font-weight: var(--font-medium);
   }
-  /* Cursor-style composer breadcrumb: plain label + chevron above the pill */
-  .picker:not(.chip):not(.rail) .trigger {
+  /* Cursor-style composer breadcrumb: plain label + chevron */
+  .picker:not(.chip):not(.rail):not(.field) .trigger {
     max-width: min(100%, 18rem);
     gap: 0.15rem;
     padding: 0;
@@ -405,7 +411,7 @@
     color: var(--text);
     border-radius: 0;
   }
-  .picker:not(.chip):not(.rail) .trigger.muted {
+  .picker:not(.chip):not(.rail):not(.field) .trigger.muted {
     color: var(--text-muted);
     font-weight: var(--font-medium);
   }
@@ -423,6 +429,37 @@
   .chip .trigger.muted {
     color: var(--text-muted);
     font-weight: var(--font-medium);
+  }
+  .field {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+  .field .trigger {
+    width: 100%;
+    max-width: none;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.55rem 0.7rem;
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    line-height: 1.2;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    background: var(--control-fill);
+    transition:
+      border-color var(--dur-fast) var(--ease-out),
+      background var(--dur-fast) var(--ease-out),
+      color var(--dur-fast) var(--ease-out);
+  }
+  .field .trigger.muted {
+    color: var(--text-muted);
+  }
+  .field .trigger:hover:not(:disabled),
+  .field .trigger.open:not(:disabled) {
+    border-color: var(--text-faint);
+    background: var(--bg-elevated);
+    color: var(--text);
   }
   .rail {
     display: block;
@@ -448,12 +485,12 @@
     background: var(--chrome-action-hover);
     border-color: var(--border);
   }
-  .picker:not(.chip):not(.rail) .trigger:hover,
-  .picker:not(.chip):not(.rail) .trigger[aria-expanded="true"] {
+  .picker:not(.chip):not(.rail):not(.field) .trigger:hover,
+  .picker:not(.chip):not(.rail):not(.field) .trigger[aria-expanded="true"] {
     background: transparent;
     color: var(--text);
   }
-  .picker:not(.chip):not(.rail) .trigger :global(svg) {
+  .picker:not(.chip):not(.rail):not(.field) .trigger :global(svg) {
     width: 14px;
     height: 14px;
     opacity: 0.7;
@@ -465,6 +502,16 @@
   .trigger:disabled {
     opacity: 0.45;
     cursor: not-allowed;
+  }
+  .chevron {
+    display: inline-flex;
+    flex-shrink: 0;
+    transform: rotate(-90deg);
+    transform-origin: center;
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .chevron.open {
+    transform: rotate(0deg);
   }
   .trigger :global(svg) {
     flex-shrink: 0;
@@ -486,6 +533,29 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-xl);
     box-shadow: none;
+    transform-origin: top left;
+    animation: picker-menu-in 0.2s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  @keyframes picker-menu-in {
+    from {
+      opacity: 0;
+      transform: translateY(-6px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .chevron {
+      transition: none;
+    }
+
+    .menu {
+      animation: none;
+    }
   }
   .search {
     display: flex;

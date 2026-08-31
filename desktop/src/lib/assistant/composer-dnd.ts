@@ -4,7 +4,7 @@
  * Tauri intercepts native file drags, so HTML5 `ondrop` alone often never
  * receives real paths. Use `getCurrentWebview().onDragDropEvent` instead.
  *
- * Drops of .md / .txt / .pdf always stage into the active composer — position
+ * Drops of .md / .txt / .pdf / .docx always stage into the active composer — position
  * hit-testing is only used for the drag-over highlight.
  */
 import { getCurrentWebview } from "@tauri-apps/api/webview";
@@ -16,7 +16,7 @@ export type ComposerDropTarget = {
   stagePaths: (paths: string[]) => void;
 };
 
-const ATTACH_EXT = /\.(md|txt|pdf)$/i;
+const ATTACH_EXT = /\.(md|txt|pdf|docx)$/i;
 
 const targets = new Set<ComposerDropTarget>();
 let unlisten: (() => void) | null = null;

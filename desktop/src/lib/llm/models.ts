@@ -1,13 +1,25 @@
 /** Shared model options for the mission bar model picker (Settings-backed). */
 
-/** Preferred free-tier stack on Groq (research quality → fallback → light). */
+/** Default stack on NVIDIA Build NIM (quality → specialty → fallback). */
+export const NVIDIA_DEFAULT_MODEL = "nvidia/nemotron-3-super-120b-a12b";
+export const NVIDIA_FALLBACK_MODEL = "nvidia/nemotron-3-nano-30b-a3b";
+
+export const NVIDIA_MODELS = [
+  "nvidia/nemotron-3-super-120b-a12b", // default
+  "openai/gpt-oss-120b", // general / agents
+  "deepseek-ai/deepseek-v4-flash-0731", // coding / web-heavy
+  "nvidia/nemotron-3-ultra-550b-a55b", // research
+  "nvidia/nemotron-3-nano-30b-a3b", // fallback
+] as const;
+
+/** Optional BYOK stack on Groq (gpt-oss-20b lives here, not on NVIDIA). */
 export const GROQ_DEFAULT_MODEL = "openai/gpt-oss-120b";
 export const GROQ_FALLBACK_MODEL = "qwen/qwen3-32b";
 export const GROQ_LIGHT_MODEL = "openai/gpt-oss-20b";
 
 export const GROQ_MODELS = [
-  "openai/gpt-oss-120b", // quality king (free tier, rate-limited)
-  "qwen/qwen3-32b", // fallback when throttled
+  "openai/gpt-oss-120b",
+  "qwen/qwen3-32b",
   "openai/gpt-oss-20b", // light / Ask-library style
   "meta-llama/llama-4-scout-17b-16e-instruct",
   "llama-3.3-70b-versatile", // legacy / deprecating
@@ -19,7 +31,7 @@ export const OPENAI_MODELS = ["gpt-4o", "gpt-4o-mini", "gpt-4.1-mini"] as const;
 
 export const XAI_MODELS = ["grok-3", "grok-3-mini", "grok-2"] as const;
 
-/** Free-first OpenRouter presets (IDs change — always include saved LLM_MODEL in UI). */
+/** Optional BYOK OpenRouter presets (IDs change — always include saved LLM_MODEL in UI). */
 export const OPENROUTER_MODELS = [
   "nvidia/nemotron-3-ultra-550b-a55b:free",
   "openrouter/free",
@@ -32,8 +44,12 @@ export const OPENROUTER_MODELS = [
 
 export const OPENROUTER_FREE_DEFAULT = "nvidia/nemotron-3-ultra-550b-a55b:free";
 
-export const GROQ_MODEL_HINTS: Record<string, string> = {
-  "openai/gpt-oss-120b": "Best free quality · research default",
+export const MODEL_HINTS: Record<string, string> = {
+  "nvidia/nemotron-3-super-120b-a12b": "Default · balanced quality",
+  "openai/gpt-oss-120b": "General / agents",
+  "deepseek-ai/deepseek-v4-flash-0731": "Coding / web-heavy",
+  "nvidia/nemotron-3-ultra-550b-a55b": "Research · deepest reasoning",
+  "nvidia/nemotron-3-nano-30b-a3b": "Fallback · fast & light",
   "qwen/qwen3-32b": "Fallback if rate-limited · more RPM",
   "openai/gpt-oss-20b": "Light / faster · weaker for deep research",
   "meta-llama/llama-4-scout-17b-16e-instruct": "Fast Scout · medium quality",
@@ -45,6 +61,7 @@ export const GROQ_MODEL_HINTS: Record<string, string> = {
 };
 
 export type LlmProviderId =
+  | "nvidia"
   | "groq"
   | "ollama"
   | "openai"
@@ -52,8 +69,9 @@ export type LlmProviderId =
   | "openrouter"
   | "openai_compatible";
 
-/** Env var that stores this provider’s BYOK secret. */
+/** Env var that stores this provider's BYOK secret. */
 export type ProviderKeyEnv =
+  | "NVIDIA_API_KEY"
   | "GROQ_API_KEY"
   | "XAI_API_KEY"
   | "OPENAI_API_KEY"
@@ -80,11 +98,35 @@ export const LLM_PROVIDERS: {
   docsLabel?: string;
   hint?: string;
   recommended?: boolean;
+  /** Nous ships access — no user connect flow required when server has operator key. */
+  bundled?: boolean;
+  /** Show optional API key field in config (BYOK override). */
+  optionalKey?: boolean;
 }[] = [
+  {
+    id: "nvidia",
+    label: "NVIDIA",
+    short: "Included with Nous",
+    monogram: "NV",
+    needsKey: false,
+    bundled: true,
+    optionalKey: true,
+    needsBaseUrl: false,
+    showBaseUrl: false,
+    keyEnv: "NVIDIA_API_KEY",
+    keyPlaceholder: "nvapi-…",
+    defaultBaseUrl: "https://integrate.api.nvidia.com/v1",
+    defaultModel: NVIDIA_DEFAULT_MODEL,
+    defaultFallback: NVIDIA_FALLBACK_MODEL,
+    docsUrl: "https://build.nvidia.com/settings/api-keys",
+    docsLabel: "Get your own key",
+    hint: "No API key needed. Optional: add your own NVIDIA key to use your credits.",
+    recommended: true,
+  },
   {
     id: "groq",
     label: "Groq",
-    short: "Fast cloud · free tier",
+    short: "Fast cloud · optional BYOK",
     monogram: "Gq",
     needsKey: true,
     needsBaseUrl: false,
@@ -95,13 +137,28 @@ export const LLM_PROVIDERS: {
     defaultFallback: GROQ_FALLBACK_MODEL,
     docsUrl: "https://console.groq.com/keys",
     docsLabel: "Get API key",
-    hint: "Best default for research. Auto-fallback on rate limits.",
-    recommended: true,
+    hint: "Optional. Includes gpt-oss-20b light tier.",
+  },
+  {
+    id: "openrouter",
+    label: "OpenRouter",
+    short: "Many models · optional BYOK",
+    monogram: "OR",
+    needsKey: true,
+    needsBaseUrl: false,
+    showBaseUrl: false,
+    keyEnv: "OPENROUTER_API_KEY",
+    keyPlaceholder: "sk-or-…",
+    defaultBaseUrl: "https://openrouter.ai/api/v1",
+    defaultModel: OPENROUTER_FREE_DEFAULT,
+    docsUrl: "https://openrouter.ai/models?q=free",
+    docsLabel: "Browse free models",
+    hint: "Optional. Paste free model ids like nvidia/nemotron-3-ultra-550b-a55b:free",
   },
   {
     id: "xai",
     label: "xAI",
-    short: "Official Grok API",
+    short: "Official Grok API · optional BYOK",
     monogram: "xAI",
     needsKey: true,
     needsBaseUrl: false,
@@ -113,13 +170,12 @@ export const LLM_PROVIDERS: {
     defaultFallback: "grok-3",
     docsUrl: "https://console.x.ai",
     docsLabel: "console.x.ai",
-    hint: "Use your xAI key — Grok models via BYOK.",
-    recommended: true,
+    hint: "Optional. Grok models via your xAI key.",
   },
   {
     id: "openai",
     label: "OpenAI",
-    short: "GPT models",
+    short: "GPT models · optional BYOK",
     monogram: "OA",
     needsKey: true,
     needsBaseUrl: false,
@@ -131,23 +187,6 @@ export const LLM_PROVIDERS: {
     defaultFallback: "gpt-4o-mini",
     docsUrl: "https://platform.openai.com/api-keys",
     docsLabel: "API keys",
-  },
-  {
-    id: "openrouter",
-    label: "OpenRouter",
-    short: "Many models, one key",
-    monogram: "OR",
-    needsKey: true,
-    needsBaseUrl: false,
-    showBaseUrl: false,
-    keyEnv: "OPENROUTER_API_KEY",
-    keyPlaceholder: "sk-or-…",
-    defaultBaseUrl: "https://openrouter.ai/api/v1",
-    defaultModel: OPENROUTER_FREE_DEFAULT,
-    docsUrl: "https://openrouter.ai/models?q=free",
-    docsLabel: "Browse free models",
-    hint: "Paste free model ids like nvidia/nemotron-3-ultra-550b-a55b:free",
-    recommended: true,
   },
   {
     id: "ollama",
@@ -184,8 +223,20 @@ export function keyEnvForProvider(id: string): ProviderKeyEnv {
 export function isProviderConnected(
   id: string,
   values: Record<string, string>,
+  opts?: {
+    connected?: Record<string, boolean> | null;
+    /** Sidecar reports Nous-included NVIDIA access (no user key). */
+    llmBundled?: boolean;
+  },
 ): boolean {
   const m = providerMeta(id);
+  // Shipped with Nous — always in Connected; optional BYOK via Config only.
+  if (m.bundled) {
+    return true;
+  }
+  if (opts?.connected && id in opts.connected) {
+    return !!opts.connected[id];
+  }
   if (!m.needsKey) return true; // ollama
   if (id === "openai_compatible") {
     const key = values.CUSTOM_API_KEY?.trim() || values.LLM_API_KEY?.trim();
@@ -201,6 +252,9 @@ export function isProviderConnected(
 export function modelsForProvider(provider: string, currentModel?: string | null): string[] {
   let base: string[];
   switch (provider) {
+    case "nvidia":
+      base = [...NVIDIA_MODELS];
+      break;
     case "ollama":
       base = [...OLLAMA_MODELS];
       break;
@@ -217,8 +271,10 @@ export function modelsForProvider(provider: string, currentModel?: string | null
       base = [...OPENAI_MODELS, ...XAI_MODELS];
       break;
     case "groq":
-    default:
       base = [...GROQ_MODELS];
+      break;
+    default:
+      base = [...NVIDIA_MODELS];
   }
   const cur = currentModel?.trim();
   // Always surface the saved/settings model even if it's a custom free id
@@ -310,7 +366,7 @@ export function modelPickerGroups(
 }
 
 export function modelHint(model: string): string {
-  return GROQ_MODEL_HINTS[model] ?? (model.includes(":free") ? "Free on OpenRouter" : "");
+  return MODEL_HINTS[model] ?? (model.includes(":free") ? "Free on OpenRouter" : "");
 }
 
 export function isFreeModel(model: string): boolean {

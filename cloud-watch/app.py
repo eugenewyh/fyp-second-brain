@@ -79,7 +79,7 @@ def require_cron(authorization: str | None = Header(default=None)) -> None:
 
 
 class LlmBody(BaseModel):
-    llm_provider: str = "groq"
+    llm_provider: str = "nvidia"
     llm_api_key: str = ""
     llm_model: str = ""
 
@@ -131,7 +131,7 @@ def put_llm(body: LlmBody, user_id: str = Depends(require_user)):
             raise HTTPException(503, str(e)) from e
     user = store.update_user_llm(
         user_id,
-        llm_provider=(body.llm_provider or "groq").strip().lower() or "groq",
+        llm_provider=(body.llm_provider or "nvidia").strip().lower() or "nvidia",
         llm_api_key_enc=enc,
         llm_model=(body.llm_model or "").strip(),
     )

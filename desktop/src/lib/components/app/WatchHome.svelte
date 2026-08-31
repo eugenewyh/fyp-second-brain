@@ -1,14 +1,19 @@
 <script lang="ts">
   import { app } from "$lib/stores/app.svelte";
-  import type { WatchListItem } from "$lib/api";
-  import WatchList, { type WatchDraft } from "./WatchList.svelte";
+  import { workspace } from "$lib/stores/workspace.svelte";
+  import type { WatchListItem, WatchStatus } from "$lib/api";
+  import WatchList from "./WatchList.svelte";
   import WatchEditor from "./WatchEditor.svelte";
+  import WatchCreateModal from "./WatchCreateModal.svelte";
 
   let selected = $state<{
     projectPath: string;
     watchId: string;
-    draft?: { name: string; focus: string; include: string };
   } | null>(null);
+  let createOpen = $state(false);
+
+  const topics = $derived(workspace.projectFolders);
+  const initialTopicPath = $derived(workspace.activeTopicPath ?? topics[0]?.path ?? null);
 
   let seenWatchListNonce = app.watchListNonce;
   $effect(() => {
@@ -22,8 +27,9 @@
     selected = { projectPath: item.project_path, watchId: item.watch_id || "legacy" };
   }
 
-  function openDraft(projectPath: string, draft: WatchDraft) {
-    selected = { projectPath, watchId: "draft", draft };
+  function onCreated(_w: WatchStatus) {
+    createOpen = false;
+    workspace.requestVaultRefresh();
   }
 </script>
 
@@ -32,19 +38,22 @@
     <WatchEditor
       projectPath={selected.projectPath}
       watchId={selected.watchId}
-      draft={selected.draft}
       onBack={() => (selected = null)}
       onMoved={(w) => {
         selected = { projectPath: w.project_path, watchId: w.watch_id || "legacy" };
       }}
-      onRelocate={(path) => {
-        if (selected?.draft) selected = { ...selected, projectPath: path };
-      }}
     />
   {:else}
-    <WatchList onOpen={openItem} onDraft={openDraft} />
+    <WatchList onOpen={openItem} onNew={() => (createOpen = true)} />
   {/if}
 </div>
+
+<WatchCreateModal
+  open={createOpen}
+  {initialTopicPath}
+  onClose={() => (createOpen = false)}
+  {onCreated}
+/>
 
 <style>
   .watch-home {

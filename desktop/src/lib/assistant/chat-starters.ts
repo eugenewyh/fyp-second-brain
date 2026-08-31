@@ -78,7 +78,7 @@ export function landingHero(phase: LandingPhase): LandingHero {
       return {
         kicker: "Get started",
         title: "Set up your second brain",
-        sub: "Create a topic workspace, connect AI, then Teach something to remember. Ask and Research only work after memory exists.",
+        sub: "Create a topic workspace, then Teach something to remember. Ask and Research only work after memory exists.",
       };
     case "seed":
       return {
@@ -144,7 +144,7 @@ export function chatSetupItems(opts: {
   }
 
   if (!opts.aiConfigured) {
-    items.push({ id: "ai", label: "Add AI key", done: false, action: "settings" });
+    items.push({ id: "ai", label: "Connect AI provider", done: false, action: "settings" });
   }
 
   if (opts.hasWorkspace && opts.channelEmpty) {

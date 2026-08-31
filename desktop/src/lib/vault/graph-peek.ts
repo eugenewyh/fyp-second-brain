@@ -98,7 +98,7 @@ export function peekConnectionRows(grouped: PeekConnections): PeekNeighbor[] {
 
 export function humanizePeekLabel(label: string): string {
   const t = label
-    .replace(/\.(md|txt|pdf)$/i, "")
+    .replace(/\.(md|txt|pdf|docx)$/i, "")
     .replace(/[-_]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();

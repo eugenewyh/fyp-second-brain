@@ -10,7 +10,10 @@ from langchain_ollama import ChatOllama
 
 logger = logging.getLogger(__name__)
 
-# Free-tier friendly defaults on Groq
+# Default stack on NVIDIA Build NIM
+DEFAULT_NVIDIA_MODEL = "nvidia/nemotron-3-super-120b-a12b"
+DEFAULT_NVIDIA_FALLBACK = "nvidia/nemotron-3-nano-30b-a3b"
+# Optional BYOK on Groq
 DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b"
 DEFAULT_GROQ_FALLBACK = "qwen/qwen3-32b"
 
@@ -18,6 +21,7 @@ LlmRole = Literal["main", "fast"]
 
 # Named OpenAI-compatible presets (base URL only; key via LLM_API_KEY / provider key)
 PROVIDER_BASE_URLS: dict[str, str] = {
+    "nvidia": "https://integrate.api.nvidia.com/v1",
     "openai": "https://api.openai.com/v1",
     "xai": "https://api.x.ai/v1",
     "openrouter": "https://openrouter.ai/api/v1",
@@ -35,13 +39,15 @@ PROVIDER_ALIASES: dict[str, str] = {
 
 
 def _provider() -> str:
-    raw = os.getenv("LLM_PROVIDER", "groq").strip().lower()
+    raw = os.getenv("LLM_PROVIDER", "nvidia").strip().lower()
     return PROVIDER_ALIASES.get(raw, raw)
 
 
 def _primary_model() -> str:
     provider = _provider()
-    if provider == "groq":
+    if provider == "nvidia":
+        default = DEFAULT_NVIDIA_MODEL
+    elif provider == "groq":
         default = DEFAULT_GROQ_MODEL
     elif provider == "ollama":
         default = "qwen3:8b"
@@ -67,10 +73,31 @@ def _model_for_role(role: LlmRole) -> str:
     return _primary_model()
 
 
+def bundled_nvidia_api_key() -> str:
+    """Operator key shipped with Nous builds — not user BYOK."""
+    return os.getenv("NOUS_NVIDIA_API_KEY", "").strip()
+
+
+def using_bundled_nvidia() -> bool:
+    """True when the active provider uses Nous-included NVIDIA access."""
+    if _provider() != "nvidia":
+        return False
+    if os.getenv("NVIDIA_API_KEY", "").strip():
+        return False
+    bundled = bundled_nvidia_api_key()
+    return bool(bundled) and _api_key() == bundled
+
+
 def _api_key() -> str:
-    """BYOK: provider-specific key first, then shared LLM_API_KEY."""
+    """BYOK: provider-specific key first, then shared LLM_API_KEY; NVIDIA falls back to Nous."""
     provider = _provider()
     generic = os.getenv("LLM_API_KEY", "").strip()
+    if provider == "nvidia":
+        return (
+            os.getenv("NVIDIA_API_KEY", "").strip()
+            or generic
+            or bundled_nvidia_api_key()
+        )
     if provider == "groq":
         return os.getenv("GROQ_API_KEY", "").strip() or generic
     if provider == "openai":
@@ -113,6 +140,8 @@ def _fallback_model() -> str | None:
         os.getenv("LLM_FALLBACK_MODEL", "").strip()
         or os.getenv("GROQ_FALLBACK_MODEL", "").strip()
     )
+    if provider == "nvidia" and not fb:
+        fb = DEFAULT_NVIDIA_FALLBACK
     if provider == "groq" and not fb:
         fb = DEFAULT_GROQ_FALLBACK
     if not fb or fb == primary:
@@ -180,9 +209,14 @@ def get_llm(
             temperature=temperature,
         )
 
-    if provider in {"openai", "xai", "openrouter", "openai_compatible"}:
+    if provider in {"nvidia", "openai", "xai", "openrouter", "openai_compatible"}:
         api_key = _api_key()
         if not api_key:
+            if provider == "nvidia":
+                raise ValueError(
+                    "NVIDIA AI is not available. Add NVIDIA_API_KEY in Settings "
+                    "or use a build with Nous-included access."
+                )
             raise ValueError(
                 f"API key is not set for provider {provider!r}. "
                 "Set LLM_API_KEY (or provider-specific key) in Settings."
@@ -202,7 +236,7 @@ def get_llm(
 
     raise ValueError(
         f"Unknown LLM_PROVIDER: {provider!r}. "
-        "Use groq, ollama, openai, xai, openrouter, or openai_compatible."
+        "Use nvidia, groq, ollama, openai, xai, openrouter, or openai_compatible."
     )
 
 

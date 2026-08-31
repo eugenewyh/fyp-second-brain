@@ -265,7 +265,7 @@ def _personal_source_wikilinks(state: dict[str, Any], *, limit: int = 6) -> list
         name = Path(str(raw)).name
         if not name:
             continue
-        stem = re.sub(r"\.(md|pdf|txt)$", "", name, flags=re.I)
+        stem = re.sub(r"\.(md|pdf|txt|docx)$", "", name, flags=re.I)
         if not stem or stem in seen:
             continue
         # Skip auto-generated research dumps as link targets (link report separately)

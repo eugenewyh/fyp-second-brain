@@ -84,7 +84,7 @@
     onSubmit,
   }: Props = $props();
 
-  let llmProvider = $state("groq");
+  let llmProvider = $state("nvidia");
   let llmModel = $state("");
   let modelOpen = $state(false);
   let modelQuery = $state("");
@@ -121,7 +121,7 @@
     if (!connection.connected) return;
     try {
       const s = await api.getSettings();
-      llmProvider = s.llm_provider || s.values.LLM_PROVIDER || "groq";
+      llmProvider = s.llm_provider || s.values.LLM_PROVIDER || "nvidia";
       llmModel = s.values.LLM_MODEL || "";
     } catch {
       /* ignore */
@@ -212,17 +212,20 @@
     assistant.composerFocusNonce += 1;
   }
 
-  const ATTACH_EXT = /\.(md|txt|pdf)$/i;
+  const ATTACH_EXT = /\.(md|txt|pdf|docx)$/i;
+  const DOCX_MIME =
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
-  function isAttachableName(name: string): boolean {
-    return ATTACH_EXT.test(name);
+  function isAttachableName(name: string, mime?: string): boolean {
+    if (ATTACH_EXT.test(name)) return true;
+    return (mime || "").split(";")[0].trim().toLowerCase() === DOCX_MIME;
   }
 
   async function pickAttachFiles() {
     try {
       const selected = await open({
         multiple: true,
-        filters: [{ name: "Documents", extensions: ["md", "txt", "pdf"] }],
+        filters: [{ name: "Documents", extensions: ["md", "txt", "pdf", "docx"] }],
       });
       const paths = Array.isArray(selected) ? selected : selected ? [selected] : [];
       for (const path of paths) {
@@ -247,7 +250,7 @@
   async function stageDroppedFiles(fileList: FileList | File[]) {
     const files = Array.from(fileList);
     for (const f of files) {
-      if (!isAttachableName(f.name)) continue;
+      if (!isAttachableName(f.name, f.type)) continue;
       const path = (f as File & { path?: string }).path;
       let text: string | undefined;
       if (/\.(md|txt)$/i.test(f.name)) {
@@ -607,7 +610,7 @@
   class:wrap-drag={dragOver}
   bind:this={dockWrapEl}
   role="region"
-  aria-label="Message composer. Drop .md, .txt, or .pdf files to attach."
+  aria-label="Message composer. Drop .md, .txt, .pdf, or .docx files to attach."
   ondragenter={onDragEnter}
   ondragover={onDragOver}
   ondragleave={onDragLeave}
@@ -834,6 +837,8 @@
   .input-dock {
     flex: 1;
     min-width: 0;
+    width: auto;
+    max-width: 100%;
     height: auto;
     min-height: 2.25rem;
     max-height: 8rem;
@@ -841,9 +846,13 @@
     border: none;
     background: transparent;
     resize: none;
+    box-sizing: border-box;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    overflow-x: hidden;
     overflow-y: auto;
     line-height: 1.45;
-    field-sizing: content;
   }
 
   /* —— Center card —— */
@@ -895,12 +904,16 @@
 
   .pill-main {
     width: 100%;
+    min-width: 0;
     padding: 0.85rem 1.1rem 0.4rem;
   }
 
-  .input-center {
+  textarea.input-center {
     display: block;
+    flex: none;
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     height: auto;
     min-height: 3.75rem;
     max-height: 12rem;
@@ -911,8 +924,12 @@
     border: none !important;
     background: transparent;
     resize: none;
+    box-sizing: border-box;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    overflow-x: hidden;
     overflow-y: auto;
-    field-sizing: content;
     outline: none;
   }
 
@@ -1342,25 +1359,6 @@
     min-height: 0;
     overflow-y: auto;
     padding: 0.35rem 0.35rem 0.45rem;
-    scrollbar-width: thin;
-    scrollbar-color: color-mix(in srgb, var(--text-faint) 35%, transparent) transparent;
-  }
-
-  .model-list::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  .model-list::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .model-list::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--text-faint) 35%, transparent);
-    border-radius: var(--radius-full);
-  }
-
-  .model-list::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in srgb, var(--text-faint) 55%, transparent);
   }
 
   .model-group-label {
@@ -1536,6 +1534,10 @@
 
   textarea.input {
     height: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    overflow-x: hidden;
   }
 
   .input:focus {

@@ -21,7 +21,7 @@ export function classifySourceOrigin(source: string): SourceOrigin {
     return "web";
   }
   // Local vault paths / filenames
-  if (s.includes("/") || s.includes("\\") || /\.(md|pdf|txt)$/i.test(s)) {
+  if (s.includes("/") || s.includes("\\") || /\.(md|pdf|txt|docx)$/i.test(s)) {
     return "personal";
   }
   return "unknown";

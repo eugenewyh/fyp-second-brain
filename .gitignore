@@ -21,6 +21,8 @@ desktop/node_modules/
 desktop/build/
 desktop/.svelte-kit/
 desktop/src-tauri/target/
+desktop/src-tauri/sidecar-bundle/*
+!desktop/src-tauri/sidecar-bundle/.gitkeep
 desktop/Nous.dev.app/
 desktop/*.app
 .verify-scratch/

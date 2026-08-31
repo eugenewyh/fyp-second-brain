@@ -2,23 +2,20 @@
   import { api, type WatchListItem } from "$lib/api";
   import { workspace } from "$lib/stores/workspace.svelte";
   import { connection } from "$lib/stores/connection.svelte";
-  import { ensureProjectFolder } from "$lib/vault/load";
-  import { ArrowUpRight, EllipsisVertical, Pencil, Plus, Search, Trash2 } from "@lucide/svelte";
-
-  export type WatchDraft = { name: string; focus: string; include: string };
+  import { watchRuns } from "$lib/stores/watchRuns.svelte";
+  import { ArrowUpRight, EllipsisVertical, Pencil, Plus, Search, Square, Trash2 } from "@lucide/svelte";
 
   interface Props {
     onOpen: (item: WatchListItem) => void;
-    onDraft: (projectPath: string, draft: WatchDraft) => void;
+    onNew: () => void;
   }
 
-  let { onOpen, onDraft }: Props = $props();
+  let { onOpen, onNew }: Props = $props();
 
   let watches = $state<WatchListItem[]>([]);
   let loading = $state(false);
   let error = $state("");
   let search = $state("");
-  let starterIndex = $state(0);
   let menu = $state<{ key: string; top: number; left: number } | null>(null);
   let menuEl = $state<HTMLDivElement | null>(null);
   let deleting = $state(false);
@@ -32,47 +29,6 @@
   const topicPath = $derived(
     workspace.activeTopicPath ?? topics[0]?.path ?? null,
   );
-  const topicLabel = $derived(
-    topicPath?.split(/[\\/]/).pop()?.replace(/[-_]/g, " ") ?? "this topic",
-  );
-
-  type Starter = {
-    id: string;
-    title: string;
-    blurb: string;
-    name: string;
-    focus: (topic: string) => string;
-    include: (topic: string) => string;
-  };
-
-  const starters: Starter[] = [
-    {
-      id: "morning",
-      title: "Morning brief",
-      blurb: "What changed overnight that matters to this topic.",
-      name: "Morning brief",
-      focus: (t) => `Significant new developments related to ${t} from the last 24 hours.`,
-      include: (t) => `Papers, product changes, and eval results related to ${t}.`,
-    },
-    {
-      id: "papers",
-      title: "Papers",
-      blurb: "Track arXiv and eval results without the hype cycle.",
-      name: "Papers",
-      focus: (t) => `New papers and benchmarks that change what I believe about ${t}.`,
-      include: (t) => `arXiv papers, shared evals, and open-weight releases related to ${t}.`,
-    },
-    {
-      id: "product",
-      title: "Product changes",
-      blurb: "Shipping updates, APIs, and launches worth a brief.",
-      name: "Product changes",
-      focus: (t) => `Product launches and API changes related to ${t}.`,
-      include: (t) => `Official blogs, release notes, and shipping announcements for ${t}.`,
-    },
-  ];
-
-  const activeStarter = $derived(starters[starterIndex] ?? starters[0]);
 
   const filtered = $derived.by(() => {
     let rows = watches;
@@ -88,8 +44,8 @@
     );
   });
 
-  async function reload() {
-    loading = true;
+  async function reload(opts?: { quiet?: boolean }) {
+    if (!opts?.quiet) loading = true;
     error = "";
     try {
       const [res, plan] = await Promise.all([
@@ -101,9 +57,9 @@
       plannerError = plan?.watch_error?.trim() || "";
       connection.watchPlanError = plannerError;
     } catch (e) {
-      error = e instanceof Error ? e.message : "Could not load schedules";
+      if (!opts?.quiet) error = e instanceof Error ? e.message : "Could not load schedules";
     } finally {
-      loading = false;
+      if (!opts?.quiet) loading = false;
     }
   }
 
@@ -113,33 +69,11 @@
     void reload();
   });
 
-  async function createNamed(opts?: { name?: string; focus?: string; include?: string }) {
-    let path = topicPath;
-    if (!path) {
-      try {
-        path = await ensureProjectFolder(opts?.name || "Scheduled Research");
-        workspace.setActiveTopic(path);
-        await workspace.syncProjectsFromDisk();
-      } catch {
-        error = "Couldn't create a topic for this schedule. Start a chat first.";
-        return;
-      }
-    }
-    onDraft(path, {
-      name: opts?.name ?? "Untitled",
-      focus: opts?.focus ?? "",
-      include: opts?.include ?? "",
-    });
-  }
-
-  function startStarter() {
-    const s = activeStarter;
-    void createNamed({
-      name: s.name,
-      focus: s.focus(topicLabel),
-      include: s.include(topicLabel),
-    });
-  }
+  $effect(() => {
+    if (!watchRuns.hasActive) return;
+    const id = window.setInterval(() => void reload({ quiet: true }), 4000);
+    return () => window.clearInterval(id);
+  });
 
   async function reloadService() {
     if (reloading) return;
@@ -157,7 +91,28 @@
     }
   }
 
-  function rowStatus(w: WatchListItem): { label: string; kind: "legacy" | "draft" | "paused" | "scheduled" | "brief" } {
+  function runFor(w: WatchListItem) {
+    return watchRuns.get(w.project_path, w.watch_id || "legacy");
+  }
+
+  function rowStatus(w: WatchListItem): {
+    label: string;
+    detail?: string;
+    kind: "running" | "legacy" | "draft" | "paused" | "scheduled" | "brief" | "done" | "error";
+  } {
+    const run = runFor(w);
+    if (run?.phase === "running") {
+      return { label: "Running", detail: run.status, kind: "running" };
+    }
+    if (run?.phase === "done") {
+      return { label: "Brief written", detail: run.status, kind: "done" };
+    }
+    if (run?.phase === "error") {
+      return { label: "Failed", detail: run.status, kind: "error" };
+    }
+    if (run?.phase === "cancelled") {
+      return { label: "Cancelled", kind: "error" };
+    }
     if (w.has_brief_today) return { label: "Brief ready", kind: "brief" };
     if (!w.watch_id) return { label: "Legacy", kind: "legacy" };
     if (!w.complete) return { label: "Draft", kind: "draft" };
@@ -222,7 +177,8 @@
 
   function editFromMenu() {
     const w = menuItem();
-    if (w) onOpen(w);
+    if (!w) return;
+    runAfterMenu(() => onOpen(w));
   }
 
   async function upgradeFromMenu() {
@@ -330,39 +286,12 @@
       </p>
     </div>
     <div class="hero-actions">
-      <button type="button" class="primary" onclick={() => createNamed()}>
+      <button type="button" class="primary" onclick={onNew}>
         <Plus size={15} strokeWidth={2.25} />
         New schedule
       </button>
     </div>
   </header>
-
-  {#if watches.length === 0}
-    <section class="starter" aria-label="From Nous">
-      <div class="starter-copy">
-        <p class="kicker">From Nous</p>
-        <h2>Ship a brief, then forget it</h2>
-        <ul>
-          {#each starters as s, i (s.id)}
-            <li>
-              <button
-                type="button"
-                class="pick"
-                class:on={starterIndex === i}
-                onclick={() => (starterIndex = i)}
-              >
-                <span class="pick-title">{s.title}</span>
-                <span class="pick-blurb">{s.blurb}</span>
-              </button>
-            </li>
-          {/each}
-        </ul>
-        <button type="button" class="primary" onclick={startStarter}>
-          Get started in {topicLabel}
-        </button>
-      </div>
-    </section>
-  {/if}
 
   {#if connection.watchesApiStale}
     <p class="err" role="status">
@@ -378,6 +307,43 @@
       Morning schedule planning failed: {plannerError}
     </p>
   {/if}
+
+  {#each watchRuns.active as run (run.projectPath + run.watchId)}
+    <div class="run-banner" role="status" aria-live="polite">
+      <span class="run-dot" aria-hidden="true"></span>
+      <div class="run-banner-copy">
+        <span class="run-banner-title">{run.name}</span>
+        <span class="run-banner-detail">{run.status}</span>
+      </div>
+      <div class="run-banner-actions">
+        <button
+          type="button"
+          class="banner-btn"
+          onclick={() =>
+            onOpen({
+              watch_id: run.watchId,
+              name: run.name,
+              project_path: run.projectPath,
+              topic: "",
+              created: "",
+              enabled: true,
+              complete: true,
+              has_brief_today: false,
+            })}
+        >
+          Open
+        </button>
+        <button
+          type="button"
+          class="banner-btn"
+          onclick={() => watchRuns.stop(run.projectPath, run.watchId)}
+        >
+          <Square size={13} strokeWidth={2} />
+          Stop
+        </button>
+      </div>
+    </div>
+  {/each}
 
   <div class="toolbar">
     {#if watches.length > 0}
@@ -408,7 +374,7 @@
         ? "No matches."
         : kindFilter !== "all"
           ? "Nothing in this filter."
-          : "No schedules yet — New schedule or pick a starter."}
+          : "No schedules yet — use New schedule to get started."}
     </p>
   {:else}
     <div class="table" role="table">
@@ -420,12 +386,23 @@
         <span class="menu-pad" aria-hidden="true"></span>
       </div>
       {#each filtered as w (rowKey(w))}
+        {@const st = rowStatus(w)}
         <div class="row item" role="row">
           <button type="button" class="open" onclick={() => onOpen(w)}>
             <span class="name">{w.name || "Untitled"}</span>
             <span class="muted">{w.topic}</span>
             <span class="muted">{relativeTime(w.created)}</span>
-            <span class="status {rowStatus(w).kind}">{rowStatus(w).label}</span>
+            <span class="status {st.kind}" title={st.detail}>
+              <span class="status-label">
+                {#if st.kind === "running"}
+                  <span class="status-dot" aria-hidden="true"></span>
+                {/if}
+                {st.label}
+              </span>
+              {#if st.detail && st.kind === "running"}
+                <span class="status-detail">{st.detail}</span>
+              {/if}
+            </span>
           </button>
           <button
             type="button"
@@ -461,7 +438,7 @@
       onpointerdown={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        runAfterMenu(editFromMenu);
+        editFromMenu();
       }}
     >
       <Pencil size={14} strokeWidth={2} />
@@ -567,61 +544,6 @@
     color: var(--text);
     border-color: var(--text-faint);
   }
-  .starter {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-2xl);
-    background: var(--control-fill);
-    padding: 1.1rem 1.2rem 1.15rem;
-    margin-bottom: 1.15rem;
-  }
-  .kicker {
-    margin: 0;
-    font-size: var(--text-2xs);
-    font-weight: var(--font-semibold);
-    letter-spacing: var(--type-caption-tracking);
-    text-transform: uppercase;
-    color: var(--text-faint);
-  }
-  .starter h2 {
-    margin: 0.35rem 0 0.75rem;
-    font-size: var(--text-lg);
-    font-weight: var(--font-semibold);
-    letter-spacing: -0.02em;
-  }
-  .starter ul {
-    list-style: none;
-    margin: 0 0 0.85rem;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-  .pick {
-    width: 100%;
-    text-align: left;
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: var(--radius-lg);
-    padding: 0.45rem 0.55rem;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    gap: 0.12rem;
-  }
-  .pick:hover,
-  .pick.on {
-    background: var(--bg-elevated);
-    border-color: var(--border);
-  }
-  .pick-title {
-    font-size: var(--text-sm);
-    font-weight: var(--font-semibold);
-    color: var(--text);
-  }
-  .pick-blurb {
-    font-size: var(--text-xs);
-    color: var(--text-muted);
-  }
   .toolbar {
     display: flex;
     justify-content: flex-end;
@@ -684,7 +606,7 @@
     align-items: stretch;
   }
   .row.head {
-    grid-template-columns: 1.4fr 1fr 0.6fr 0.7fr 2.25rem;
+    grid-template-columns: 1.4fr 1fr 0.6fr 1fr 2.25rem;
     gap: 0.5rem;
     padding: 0.55rem 0.85rem;
     color: var(--text-faint);
@@ -711,7 +633,7 @@
   }
   .open {
     display: grid;
-    grid-template-columns: 1.4fr 1fr 0.6fr 0.7fr;
+    grid-template-columns: 1.4fr 1fr 0.6fr 1fr;
     gap: 0.5rem;
     width: 100%;
     min-width: 0;
@@ -754,12 +676,112 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .status {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+    align-self: center;
+  }
+
+  .status-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--status-running);
+    flex-shrink: 0;
+    animation: pulse-live 1.4s ease-in-out infinite;
+  }
+
+  .status-detail {
+    font-size: var(--text-2xs);
+    color: var(--text-faint);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .status.scheduled {
     color: var(--success);
   }
   .status.brief {
     color: var(--accent-live, var(--success));
     font-weight: var(--font-medium);
+  }
+  .status.running {
+    color: var(--accent-live, var(--success));
+    font-weight: var(--font-medium);
+  }
+  .status.done {
+    color: var(--success);
+  }
+  .status.error {
+    color: var(--error);
+  }
+  .run-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin-bottom: 0.85rem;
+    padding: 0.65rem 0.8rem;
+    border: 1px solid color-mix(in srgb, var(--accent-live) 35%, var(--border));
+    border-radius: var(--radius-xl);
+    background: color-mix(in srgb, var(--accent-live) 8%, var(--bg-elevated));
+  }
+  .run-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--status-running);
+    flex-shrink: 0;
+    animation: pulse-live 1.4s ease-in-out infinite;
+  }
+  .run-banner-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+    flex: 1;
+  }
+  .run-banner-title {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--text);
+  }
+  .run-banner-detail {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .run-banner-actions {
+    display: flex;
+    gap: 0.35rem;
+    flex-shrink: 0;
+  }
+  .banner-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    border: 1px solid var(--border);
+    background: var(--control-fill);
+    border-radius: var(--radius-full);
+    padding: 0.22rem 0.6rem;
+    font: inherit;
+    font-size: var(--text-xs);
+    color: var(--text);
+    cursor: pointer;
+    min-height: 28px;
+  }
+  .banner-btn:hover {
+    background: var(--chrome-action-hover);
   }
   .status.paused,
   .status.draft {

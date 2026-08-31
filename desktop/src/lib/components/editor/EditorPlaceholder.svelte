@@ -19,10 +19,16 @@
   const name = $derived(path.split("/").pop() ?? "File");
   const ext = $derived(name.includes(".") ? name.split(".").pop()?.toLowerCase() : "");
 
+  const isBinary = $derived(ext === "docx");
+
   onMount(async () => {
     loading = true;
     error = "";
     workspace.setActiveNote(path);
+    if (isBinary) {
+      loading = false;
+      return;
+    }
     try {
       content = await readNote(path);
     } catch (e) {
@@ -55,15 +61,19 @@
       <FileQuestion size={28} strokeWidth={1.5} />
       <p class="title">This file type can't be edited yet</p>
       <p class="desc">
-        {#if ext}
+        {#if ext === "docx"}
+          Word files are indexed for search, not opened in the note editor.
+        {:else if ext}
           <code>.{ext}</code> files open as plain text for reference. Markdown notes and PDFs have full viewers.
         {:else}
           Open a markdown note or PDF for the best experience.
         {/if}
       </p>
-      <Button variant="ghost" onclick={() => (showRaw = !showRaw)}>
-        {showRaw ? "Hide content" : "Show text preview"}
-      </Button>
+      {#if !isBinary}
+        <Button variant="ghost" onclick={() => (showRaw = !showRaw)}>
+          {showRaw ? "Hide content" : "Show text preview"}
+        </Button>
+      {/if}
     </div>
     {#if showRaw}
       <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->

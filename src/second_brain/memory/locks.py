@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import threading
 
-chroma_write_lock = threading.Lock()
+chroma_write_lock = threading.RLock()
 
 _ingest_locks: dict[str, threading.RLock] = {}
 _ingest_guard = threading.Lock()

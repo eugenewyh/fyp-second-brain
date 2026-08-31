@@ -65,7 +65,7 @@ export function vaultNodeTypeLabel(t: VaultNodeType): string {
 }
 
 function stripExt(name: string): string {
-  return name.replace(/\.(md|pdf|txt)$/i, "");
+  return name.replace(/\.(md|pdf|txt|docx)$/i, "");
 }
 
 export function classifyPath(path: string): VaultNodeType {

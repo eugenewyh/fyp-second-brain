@@ -9,13 +9,10 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT))
 
-from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-
-load_dotenv(ROOT / ".env")
 
 from second_brain.agent.daily_review import (  # noqa: E402
     plan_daily_review,
@@ -35,8 +32,10 @@ from second_brain.config import (  # noqa: E402
     DAILY_REVIEW_HOUR,
     DAILY_REVIEW_MAX_GOALS,
     ENABLE_SELF_CRITIQUE,
+    ENV_FILE_PATH,
     PLAN_REVIEW_DEFAULT,
-    PROJECT_ROOT,
+    SUPPORTED_EXTENSIONS,
+    data_root,
 )
 from second_brain.memory.digest import get_digest, list_digests  # noqa: E402
 from second_brain.memory.digest_link import digest_and_link  # noqa: E402
@@ -79,10 +78,12 @@ def _reserve_auto(project_path: str | None = None) -> str:
 def _start_daily_review_scheduler():
     start_scheduler(acquire_lock=RUNS.try_begin_auto, release_lock=RUNS.end_auto)
 
-ENV_PATH = PROJECT_ROOT / ".env"
+ENV_PATH = ENV_FILE_PATH
 ENV_KEYS = [
     "LLM_PROVIDER",
     "GROQ_API_KEY",
+    "NVIDIA_API_KEY",
+    "NOUS_NVIDIA_API_KEY",
     "LLM_API_KEY",
     "LLM_BASE_URL",
     "LLM_MAX_TOKENS",
@@ -136,6 +137,8 @@ _HIDDEN_ENV_KEYS = frozenset(
         "GEMINI_LITE_MODEL",
         # Cloud Watch URL is operator/build config (session comes from desktop Bearer).
         "CLOUD_WATCH_URL",
+        # Nous-included NVIDIA access — never exposed in Settings UI.
+        "NOUS_NVIDIA_API_KEY",
     }
 )
 
@@ -188,6 +191,8 @@ class WatchUpdateRequest(BaseModel):
     exclude: str | None = None
     trusted_sources: str | None = None
     enabled: bool | None = None
+    cadence: str | None = None
+    hour: int | None = Field(default=None, ge=0, le=23)
 
 
 class WatchCreateRequest(BaseModel):
@@ -196,6 +201,8 @@ class WatchCreateRequest(BaseModel):
     focus: str | None = None
     include: str | None = None
     enabled: bool | None = None
+    cadence: str | None = None
+    hour: int | None = Field(default=None, ge=0, le=23)
 
 
 class WatchMoveRequest(BaseModel):
@@ -220,7 +227,7 @@ class CloudWatchSyncRequest(BaseModel):
 
 
 class CloudWatchLlmRequest(BaseModel):
-    llm_provider: str = "groq"
+    llm_provider: str = "nvidia"
     llm_api_key: str = ""
     llm_model: str = ""
 
@@ -407,9 +414,9 @@ def status():
     emb = probe_embeddings()
     return {
         "collection_count": collection_count(),
-        "project_root": str(PROJECT_ROOT),
+        "project_root": str(data_root()),
         "ollama_url": os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
-        "llm_provider": os.getenv("LLM_PROVIDER", "groq"),
+        "llm_provider": os.getenv("LLM_PROVIDER", "nvidia"),
         "llm_model": os.getenv("LLM_MODEL", ""),
         "llm_fast_model": os.getenv("LLM_FAST_MODEL", ""),
         "embeddings_provider": emb.get("embeddings_provider"),
@@ -632,7 +639,7 @@ def _friendly_research_error(exc: BaseException) -> str:
             "Wait 30–60s and retry, use Library-only scope, or switch provider in Settings "
             "(OpenRouter, DeepSeek, xAI, etc.). Multi-agent research uses several model calls."
         )
-    if "api key" in lower or "groq_api_key" in lower or "llm_api_key" in lower:
+    if "api key" in lower or "nvidia_api_key" in lower or "groq_api_key" in lower or "llm_api_key" in lower:
         return "API key missing or invalid. Open Settings and add your key (BYOK)."
     if "connection" in lower or "refused" in lower:
         return "Could not reach the AI service. Check the connection, then retry."
@@ -1023,7 +1030,7 @@ def ingest(req: IngestRequest):
             {
                 p.stem.replace("-", " ").replace("_", " ")
                 for p in target.rglob("*")
-                if p.is_file() and p.suffix.lower() in {".pdf", ".md", ".txt"}
+                if p.is_file() and p.suffix.lower() in SUPPORTED_EXTENSIONS
             }
         )[:8]
         if names:
@@ -1050,7 +1057,7 @@ def ingest_single_file(req: IngestFileRequest):
     if not target.is_file():
         raise HTTPException(400, f"Not a file: {target}")
     suffix = target.suffix.lower()
-    if suffix not in {".pdf", ".txt", ".md"}:
+    if suffix not in SUPPORTED_EXTENSIONS:
         raise HTTPException(400, f"Unsupported file type: {suffix}")
     count = ingest_file(target)
     return {
@@ -1189,6 +1196,8 @@ def watches_create(req: WatchCreateRequest):
             focus=(req.focus or "").strip() or None,
             include=include,
             enabled=bool(req.enabled) if req.enabled is not None else False,
+            cadence=req.cadence,
+            hour=req.hour,
         )
     except WatchError as e:
         raise HTTPException(400, str(e)) from e
@@ -1214,6 +1223,8 @@ def _apply_watch_update(req: WatchUpdateRequest):
             exclude=req.exclude,
             trusted_sources=req.trusted_sources,
             enabled=req.enabled,
+            cadence=req.cadence,
+            hour=req.hour,
         )
     except WatchError as e:
         raise HTTPException(400, str(e)) from e
@@ -1541,13 +1552,16 @@ def digest_notes(req: DigestRequest):
 
 @app.get("/api/settings")
 def get_settings():
+    from second_brain.memory.llm import using_bundled_nvidia
+
     env = _read_env()
-    provider = (env.get("LLM_PROVIDER") or "groq").strip().lower()
+    provider = (env.get("LLM_PROVIDER") or "nvidia").strip().lower()
 
     def _has(k: str) -> bool:
         return bool((env.get(k) or "").strip())
 
     connected = {
+        "nvidia": _has("NVIDIA_API_KEY") or _has("NOUS_NVIDIA_API_KEY"),
         "groq": _has("GROQ_API_KEY"),
         "xai": _has("XAI_API_KEY"),
         "openai": _has("OPENAI_API_KEY"),
@@ -1560,6 +1574,8 @@ def get_settings():
     # Active provider ready?
     if provider == "ollama":
         llm_configured = True
+    elif provider == "nvidia":
+        llm_configured = connected["nvidia"] or _has("LLM_API_KEY")
     elif provider == "groq":
         llm_configured = connected["groq"] or _has("LLM_API_KEY")
     elif provider == "xai":
@@ -1583,6 +1599,7 @@ def get_settings():
         "notion_configured": bool((env.get("NOTION_API_KEY") or "").strip()),
         "groq_configured": connected["groq"],
         "llm_configured": llm_configured,
+        "llm_bundled": using_bundled_nvidia(),
         "llm_provider": provider,
         "connected_providers": connected,
     }

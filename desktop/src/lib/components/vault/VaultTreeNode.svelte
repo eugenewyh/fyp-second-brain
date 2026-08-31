@@ -31,7 +31,7 @@
 
   function fileIcon(name: string) {
     const lower = name.toLowerCase();
-    if (lower.endsWith(".pdf")) return FileType;
+    if (lower.endsWith(".pdf") || lower.endsWith(".docx")) return FileType;
     return FileText;
   }
 </script>

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Literal
 
 from second_brain.agent.policy import has_learn_intent
+from second_brain.config import SUPPORTED_EXTENSIONS
 from second_brain.memory.claims import list_claims
 
 AskDepth = Literal["quick", "comprehensive"]
@@ -21,7 +22,7 @@ _COMPREHENSIVE = re.compile(
     re.I,
 )
 _LEC_HINT = re.compile(r"\b(lec\s*\d+|Lec\d+)\b", re.I)
-_FILE_HINT = re.compile(r"\b([A-Za-z][\w-]*(?:\.md|\.pdf)?)\b")
+_FILE_HINT = re.compile(r"\b([A-Za-z][\w-]*(?:\.md|\.pdf|\.txt|\.docx)?)\b")
 
 _QUERY_STOP = {
     "teach",
@@ -91,7 +92,7 @@ def _hint_tokens(hints: list[str]) -> set[str]:
         h = h.lower().strip()
         out.add(h)
         out.add(re.sub(r"\s+", "", h))
-        if h.endswith((".md", ".pdf")):
+        if h.endswith((".md", ".pdf", ".txt", ".docx")):
             out.add(Path(h).stem.lower())
     return out
 
@@ -157,7 +158,7 @@ def _candidate_sources(
 
     root = Path(project_path).expanduser()
     if root.is_dir():
-        for ext in (".md", ".pdf", ".txt"):
+        for ext in SUPPORTED_EXTENSIONS:
             for p in root.rglob(f"*{ext}"):
                 parts = {part.lower() for part in p.parts}
                 if "memory" in parts and p.name in {"project.md", "memory.md"}:

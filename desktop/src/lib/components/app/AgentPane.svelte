@@ -31,7 +31,7 @@
 
   let noteExcerpt = $state("");
   let groqConfigured = $state(false);
-  let llmProvider = $state("groq");
+  let llmProvider = $state("nvidia");
   let llmConfigured = $state(false);
 
   const noteTitle = $derived(
@@ -94,7 +94,7 @@
       const settings = await api.getSettings();
       groqConfigured = settings.groq_configured;
       llmConfigured = settings.llm_configured ?? settings.groq_configured;
-      llmProvider = settings.llm_provider || settings.values.LLM_PROVIDER || "groq";
+      llmProvider = settings.llm_provider || settings.values.LLM_PROVIDER || "nvidia";
     } catch {
       groqConfigured = false;
       llmConfigured = false;

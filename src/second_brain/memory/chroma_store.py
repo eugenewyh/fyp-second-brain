@@ -8,7 +8,8 @@ import chromadb
 from langchain_core.documents import Document
 
 from second_brain.config import CHROMA_PATH, COLLECTION_NAME
-from second_brain.memory.embeddings import FINGERPRINT_PATH, get_embeddings, write_fingerprint
+from second_brain.memory.bm25_index import reset_bm25_index, update_bm25_index
+from second_brain.memory.embeddings import get_embeddings, write_fingerprint
 from second_brain.memory.locks import chroma_write_lock
 
 logger = logging.getLogger(__name__)
@@ -65,30 +66,26 @@ def reset_vector_store(*, wipe_files: bool = True) -> None:
 
 def _reset_vector_store_unlocked(*, wipe_files: bool = True) -> None:
     global _client
-    try:
-        client = get_client()
-        try:
-            client.delete_collection(COLLECTION_NAME)
-        except Exception as e:
-            logger.warning("delete_collection failed (will wipe files): %s", e)
-    finally:
+    if wipe_files:
+        # Wiping the directory makes delete_collection unnecessary; calling it first
+        # leaves Chroma 1.x sqlite bindings read-only in-process until exit.
         _client = None
-
-    if wipe_files and CHROMA_PATH.exists():
-        for child in CHROMA_PATH.iterdir():
+        if CHROMA_PATH.exists():
             try:
-                if child.is_dir():
-                    shutil.rmtree(child)
-                elif child.name != ".gitkeep":
-                    child.unlink(missing_ok=True)
+                shutil.rmtree(CHROMA_PATH)
             except OSError as e:
-                logger.warning("Could not remove %s: %s", child, e)
-
-    if FINGERPRINT_PATH.exists():
+                logger.warning("Could not remove %s: %s", CHROMA_PATH, e)
+    else:
         try:
-            FINGERPRINT_PATH.unlink()
-        except OSError:
-            pass
+            client = get_client()
+            try:
+                client.delete_collection(COLLECTION_NAME)
+            except Exception as e:
+                logger.warning("delete_collection failed: %s", e)
+        finally:
+            _client = None
+
+    reset_bm25_index()
 
     reset_client()
     CHROMA_PATH.mkdir(parents=True, exist_ok=True)
@@ -104,7 +101,9 @@ def upsert_documents(documents: list[Document]) -> int:
     embeddings_model = get_embeddings()
 
     texts = [doc.page_content for doc in documents]
+    logger.info("Embedding %d chunk(s)…", len(texts))
     embeddings = embeddings_model.embed_documents(texts)
+    logger.info("Embedding complete — upserting to Chroma")
     if embeddings:
         write_fingerprint(dims=len(embeddings[0]))
 
@@ -113,12 +112,14 @@ def upsert_documents(documents: list[Document]) -> int:
     for doc in documents:
         source = doc.metadata.get("source", "unknown")
         chunk_index = doc.metadata.get("chunk_index", 0)
-        doc_id = f"{source}_{chunk_index}"
+        source_hash = doc.metadata.get("source_hash", "")
+        doc_id = f"{source_hash}_{chunk_index}" if source_hash else f"{source}_{chunk_index}"
         ids.append(doc_id)
 
         metadata = {
             "source": source,
             "source_path": doc.metadata.get("source_path", ""),
+            "source_hash": source_hash,
             "page": doc.metadata.get("page", -1),
             "chunk_index": chunk_index,
             "ingested_at": doc.metadata.get(
@@ -140,4 +141,5 @@ def upsert_documents(documents: list[Document]) -> int:
             embeddings=embeddings,
             metadatas=metadatas,
         )
+        update_bm25_index(documents)
     return len(documents)

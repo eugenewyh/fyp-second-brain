@@ -17,6 +17,7 @@ from second_brain.config import (
     DOCUMENTS_DIR,
     SUPPORTED_EXTENSIONS,
 )
+from second_brain.ingestion.skip import should_skip_ingest_path
 from second_brain.memory.digest import (
     collect_open_questions,
     list_learning_cards,
@@ -35,13 +36,6 @@ ReviewStatus = Literal[
 ]
 
 _review_lock = threading.Lock()
-
-# Paths relative to DOCUMENTS_DIR that the daily review should ignore
-_SKIP_DIR_PARTS = {
-    "memory/digests",
-    "memory/learnings",  # cards are consumed as open-questions, not re-reviewed as docs
-}
-
 
 @dataclass
 class ReviewGoal:
@@ -106,22 +100,7 @@ def is_review_running() -> bool:
 
 
 def _should_skip_path(path: Path, root: Path) -> bool:
-    try:
-        rel = path.resolve().relative_to(root.resolve())
-    except ValueError:
-        return True
-    parts = rel.as_posix()
-    for skip in _SKIP_DIR_PARTS:
-        if parts == skip or parts.startswith(skip + "/"):
-            return True
-    # Also skip digests directory by name anywhere
-    if "digests" in rel.parts:
-        return True
-    if "briefs" in rel.parts or "memory" in rel.parts or "watches" in rel.parts:
-        return True
-    if rel.name.lower() == "instruction.md":
-        return True
-    return False
+    return should_skip_ingest_path(path, root)
 
 
 def find_changed_files(

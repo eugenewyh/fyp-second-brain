@@ -9,7 +9,7 @@ import { shouldSkipWatcherIngest } from "$lib/vault/watcher-skip";
 
 export type VaultChangeHandler = (path: string, kind?: string) => void;
 
-const SUPPORTED = /\.(md|txt|pdf)$/i;
+const SUPPORTED = /\.(md|txt|pdf|docx)$/i;
 
 type VaultEventPayload = {
   path: string;

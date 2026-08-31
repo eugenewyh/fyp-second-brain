@@ -271,6 +271,8 @@ def create_watch(
     focus: str | None = None,
     include: str | None = None,
     enabled: bool = False,
+    cadence: str | None = None,
+    hour: int | None = None,
 ) -> WatchInstruction:
     """Create a named Watch under `{topic}/watches/{slug}/`. Never writes legacy instruction.md."""
     path = Path(project_path).expanduser()
@@ -289,6 +291,8 @@ def create_watch(
         focus=focus,
         include=inc,
         enabled=enabled,
+        cadence=cadence,
+        hour=hour,
     )
 
 
@@ -527,6 +531,8 @@ def update_watch(
     exclude: str | None = None,
     trusted_sources: str | None = None,
     enabled: bool | None = None,
+    cadence: str | None = None,
+    hour: int | None = None,
 ) -> WatchInstruction:
     """Write fields into this Watch's instruction.md without clobbering Steer log."""
     wid = normalize_watch_id(watch_id)
@@ -551,6 +557,10 @@ def update_watch(
         text = _replace_section(text, "Exclude", exclude)
     if trusted_sources is not None:
         text = _replace_section(text, "Trusted sources", trusted_sources)
+    if cadence is not None:
+        text = _set_frontmatter_value(text, "cadence", (cadence or "weekdays").strip().lower())
+    if hour is not None:
+        text = _set_frontmatter_value(text, "hour", str(max(0, min(23, int(hour)))))
     path.write_text(text, encoding="utf-8")
     watch = parse_instruction(
         text,

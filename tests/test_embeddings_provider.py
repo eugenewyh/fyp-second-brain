@@ -28,6 +28,22 @@ def test_fingerprint_roundtrip(tmp_path, monkeypatch):
     assert emb.read_fingerprint()["model"] == "BAAI/bge-small-en-v1.5"
 
 
+def test_bundled_nvidia_api_key(monkeypatch):
+    from second_brain.memory import llm as llm_mod
+
+    monkeypatch.setenv("LLM_PROVIDER", "nvidia")
+    monkeypatch.setenv("NVIDIA_API_KEY", "")
+    monkeypatch.setenv("LLM_API_KEY", "")
+    monkeypatch.setattr(llm_mod, "bundled_nvidia_api_key", lambda: "nvapi-bundled")
+    assert llm_mod._api_key() == "nvapi-bundled"
+    assert llm_mod.using_bundled_nvidia() is True
+    assert llm_mod.llm_is_configured() is True
+
+    monkeypatch.setenv("NVIDIA_API_KEY", "nvapi-user")
+    assert llm_mod._api_key() == "nvapi-user"
+    assert llm_mod.using_bundled_nvidia() is False
+
+
 def test_llm_fast_role(monkeypatch):
     monkeypatch.setenv("LLM_PROVIDER", "groq")
     monkeypatch.setenv("LLM_MODEL", "openai/gpt-oss-120b")

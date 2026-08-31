@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::mpsc::channel;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::thread;
 use std::time::Duration;
 
@@ -17,7 +17,13 @@ struct WatchState {
     stop: Arc<Mutex<bool>>,
 }
 
-fn project_root() -> PathBuf {
+static DATA_ROOT: OnceLock<Mutex<PathBuf>> = OnceLock::new();
+
+fn data_root_store() -> &'static Mutex<PathBuf> {
+    DATA_ROOT.get_or_init(|| Mutex::new(dev_project_root()))
+}
+
+fn dev_project_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .expect("desktop dir")
@@ -26,40 +32,110 @@ fn project_root() -> PathBuf {
         .to_path_buf()
 }
 
-fn python_executable(root: &PathBuf) -> PathBuf {
-    let venv_python = root.join(".venv/bin/python");
-    if venv_python.exists() {
-        return venv_python;
-    }
-    root.join(".venv/bin/python3")
+fn active_data_root() -> PathBuf {
+    data_root_store()
+        .lock()
+        .map(|g| g.clone())
+        .unwrap_or_else(|_| dev_project_root())
 }
 
-fn start_sidecar_process(state: &SidecarState) -> Result<(), String> {
+fn bundled_sidecar_dir(app: &AppHandle) -> Option<PathBuf> {
+    let resource = app.path().resource_dir().ok()?;
+    let bundle = resource.join("sidecar-bundle");
+    if bundle.join("sidecar").join("server.py").exists() {
+        Some(bundle)
+    } else {
+        None
+    }
+}
+
+fn ensure_data_dirs(data: &Path) -> Result<(), String> {
+    std::fs::create_dir_all(data.join("data").join("documents"))
+        .map_err(|e| format!("Cannot create documents dir: {e}"))?;
+    std::fs::create_dir_all(data.join("data").join("chroma"))
+        .map_err(|e| format!("Cannot create chroma dir: {e}"))?;
+    Ok(())
+}
+
+#[cfg(windows)]
+fn python_executable(root: &Path, bundled: bool) -> PathBuf {
+    if bundled {
+        root.join("venv").join("Scripts").join("python.exe")
+    } else {
+        let venv = root.join(".venv").join("Scripts").join("python.exe");
+        if venv.exists() {
+            venv
+        } else {
+            root.join(".venv").join("Scripts").join("python3.exe")
+        }
+    }
+}
+
+#[cfg(not(windows))]
+fn python_executable(root: &Path, bundled: bool) -> PathBuf {
+    if bundled {
+        root.join("venv").join("bin").join("python")
+    } else {
+        let venv_python = root.join(".venv").join("bin").join("python");
+        if venv_python.exists() {
+            venv_python
+        } else {
+            root.join(".venv").join("bin").join("python3")
+        }
+    }
+}
+
+fn start_sidecar_process(app: &AppHandle, state: &SidecarState) -> Result<(), String> {
     let mut guard = state.0.lock().map_err(|e| e.to_string())?;
     if guard.is_some() {
         return Ok(());
     }
 
-    let root = project_root();
-    let python = python_executable(&root);
+    let (root, script, bundled, data_dir) = if let Some(bundle) = bundled_sidecar_dir(app) {
+        let data = app.path().app_data_dir().map_err(|e| e.to_string())?;
+        ensure_data_dirs(&data)?;
+        if let Ok(mut store) = data_root_store().lock() {
+            *store = data.clone();
+        }
+        let script = bundle.join("sidecar").join("server.py");
+        (bundle, script, true, data)
+    } else {
+        let root = dev_project_root();
+        if let Ok(mut store) = data_root_store().lock() {
+            *store = root.clone();
+        }
+        let script = root.join("sidecar").join("server.py");
+        (root.clone(), script, false, root)
+    };
+
+    let python = python_executable(&root, bundled);
     if !python.exists() {
         return Err(format!(
-            "Python venv not found at {}. From project root run: python3.12 -m venv .venv && pip install -r requirements.txt",
+            "Python not found at {}. For dev: python3.12 -m venv .venv && pip install -r requirements.txt",
             python.display()
         ));
     }
-
-    let script = root.join("sidecar/server.py");
     if !script.exists() {
         return Err(format!("Sidecar script not found: {}", script.display()));
     }
 
-    let child = Command::new(&python)
-        .arg(&script)
+    let mut cmd = Command::new(&python);
+    cmd.arg(&script)
         .current_dir(&root)
         .env("PYTHONPATH", root.join("src"))
         .stdout(Stdio::null())
-        .stderr(Stdio::piped())
+        .stderr(Stdio::piped());
+
+    if bundled {
+        cmd.env("NOUS_BUNDLE_ROOT", &root)
+            .env("NOUS_DATA_DIR", &data_dir)
+            .env(
+                "FASTEMBED_CACHE_PATH",
+                root.join("fastembed_cache"),
+            );
+    }
+
+    let child = cmd
         .spawn()
         .map_err(|e| format!("Failed to start sidecar: {e}"))?;
 
@@ -85,7 +161,7 @@ fn get_sidecar_url() -> String {
 
 #[tauri::command]
 fn get_project_root() -> String {
-    project_root().to_string_lossy().to_string()
+    active_data_root().to_string_lossy().to_string()
 }
 
 fn is_supported_vault_file(path: &Path) -> bool {
@@ -93,13 +169,13 @@ fn is_supported_vault_file(path: &Path) -> bool {
         .and_then(|ext| ext.to_str())
         .map(|ext| {
             let lower = ext.to_lowercase();
-            lower == "md" || lower == "txt" || lower == "pdf"
+            lower == "md" || lower == "txt" || lower == "pdf" || lower == "docx"
         })
         .unwrap_or(false)
 }
 
 fn vault_documents_dir() -> PathBuf {
-    project_root().join("data").join("documents")
+    active_data_root().join("data").join("documents")
 }
 
 fn path_under_vault(path: &Path) -> Result<PathBuf, String> {
@@ -283,10 +359,10 @@ fn stop_vault_watch(state: State<WatchState>) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn restart_sidecar(state: State<SidecarState>) -> Result<String, String> {
+fn restart_sidecar(app: AppHandle, state: State<SidecarState>) -> Result<String, String> {
     stop_sidecar_process(&state);
     std::thread::sleep(Duration::from_millis(300));
-    start_sidecar_process(&state)?;
+    start_sidecar_process(&app, &state)?;
     Ok(get_sidecar_url())
 }
 
@@ -423,7 +499,7 @@ pub fn run() {
         ])
         .setup(|app| {
             let state = app.state::<SidecarState>();
-            if let Err(error) = start_sidecar_process(&state) {
+            if let Err(error) = start_sidecar_process(app.handle(), &state) {
                 eprintln!("Sidecar startup warning: {error}");
             }
             Ok(())
