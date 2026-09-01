@@ -21,6 +21,7 @@
     SlidersHorizontal,
     FileText,
     X,
+    Pause,
   } from "@lucide/svelte";
   import { open } from "@tauri-apps/plugin-dialog";
   import {
@@ -95,6 +96,8 @@
   let pillEl: HTMLDivElement | undefined = $state();
   let dockWrapEl: HTMLDivElement | undefined = $state();
   let modelSearchEl: HTMLInputElement | undefined = $state();
+  let modelTriggerEl: HTMLDivElement | undefined = $state();
+  let modelMenuPos = $state({ left: 0, bottom: 0 });
   let dragOver = $state(false);
   let htmlDragDepth = 0;
 
@@ -152,8 +155,21 @@
     plusOpen = false;
     if (modelOpen) {
       modelQuery = "";
+      if (modelTriggerEl) {
+        const r = modelTriggerEl.getBoundingClientRect();
+        modelMenuPos = { left: r.left, bottom: window.innerHeight - r.top + 8 };
+      }
       requestAnimationFrame(() => modelSearchEl?.focus());
     }
+  }
+
+  function portalMenu(node: HTMLElement) {
+    document.body.appendChild(node);
+    return {
+      destroy() {
+        node.remove();
+      },
+    };
   }
 
   const placeholder = $derived(
@@ -327,6 +343,9 @@
   function onDocClick(e: MouseEvent) {
     if (!pillEl) return;
     if (pillEl.contains(e.target as Node)) return;
+    // Portaled menus live outside the pill — don't close when clicking inside them.
+    const t = e.target as HTMLElement | null;
+    if (t?.closest?.(".model-menu")) return;
     if (plusOpen) plusOpen = false;
     if (modelOpen) {
       modelOpen = false;
@@ -471,7 +490,7 @@
 {/snippet}
 
 {#snippet modelPicker()}
-  <div class="dd">
+  <div class="dd" bind:this={modelTriggerEl}>
     <button
       type="button"
       class="dd-btn"
@@ -486,7 +505,14 @@
       <ChevronDown size={14} strokeWidth={2} />
     </button>
     {#if modelOpen}
-      <div class="model-menu" role="listbox" aria-label="Models">
+      <div
+        class="model-menu"
+        role="listbox"
+        aria-label="Models"
+        use:portalMenu
+        style:left="{modelMenuPos.left}px"
+        style:bottom="{modelMenuPos.bottom}px"
+      >
         <div class="model-search">
           <Search size={14} strokeWidth={2} aria-hidden="true" />
           <input
@@ -554,29 +580,35 @@
 {/snippet}
 
 {#snippet sendButton()}
-  <button
-    type="button"
-    class="send-soft"
-    class:ready={canSubmit}
-    class:busy={assistant.isLoading}
-    data-testid="run-research"
-    disabled={!canSubmit}
-    onclick={onSubmit}
-    title={offline
-      ? "Backend offline"
-      : connection.memorySearchBlocked
-        ? "Memory unavailable"
-        : assistant.isLoading
-          ? "Working…"
+  {#if assistant.isLoading}
+    <button
+      type="button"
+      class="send-soft pause"
+      data-testid="pause-composer"
+      onclick={() => assistant.pauseComposer()}
+      title="Pause and edit message"
+      aria-label="Pause"
+    >
+      <Pause size={18} strokeWidth={2.25} />
+    </button>
+  {:else}
+    <button
+      type="button"
+      class="send-soft"
+      class:ready={canSubmit}
+      data-testid="run-research"
+      disabled={!canSubmit}
+      onclick={onSubmit}
+      title={offline
+        ? "Backend offline"
+        : connection.memorySearchBlocked
+          ? "Memory unavailable"
           : "Send"}
-    aria-label={assistant.isLoading ? "Working" : "Send"}
-  >
-    {#if assistant.isLoading}
-      <span class="send-spinner" aria-hidden="true"></span>
-    {:else}
+      aria-label="Send"
+    >
       <ArrowUp size={18} strokeWidth={2.25} />
-    {/if}
-  </button>
+    </button>
+  {/if}
 {/snippet}
 
 {#snippet attachChips()}
@@ -1301,10 +1333,8 @@
   }
 
   .model-menu {
-    position: absolute;
-    left: 0;
-    bottom: calc(100% + 8px);
-    z-index: 90;
+    position: fixed;
+    z-index: 9999;
     width: min(18.5rem, calc(100vw - 2rem));
     max-height: min(22rem, calc(100vh - 10rem));
     display: flex;
@@ -1482,6 +1512,17 @@
 
   .send-soft.ready:hover {
     background: var(--accent-live-hover);
+  }
+
+  .send-soft.pause {
+    background: var(--accent-live-dim);
+    color: var(--accent-live);
+    cursor: pointer;
+  }
+
+  .send-soft.pause:hover {
+    background: var(--accent-live);
+    color: var(--accent-on-live, #ffffff);
   }
 
   .send-soft.busy {

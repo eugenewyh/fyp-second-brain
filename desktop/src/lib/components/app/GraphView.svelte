@@ -13,38 +13,19 @@
     type VaultEdgeKind,
     type VaultGraphData,
     type VaultGraphNode,
-    type VaultNodeType,
   } from "$lib/vault/vault-graph";
-  import { assistant } from "$lib/stores/assistant.svelte";
+  import {
+    memory,
+    GRAPH_TYPE_STYLE,
+    GRAPH_TYPE_COLORS,
+    GRAPH_TYPE_ORDER,
+    type GraphTypeStyle,
+  } from "$lib/stores/memory.svelte";
   import { THEME_CHANGE_EVENT } from "$lib/theme/apply-theme";
-  import { RefreshCw, Search, X } from "@lucide/svelte";
-  import GraphPeek from "./GraphPeek.svelte";
   import type { PeekNeighbor } from "$lib/vault/graph-peek";
 
-  interface TypeStyle {
-    fill: string;
-    stroke: string;
-  }
-
-  /** Quiet type tints; geometry is always a circle (Obsidian-like). */
-  const TYPE_STYLE: Record<VaultNodeType, TypeStyle> = {
-    note: { fill: "#6d7a86", stroke: "#4a5560" },
-    research: { fill: "#6b82c4", stroke: "#445a96" },
-    learning: { fill: "#c49a4a", stroke: "#8f6d2e" },
-    digest: { fill: "#8b72b0", stroke: "#5e4a7a" },
-    topic: { fill: "#8a8a8a", stroke: "#6f6f6f" },
-  };
-
-  const TYPE_COLORS: Record<VaultNodeType, string> = {
-    note: TYPE_STYLE.note.fill,
-    research: TYPE_STYLE.research.fill,
-    learning: TYPE_STYLE.learning.fill,
-    digest: TYPE_STYLE.digest.fill,
-    topic: TYPE_STYLE.topic.stroke,
-  };
-
-  let { scoped = false, initialTopicPath = null }: { scoped?: boolean; initialTopicPath?: string | null } =
-    $props();
+  const TYPE_STYLE = GRAPH_TYPE_STYLE;
+  const TYPE_COLORS = GRAPH_TYPE_COLORS;
 
   let tree = $state<VaultNode[]>([]);
   let bodies = $state<Record<string, string>>({});
@@ -54,19 +35,6 @@
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let graph = $state<any>(null);
 
-  let showNotes = $state(true);
-  let showResearch = $state(true);
-  let showLearnings = $state(true);
-  let showDigests = $state(true);
-  let showTopics = $state(true);
-  let topicFilter = $state<string | null>(scoped ? workspace.activeTopicPath : initialTopicPath);
-
-  $effect(() => {
-    if (scoped) topicFilter = workspace.activeTopicPath;
-  });
-  let search = $state("");
-  let selected = $state<VaultGraphNode | null>(null);
-  let neighborIds = $state<Set<string>>(new Set());
   let hoveredId = $state<string | null>(null);
   let resizeHandler: (() => void) | null = null;
   let keyHandler: ((e: KeyboardEvent) => void) | null = null;
@@ -85,18 +53,12 @@
 
   const data = $derived.by((): VaultGraphData => {
     return buildVaultGraph(tree, bodies, {
-      types: {
-        note: showNotes,
-        research: showResearch,
-        learning: showLearnings,
-        digest: showDigests,
-        topic: showTopics,
-      },
-      topicPath: topicFilter,
+      types: memory.types,
+      topicPath: memory.topicFilter,
     });
   });
 
-  const searchNeedle = $derived(search.trim().toLowerCase());
+  const searchNeedle = $derived(memory.search.trim().toLowerCase());
   const searchMatchIds = $derived.by(() => {
     if (!searchNeedle) return new Set<string>();
     const ids = new Set<string>();
@@ -131,13 +93,17 @@
     return searchNeedle.length > 0;
   }
 
+  const neighborIds = $derived(
+    memory.selected ? neighborhood(memory.selected.id) : new Set<string>(),
+  );
+
   function isMatch(id: string): boolean {
     return searchMatchIds.has(id);
   }
 
   function isDimmed(id: string): boolean {
     if (isSearching()) return !searchMatchIds.has(id);
-    if (!selected) return false;
+    if (!memory.selected) return false;
     if (hoveredId === id) return false;
     return !neighborIds.has(id);
   }
@@ -198,13 +164,13 @@
     x: number,
     y: number,
     r: number,
-    style: TypeStyle,
+    style: GraphTypeStyle,
     dimmed: boolean,
     hovered: boolean,
     matched: boolean,
   ) {
     const alpha = dimmed ? 0.16 : 1;
-    const isSelected = selected?.id === n.id;
+    const isSelected = memory.selected?.id === n.id;
     ctx.save();
     ctx.globalAlpha = alpha;
 
@@ -312,7 +278,7 @@
     const dimmed = isDimmed(n.id);
     const hovered = hoveredId === n.id;
     const matched = isSearching() && isMatch(n.id);
-    const emphasized = hovered || selected?.id === n.id || matched;
+    const emphasized = hovered || memory.selected?.id === n.id || matched;
     paintNodeShape(ctx, n, x, y, r, style, dimmed, hovered, matched);
     paintNodeLabel(ctx, n, x, y, r, globalScale, dimmed, emphasized);
   }
@@ -361,7 +327,7 @@
     let dimmed = false;
     if (isSearching()) {
       dimmed = !(searchMatchIds.has(sid) && searchMatchIds.has(tid));
-    } else if (selected) {
+    } else if (memory.selected) {
       dimmed = !(neighborIds.has(sid) && neighborIds.has(tid));
     }
 
@@ -416,6 +382,23 @@
     }
   }
 
+  function repaintGraph() {
+    requestAnimationFrame(() => {
+      sizeGraph();
+      try {
+        graph?.refresh?.();
+      } catch {
+        /* ignore */
+      }
+    });
+  }
+
+  function clearSelection() {
+    memory.selected = null;
+    hoveredId = null;
+    repaintGraph();
+  }
+
   async function refresh() {
     loading = true;
     error = "";
@@ -451,6 +434,10 @@
   }
 
   onMount(async () => {
+    memory.selectNode = (n) => selectNode(n);
+    memory.clearSelection = () => closePeek();
+    memory.reload = () => void refresh();
+
     readThemeColors();
     await refresh();
     if (!containerEl) return;
@@ -506,7 +493,7 @@
     resizeHandler = onResize;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      if (!selected && !app.documentPath) return;
+      if (!memory.selected && !app.documentPath) return;
       e.preventDefault();
       e.stopImmediatePropagation();
       closePeek();
@@ -520,6 +507,7 @@
   });
 
   onDestroy(() => {
+    memory.reset();
     window.removeEventListener(THEME_CHANGE_EVENT, onThemeChange);
     if (resizeHandler) {
       window.removeEventListener("resize", resizeHandler);
@@ -548,10 +536,33 @@
     syncGraphData();
   });
 
-  const peekOpen = $derived(!!selected);
   $effect(() => {
-    void peekOpen;
-    requestAnimationFrame(() => sizeGraph());
+    memory.counts = counts;
+    memory.topics = topics;
+    memory.totalFiles = data.totalFiles;
+    memory.nodeCount = data.nodes.length;
+    memory.truncated = data.truncated;
+    memory.matchCount = searchNeedle ? searchMatchIds.size : 0;
+  });
+
+  $effect(() => {
+    memory.neighbors = neighborRows;
+    memory.selectedBody = memory.selected ? (bodies[memory.selected.id] ?? "") : "";
+  });
+
+  $effect(() => {
+    const el = containerEl;
+    if (!el) return;
+    const ro = new ResizeObserver(() => repaintGraph());
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
+
+  $effect(() => {
+    const path = app.documentPath;
+    if (!path && memory.selected && memory.selected.type !== "topic") {
+      clearSelection();
+    }
   });
 
   $effect(() => {
@@ -559,40 +570,25 @@
     void refresh();
   });
 
-  function toggleType(t: VaultNodeType) {
-    if (t === "note") showNotes = !showNotes;
-    else if (t === "research") showResearch = !showResearch;
-    else if (t === "learning") showLearnings = !showLearnings;
-    else if (t === "digest") showDigests = !showDigests;
-    else showTopics = !showTopics;
-  }
-
-  function typeEnabled(t: VaultNodeType): boolean {
-    if (t === "note") return showNotes;
-    if (t === "research") return showResearch;
-    if (t === "learning") return showLearnings;
-    if (t === "digest") return showDigests;
-    return showTopics;
-  }
-
   const counts = $derived.by(() => {
     const c: Record<string, number> = {};
     for (const n of data.nodes) c[n.type] = (c[n.type] ?? 0) + 1;
     return c;
   });
 
-  const legendItems: VaultNodeType[] = ["note", "research", "learning", "digest", "topic"];
+  const legendItems = GRAPH_TYPE_ORDER;
 
   const connected = $derived.by((): { incoming: PeekNeighbor[]; outgoing: PeekNeighbor[] } => {
-    if (!selected) return { incoming: [], outgoing: [] };
+    const sel = memory.selected;
+    if (!sel) return { incoming: [], outgoing: [] };
     const byId = new Map(data.nodes.map((n) => [n.id, n]));
     const incoming: PeekNeighbor[] = [];
     const outgoing: PeekNeighbor[] = [];
     for (const l of data.links) {
-      if (l.source === selected.id) {
+      if (l.source === sel.id) {
         const node = byId.get(l.target);
         if (node) outgoing.push({ node, kind: l.kind });
-      } else if (l.target === selected.id) {
+      } else if (l.target === sel.id) {
         const node = byId.get(l.source);
         if (node) incoming.push({ node, kind: l.kind });
       }
@@ -605,16 +601,13 @@
   });
 
   function closePeek() {
-    selected = null;
-    neighborIds = new Set();
-    hoveredId = null;
+    clearSelection();
     if (app.documentPath) app.closeDocument();
   }
 
   function selectNode(node: VaultGraphNode) {
-    const already = selected?.id === node.id;
-    selected = node;
-    neighborIds = neighborhood(node.id);
+    const already = memory.selected?.id === node.id;
+    memory.selected = node;
     if (node.type === "topic") {
       if (app.documentPath) app.closeDocument();
       return;
@@ -625,105 +618,8 @@
   }
 </script>
 
-<div class="graph-view" class:scoped>
-  {#if !scoped}
-  <div class="filter-rail">
-    <div class="rail-head">
-      <span class="rail-title">Graph</span>
-      <button
-        type="button"
-        class="icon-btn"
-        title="Reload vault"
-        aria-label="Reload vault"
-        onclick={() => void refresh()}
-      >
-        <RefreshCw size={14} strokeWidth={2} />
-      </button>
-    </div>
-
-    <div class="search-box">
-      <Search size={14} strokeWidth={2} class="search-icon" />
-      <input
-        type="search"
-        placeholder="Search notes…"
-        bind:value={search}
-        aria-label="Search notes"
-      />
-      {#if search}
-        <button type="button" class="clear" aria-label="Clear search" onclick={() => (search = "")}>
-          <X size={11} strokeWidth={2.25} />
-        </button>
-      {/if}
-    </div>
-    {#if searchNeedle}
-      <p class="match-count">{searchMatchIds.size} {searchMatchIds.size === 1 ? "match" : "matches"}</p>
-    {/if}
-
-    {#if !scoped && topics.length > 0}
-      <div class="field">
-        <label class="field-label" for="graph-topic">Topic</label>
-        <select id="graph-topic" bind:value={topicFilter}>
-          <option value={null}>All topics</option>
-          {#each topics as t (t.path)}
-            <option value={t.path}>{t.name}</option>
-          {/each}
-        </select>
-      </div>
-    {/if}
-
-    <div class="types">
-      <span class="field-label">Node types</span>
-      {#each ["note", "research", "learning", "digest", "topic"] as t (t)}
-        <button
-          type="button"
-          class="type-row"
-          class:off={!typeEnabled(t as VaultNodeType)}
-          onclick={() => toggleType(t as VaultNodeType)}
-          aria-pressed={typeEnabled(t as VaultNodeType)}
-        >
-          <span
-            class="shape-swatch"
-            class:topic={t === "topic"}
-            style:--swatch={TYPE_COLORS[t as VaultNodeType]}
-            style:--swatch-stroke={TYPE_STYLE[t as VaultNodeType].stroke}
-          ></span>
-          <span class="type-label">{vaultNodeTypeLabel(t as VaultNodeType)}</span>
-          <span class="count">{counts[t] ?? 0}</span>
-        </button>
-      {/each}
-    </div>
-
-    {#if data.truncated}
-      <p class="hint">
-        Showing most-connected {data.nodes.length} of {data.totalFiles} files. Filter by topic or
-        search to highlight.
-      </p>
-    {/if}
-  </div>
-  {/if}
-
+<div class="graph-view">
   <div class="canvas-wrap">
-    {#if scoped}
-      <div class="overlay">
-        <div class="search-box">
-          <Search size={14} strokeWidth={2} class="search-icon" />
-          <input
-            type="search"
-            placeholder="Search notes…"
-            bind:value={search}
-            aria-label="Search notes"
-          />
-          {#if search}
-            <button type="button" class="clear" aria-label="Clear search" onclick={() => (search = "")}>
-              <X size={11} strokeWidth={2.25} />
-            </button>
-          {/if}
-        </div>
-        {#if searchNeedle}
-          <p class="match-count overlay-count">{searchMatchIds.size} {searchMatchIds.size === 1 ? "match" : "matches"}</p>
-        {/if}
-      </div>
-    {/if}
     {#if loading && data.nodes.length === 0}
       <div class="state">
         <p class="state-title">Loading vault…</p>
@@ -763,18 +659,6 @@
       </div>
     {/if}
   </div>
-
-  {#if selected}
-    <GraphPeek
-      {selected}
-      neighbors={neighborRows}
-      body={bodies[selected.id] ?? ""}
-      onSelect={selectNode}
-      onClose={closePeek}
-      onAsk={(title) =>
-        assistant.prepareAsk(`What do we know about ${title}? Cite claims if we have them.`)}
-    />
-  {/if}
 </div>
 
 <style>
@@ -783,177 +667,6 @@
     height: 100%;
     min-height: 0;
     background: var(--bg-elevated);
-  }
-
-  .graph-view.scoped .filter-rail {
-    width: 11.5rem;
-  }
-
-  .filter-rail {
-    width: 220px;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.9rem;
-    padding: 1rem 0.85rem;
-    border-right: 1px solid var(--border-subtle);
-    background: var(--pane-bg);
-    overflow-y: auto;
-  }
-
-  .rail-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .rail-title {
-    font-size: var(--text-sm);
-    font-weight: var(--font-semibold);
-  }
-
-  .icon-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    height: 26px;
-    border: none;
-    border-radius: var(--radius-feedback);
-    background: transparent;
-    color: var(--text-faint);
-    cursor: pointer;
-  }
-
-  .icon-btn:hover {
-    color: var(--text);
-    background: var(--chrome-action-hover);
-  }
-
-  .search-box {
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-
-  .search-box :global(.search-icon) {
-    position: absolute;
-    left: 8px;
-    color: var(--text-faint);
-    pointer-events: none;
-  }
-
-  .search-box input {
-    width: 100%;
-    height: 30px;
-    padding: 0 28px 0 28px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: var(--bg-elevated);
-    color: var(--text);
-    font-size: var(--text-sm);
-  }
-
-  .search-box input:focus {
-    outline: none;
-    border-color: var(--border-active);
-  }
-
-  .search-box input::-webkit-search-cancel-button,
-  .search-box input::-webkit-search-decoration,
-  .search-box input::-moz-search-cancel-button {
-    -webkit-appearance: none;
-    appearance: none;
-    display: none;
-  }
-
-  .clear {
-    position: absolute;
-    right: 6px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    padding: 0;
-    border: none;
-    border-radius: 50%;
-    background: transparent;
-    color: var(--text-faint);
-    cursor: pointer;
-  }
-
-  .clear:hover {
-    color: var(--text);
-    background: var(--chrome-action-hover);
-  }
-
-  .match-count {
-    margin: 0.3rem 0 0;
-    font-size: var(--text-2xs);
-    color: var(--text-faint);
-  }
-
-  .match-count.overlay-count {
-    margin: 0;
-    padding: 0.15rem 0.4rem;
-    border-radius: var(--radius-feedback);
-    background: color-mix(in srgb, var(--bg-elevated) 88%, transparent);
-    pointer-events: none;
-  }
-
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-  }
-
-  .field-label {
-    font-size: var(--text-2xs);
-    font-weight: var(--font-semibold);
-    letter-spacing: var(--type-caption-tracking);
-    text-transform: uppercase;
-    color: var(--text-faint);
-  }
-
-  select {
-    height: 30px;
-    padding: 0 0.5rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: var(--bg-elevated);
-    color: var(--text);
-    font-size: var(--text-sm);
-  }
-
-  .types {
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-  }
-
-  .type-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.3rem 0.4rem;
-    border: none;
-    border-radius: var(--radius-feedback);
-    background: transparent;
-    color: var(--text-muted);
-    font-size: var(--text-sm);
-    cursor: pointer;
-    text-align: left;
-  }
-
-  .type-row:hover {
-    background: var(--chrome-action-hover);
-  }
-
-  .type-row.off {
-    opacity: 0.45;
   }
 
   .shape-swatch {
@@ -971,47 +684,12 @@
     border-width: 1.5px;
   }
 
-  .type-label {
-    flex: 1;
-  }
-
-  .count {
-    font-family: var(--font-mono);
-    font-size: var(--text-2xs);
-    color: var(--text-faint);
-  }
-
-  .hint {
-    margin: 0;
-    font-size: var(--text-2xs);
-    color: var(--text-faint);
-    line-height: 1.4;
-  }
-
   .canvas-wrap {
     position: relative;
     flex: 1;
     min-width: 0;
     min-height: 0;
     overflow: hidden;
-  }
-
-  .overlay {
-    position: absolute;
-    top: 0.75rem;
-    left: 0.75rem;
-    right: 0.75rem;
-    z-index: 3;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.45rem;
-    pointer-events: none;
-  }
-
-  .overlay .search-box {
-    pointer-events: auto;
-    width: min(18rem, 100%);
   }
 
   .canvas {

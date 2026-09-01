@@ -5,6 +5,7 @@
   import ResearchReport from "$lib/components/research/ResearchReport.svelte";
   import FailRetry from "./FailRetry.svelte";
   import { extractOpenQuestions, questionFromGap } from "$lib/research/gaps";
+  import { readNote } from "$lib/vault/load";
 
   type ResearchTurn = Extract<AssistantTurn, { kind: "research" }>;
 
@@ -41,8 +42,8 @@
   );
   const rememberedLabel = $derived(
     claimCount > 0
-      ? `${claimCount} claim${claimCount === 1 ? "" : "s"} written back to memory`
-      : "Saved to this topic’s memory",
+      ? `${claimCount} claim${claimCount === 1 ? "" : "s"} saved — View saved memory`
+      : "Saved to memory — View saved memory",
   );
   const deepenGaps = $derived(
     done && turn.result?.report ? extractOpenQuestions(turn.result.report, 3) : [],
@@ -51,6 +52,69 @@
   function fillDeepen(gap: string) {
     assistant.input = questionFromGap(gap);
     assistant.composerFocusNonce += 1;
+  }
+
+  let claimTitles = $state<string[]>([]);
+  let claimPaths = $state<string[]>([]);
+  let claimsLoaded = false;
+  let claimsLoading = false;
+
+  $effect(() => {
+    if (claimsLoaded || claimsLoading || claimCount === 0) return;
+    claimsLoading = true;
+    void loadClaimTitles();
+  });
+
+  async function loadClaimTitles() {
+    try {
+      const slugs = turn.claimSlugs ?? turn.result?.claim_slugs ?? [];
+      if (!slugs.length) {
+        claimsLoaded = true;
+        return;
+      }
+      // Resolve claim paths: same directory as the learning card when available.
+      const learningPath = turn.learningPath || turn.result?.learning_path;
+      const claimsDir = learningPath
+        ? learningPath.replace(/\/memory\/.*$/, "") + "/memory/claims"
+        : "";
+      const titles: string[] = [];
+      const paths: string[] = [];
+      for (const slug of slugs.slice(0, 6)) {
+        const path = claimsDir ? `${claimsDir}/${slug}.md` : "";
+        if (path) {
+          try {
+            const md = await readNote(path);
+            const m = md.match(/claim:\s*"(.*?)"/);
+            const title = m?.[1] ?? slug.replace(/-/g, " ");
+            titles.push(title);
+            paths.push(path);
+          } catch {
+            titles.push(slug.replace(/-/g, " "));
+            paths.push(path);
+          }
+        }
+      }
+      claimTitles = titles;
+      claimPaths = paths;
+      claimsLoaded = true;
+    } finally {
+      claimsLoading = false;
+    }
+  }
+
+  /** Open the memory learning card in the standard reader (not the report). */
+  async function openSavedMemory() {
+    const direct = turn.learningPath || turn.result?.learning_path;
+    if (direct) {
+      onOpenPath?.(direct);
+      return;
+    }
+    onToggleDetails?.();
+  }
+
+  function openClaim(index: number) {
+    const path = claimPaths[index];
+    if (path) onOpenPath?.(path);
   }
 </script>
 
@@ -90,10 +154,30 @@
     <button
       type="button"
       class="remembered"
-      onclick={() => onToggleDetails?.()}
+      title="Open saved memory"
+      onclick={() => void openSavedMemory()}
     >
       {rememberedLabel}
     </button>
+    {#if claimTitles.length}
+      <div class="claims-list">
+        <p class="claims-label">Ideas saved</p>
+        <ul class="claims-ul">
+          {#each claimTitles as title, i}
+            <li>
+              <button
+                type="button"
+                class="claim-link"
+                onclick={() => openClaim(i)}
+                title={claimPaths[i]}
+              >
+                {title}
+              </button>
+            </li>
+          {/each}
+        </ul>
+      </div>
+    {/if}
   {/if}
 
   {#if showActions && !live}
@@ -176,6 +260,50 @@
 
   .remembered:hover {
     color: var(--text-muted);
+    text-decoration: underline;
+  }
+
+  .claims-list {
+    margin-top: 0.35rem;
+    padding: 0.35rem 0.6rem;
+    border-left: 1px solid var(--border-subtle);
+  }
+
+  .claims-label {
+    margin: 0 0 0.25rem;
+    font-size: var(--text-xs);
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .claims-ul {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .claim-link {
+    background: none;
+    border: none;
+    padding: 0;
+    min-height: auto;
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 0;
+    text-align: left;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .claim-link:hover {
+    color: var(--text);
     text-decoration: underline;
   }
 

@@ -1,7 +1,7 @@
 {
   "name": "nous",
-  "version": "0.1.0",
-  "description": "Nous — personal knowledge and autonomous research",
+  "version": "0.1.2",
+  "description": "Nous \u2014 personal knowledge and autonomous research",
   "type": "module",
   "scripts": {
     "dev": "vite dev",

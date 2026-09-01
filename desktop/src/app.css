@@ -5,6 +5,7 @@
 @import "./lib/theme/palettes/nous.css";
 @import "./lib/theme/palettes/ember.css";
 @import "./lib/theme/palettes/mono.css";
+@import "./lib/theme/palettes/lilac.css";
 @import "./lib/theme/palette-bridge.css";
 
 :root {

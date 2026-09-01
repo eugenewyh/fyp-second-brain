@@ -6,10 +6,10 @@ export const PALETTE_STORAGE_KEY = "nous-theme-palette";
 export const THEME_DEFAULT: ThemePreference = "system";
 export const PALETTE_DEFAULT = "nous" as const;
 
-export type PaletteId = "nous" | "ember" | "mono";
+export type PaletteId = "nous" | "ember" | "mono" | "lilac";
 
 export function isPaletteId(value: string | null | undefined): value is PaletteId {
-  return value === "nous" || value === "ember" || value === "mono";
+  return value === "nous" || value === "ember" || value === "mono" || value === "lilac";
 }
 
 export function isThemePreference(value: string | null | undefined): value is ThemePreference {

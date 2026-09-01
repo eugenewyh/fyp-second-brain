@@ -43,6 +43,16 @@ export const PALETTES: PaletteMeta[] = [
       muted: "oklch(0.274 0.005 286.033)",
     },
   },
+  {
+    id: "lilac",
+    name: "Lilac",
+    description: "Soft magenta and plum — gentle and calm.",
+    preview: {
+      bg: "oklch(0 0 0)",
+      accent: "oklch(0.864 0.076 323.523)",
+      muted: "oklch(0.264 0.019 323.456)",
+    },
+  },
 ];
 
 export const PALETTE_IDS = PALETTES.map((p) => p.id);

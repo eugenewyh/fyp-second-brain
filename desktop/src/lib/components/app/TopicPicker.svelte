@@ -14,6 +14,9 @@
     disabled?: boolean;
     variant?: "plain" | "chip" | "sidebar" | "field";
     allowUnbound?: boolean;
+    /** Show an "all" scope row when value is empty (e.g. Memory → all workspaces). */
+    allowAll?: boolean;
+    allLabel?: string;
     allowCreate?: boolean;
     searchPlaceholder?: string;
     menuZIndex?: number;
@@ -28,6 +31,8 @@
     disabled = false,
     variant = "plain",
     allowUnbound = false,
+    allowAll = false,
+    allLabel = "All workspaces",
     allowCreate = false,
     searchPlaceholder = "Search topics…",
     menuZIndex = 40,
@@ -53,11 +58,14 @@
 
   const topics = $derived(workspace.projectFolders as Topic[]);
   const unbound = $derived(!value);
-  const asWorkspace = $derived(variant === "sidebar" || !!onNewWorkspace);
+  const allSelected = $derived(allowAll && !value);
+  const asWorkspace = $derived(variant === "sidebar" || !!onNewWorkspace || allowAll);
   const currentName = $derived(
-    unbound
-      ? (label || "New")
-      : (topics.find((t) => t.path === value)?.name ?? label ?? "Topic"),
+    allSelected
+      ? allLabel
+      : unbound
+        ? (label || "New")
+        : (topics.find((t) => t.path === value)?.name ?? label ?? "Topic"),
   );
   const createHint = $derived(query.trim());
   const entityLabel = $derived(asWorkspace ? "workspace" : "topic");
@@ -145,6 +153,11 @@
     if (path !== value) onSelect(path);
   }
 
+  function chooseAll() {
+    close();
+    if (value) onSelect("");
+  }
+
   function chooseUnbound() {
     close();
     if (value) onSelect("");
@@ -226,15 +239,17 @@
   <button
     type="button"
     class="trigger"
-    class:muted={unbound}
+    class:muted={unbound && !allowAll}
     class:open={open}
     bind:this={triggerEl}
     disabled={disabled}
     aria-haspopup="listbox"
     aria-expanded={open}
-    aria-label={unbound
-      ? `Choose ${entityLabel}`
-      : `${entityLabelCap}: ${currentName}`}
+    aria-label={allSelected
+      ? allLabel
+      : unbound
+        ? `Choose ${entityLabel}`
+        : `${entityLabelCap}: ${currentName}`}
     onclick={toggle}
   >
     <span class="trigger-label">{currentName}</span>
@@ -268,6 +283,20 @@
     </label>
 
     <div class="list ui-scroll">
+      {#if allowAll && !query.trim()}
+        <button
+          type="button"
+          class="item"
+          class:on={allSelected}
+          role="option"
+          aria-selected={allSelected}
+          onclick={chooseAll}
+        >
+          <Folder size={14} strokeWidth={1.75} />
+          <span>{allLabel}</span>
+        </button>
+      {/if}
+
       {#if allowUnbound && !query.trim()}
         <button
           type="button"
@@ -498,6 +527,12 @@
   .rail .trigger:hover,
   .rail .trigger[aria-expanded="true"] {
     background: var(--chrome-action-hover);
+  }
+  .rail .chevron {
+    transform: none;
+  }
+  .rail .chevron.open {
+    transform: rotate(180deg);
   }
   .trigger:disabled {
     opacity: 0.45;

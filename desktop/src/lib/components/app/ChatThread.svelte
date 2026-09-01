@@ -216,7 +216,7 @@
                           disabled={assistant.isLoading}
                           onclick={() => onTeach()}
                         >
-                          Teach notes
+                          Save notes
                         </button>
                       {/if}
                       {#if onLookup && priorUserText(turn.id) && !shouldAutoResearch(priorUserText(turn.id))}
@@ -227,7 +227,7 @@
                           disabled={assistant.isLoading}
                           onclick={() => onLookup(priorUserText(turn.id))}
                         >
-                          Look this up
+                          Research this
                         </button>
                       {/if}
                     </div>

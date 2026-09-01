@@ -144,6 +144,7 @@ def apply_policy(
     matching_claim_count: int,
     has_attachments: bool = False,
     forced: bool = False,
+    clarify_followup: bool = False,
 ) -> Job:
     """Clamp a proposed job to hard invariants (forced skills, attachments, notes-only).
 
@@ -188,6 +189,8 @@ def apply_policy(
             return "refuse"
         return "file"
     if job == "refuse" and research_allowed(text, matching_claim_count=matching_claim_count):
+        return "research"
+    if clarify_followup and job == "refuse" and not has_notes_intent(text):
         return "research"
     return job if job in {"file", "answer", "research", "refuse"} else "refuse"
 

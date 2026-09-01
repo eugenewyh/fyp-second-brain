@@ -597,7 +597,12 @@ export const api = {
     messages: ChatMessage[],
     context?: ChatContext,
     top_k = 5,
-    opts?: { projectPath?: string | null; sessionId?: string | null; alsoProjectPaths?: string[] },
+    opts?: {
+      projectPath?: string | null;
+      sessionId?: string | null;
+      alsoProjectPaths?: string[];
+      signal?: AbortSignal;
+    },
   ) =>
     apiFetch<ChatResult>("/api/chat", {
       method: "POST",
@@ -609,17 +614,21 @@ export const api = {
         session_id: opts?.sessionId ?? null,
         also_project_paths: opts?.alsoProjectPaths ?? [],
       }),
+      signal: opts?.signal,
     }),
-  managerTurn: (body: {
-    message: string;
-    projectPath?: string | null;
-    sessionId?: string | null;
-    hasAttachments?: boolean;
-    clarifyCount?: number;
-    history?: { role: string; content: string }[];
-    topics?: { name: string; path: string }[];
-    forcedJob?: "answer" | "research" | "file" | "watch" | null;
-  }) =>
+  managerTurn: (
+    body: {
+      message: string;
+      projectPath?: string | null;
+      sessionId?: string | null;
+      hasAttachments?: boolean;
+      clarifyCount?: number;
+      history?: { role: string; content: string }[];
+      topics?: { name: string; path: string }[];
+      forcedJob?: "answer" | "research" | "file" | "watch" | null;
+    },
+    signal?: AbortSignal,
+  ) =>
     apiFetch<ManagerTurn>("/api/manager/turn", {
       method: "POST",
       body: JSON.stringify({
@@ -632,6 +641,7 @@ export const api = {
         topics: body.topics ?? [],
         forced_job: body.forcedJob ?? null,
       }),
+      signal,
     }),
   digest: (body: {
     text?: string | null;

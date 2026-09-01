@@ -149,6 +149,7 @@ export type AssistantTurn =
       memoryRecalled?: number;
       memoryDetail?: string;
       claimCount?: number;
+      claimSlugs?: string[];
       confidence?: number;
       goalStatus?: string;
       /** Wall-clock start for "Worked for …" summaries. */
@@ -173,6 +174,14 @@ export type ChatSession = {
   draftInput?: string;
   /** Unsent attachments staged in the composer for this chat. */
   draftAttachments?: ComposerAttachment[];
+};
+
+/** Snapshot taken when the user sends — restored if they pause mid-turn. */
+type ComposerPauseDraft = {
+  sessionId: string;
+  input: string;
+  attachments: ComposerAttachment[];
+  turnCountBefore: number;
 };
 
 /** Blank or opener-only — no Teach / Ask / Research work yet. */
@@ -318,6 +327,10 @@ class AssistantStore {
   private jobs = $state<Record<string, SessionJob>>({});
   /** Composer submit claimed this session before manager route / job begin. */
   private pendingTurns = $state<Record<string, true>>({});
+  /** Original composer text/files while a turn is in flight — restored on pause. */
+  private composerPauseDraft = $state<ComposerPauseDraft | null>(null);
+  private pausedSubmitSessions = $state<Record<string, true>>({});
+  private pendingAborts = $state<Record<string, AbortController>>({});
   ingestSuggestions = $state<string[]>([]);
   selectedAgentNode = $state<AgentNodeId | null>(null);
   planReviewEnabled = $state(true);
@@ -479,6 +492,87 @@ class AssistantStore {
 
   endPendingTurn(sessionId: string): void {
     this.pendingTurns = endPendingTurn(this.pendingTurns, sessionId);
+  }
+
+  /** Remember composer contents before submit clears the field. */
+  stashComposerPause(
+    sessionId: string,
+    input: string,
+    attachments: ComposerAttachment[],
+  ): void {
+    const s = this.sessions[sessionId];
+    if (!s) return;
+    this.pendingAborts[sessionId]?.abort();
+    this.pendingAborts = {
+      ...this.pendingAborts,
+      [sessionId]: new AbortController(),
+    };
+    this.composerPauseDraft = {
+      sessionId,
+      input,
+      attachments: attachments.map((a) => ({ ...a })),
+      turnCountBefore: s.turns.length,
+    };
+  }
+
+  pendingAbortSignal(sessionId: string): AbortSignal | undefined {
+    return this.pendingAborts[sessionId]?.signal;
+  }
+
+  wasSubmitPaused(sessionId: string): boolean {
+    return !!this.pausedSubmitSessions[sessionId];
+  }
+
+  clearSubmitPaused(sessionId: string): void {
+    const { [sessionId]: _, ...restPaused } = this.pausedSubmitSessions;
+    this.pausedSubmitSessions = restPaused;
+    const { [sessionId]: __, ...restAborts } = this.pendingAborts;
+    this.pendingAborts = restAborts;
+    if (this.composerPauseDraft?.sessionId === sessionId) {
+      this.composerPauseDraft = null;
+    }
+  }
+
+  /** Stop the active turn and put the user's message back in the composer. */
+  pauseComposer(): void {
+    const sid = this.activeSessionId;
+    if (!sid || !this.sessionTurnLocked(sid)) return;
+    const draft = this.composerPauseDraft;
+    if (!draft || draft.sessionId !== sid) return;
+
+    this.pausedSubmitSessions = { ...this.pausedSubmitSessions, [sid]: true };
+    this.pendingAborts[sid]?.abort();
+    this.cancelSession(sid);
+    this.endPendingTurn(sid);
+
+    const s = this.sessions[sid];
+    if (s) {
+      const turns =
+        s.turns.length > draft.turnCountBefore
+          ? s.turns.slice(0, draft.turnCountBefore)
+          : s.turns;
+      this.sessions = {
+        ...this.sessions,
+        [sid]: {
+          ...s,
+          turns,
+          draftInput: draft.input,
+          draftAttachments: draft.attachments.map((a) => ({ ...a })),
+        },
+      };
+    }
+
+    this.input = draft.input;
+    this.attachments = draft.attachments.map((a) => ({ ...a }));
+    this.composerPauseDraft = null;
+    this.touchUiForSession(sid, {
+      routeStatus: null,
+      focusedTurnId: null,
+      activeResearchTurnId: null,
+      selectedAgentNode: null,
+    });
+    this.composerFocusNonce += 1;
+    this.persist();
   }
 
   sessionBusyForTurn(turnId: string): boolean {
@@ -1036,6 +1130,7 @@ class AssistantStore {
       learningPath: undefined,
       indexed: undefined,
       claimCount: undefined,
+      claimSlugs: undefined,
       confidence: undefined,
       goalStatus: undefined,
       runId: undefined,
@@ -1389,8 +1484,8 @@ class AssistantStore {
     this.persist();
   }
 
-  managerHistory(): { role: string; content: string }[] {
-    if (this.clarifyCount() < 1) return [];
+  /** Recent thread slice for the manager router (since the last completed job). */
+  managerRoutingContext(): { role: string; content: string }[] {
     const thread = this.getActiveThread();
     let start = -1;
     for (let i = thread.length - 1; i >= 0; i -= 1) {
@@ -1720,6 +1815,7 @@ class AssistantStore {
         projectPath: this.projectPathForSession(sid),
         sessionId: sid,
         alsoProjectPaths: opts?.alsoProjectPaths,
+        signal: started.abort.signal,
       });
       const thin = !!result.thin_memory;
       this.appendTurn(
@@ -1754,6 +1850,7 @@ class AssistantStore {
       }
       return { thinMemory: thin };
     } catch (e) {
+      if (this.wasSubmitPaused(sid)) return { thinMemory: false };
       const message = e instanceof Error ? e.message : "Quick answer failed";
       this.appendTurn(
         {
@@ -1995,6 +2092,7 @@ class AssistantStore {
       );
       this.appendTeachAskNudge(sid, result.claims_created, result.claims_revised);
     } catch (e) {
+      if (this.wasSubmitPaused(sid)) return;
       const aborted = e instanceof Error && e.name === "AbortError";
       this.updateTurn(
         turnId,
@@ -2073,6 +2171,7 @@ class AssistantStore {
       );
       this.appendTeachAskNudge(sid, result.claims_created, result.claims_revised);
     } catch (e) {
+      if (this.wasSubmitPaused(sid)) return;
       const aborted = e instanceof Error && e.name === "AbortError";
       this.updateTurn(
         turnId,
@@ -2234,6 +2333,7 @@ class AssistantStore {
       goalStatus: result.goal_status ?? undefined,
       memoryDetail: memoryDetail || undefined,
       claimCount: result.claim_count ?? undefined,
+      claimSlugs: result.claim_slugs ?? undefined,
       agentStatuses: finalStatuses,
       looping: false,
       liveCritiqueHistory: critiqueHistory,
@@ -2468,6 +2568,7 @@ class AssistantStore {
       }
       await this.finalizeResearchResult(turnId, result);
     } catch (e) {
+      if (this.wasSubmitPaused(sid)) return;
       const message = this.researchErrorMessage(e, sid);
       this.updateResearchTurn(turnId, {
         status: "error",

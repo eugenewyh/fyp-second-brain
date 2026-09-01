@@ -6,7 +6,6 @@
   import { connection } from "$lib/stores/connection.svelte";
   import { watchRuns } from "$lib/stores/watchRuns.svelte";
   import { workspace } from "$lib/stores/workspace.svelte";
-  import { markdownBodyToHtml } from "$lib/vault/markdown";
   import { ChevronLeft, ChevronRight, Play, Square } from "@lucide/svelte";
 
   interface Props {
@@ -247,8 +246,8 @@
     }
   }
 
-  function openBrief(path: string) {
-    app.openDocument(path, { from: "agent" });
+  function openBrief(path: string, day?: string) {
+    app.openDocument(path, { label: day, from: "agent" });
     workspace.setActiveNote(path);
   }
 </script>
@@ -409,16 +408,18 @@
         <ul class="history">
           {#each status.briefs as b (b.path)}
             <li>
-              <button type="button" class="hist" onclick={() => openBrief(b.path)}>
+              <button
+                type="button"
+                class="hist"
+                class:active={app.documentPath === b.path}
+                onclick={() => openBrief(b.path, b.day)}
+              >
                 <span class="day">{b.day}</span>
                 <span class="ex">{b.excerpt}</span>
               </button>
             </li>
           {/each}
         </ul>
-      {/if}
-      {#if status?.latest_brief}
-        <div class="md">{@html markdownBodyToHtml(status.latest_brief)}</div>
       {/if}
     {/if}
   </div>
@@ -799,6 +800,11 @@
     background: var(--chrome-action-hover);
   }
 
+  .hist.active {
+    border-color: var(--accent-link);
+    background: var(--chrome-action-hover);
+  }
+
   .day {
     font-size: var(--text-sm);
     font-weight: var(--font-medium);
@@ -813,11 +819,5 @@
     line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-  }
-
-  .md {
-    margin-top: 0.85rem;
-    font-size: var(--text-sm);
-    line-height: 1.5;
   }
 </style>

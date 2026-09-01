@@ -28,6 +28,7 @@ function tabIdForDocument(path: string): string {
   return `doc:${path}`;
 }
 
+
 type OpenTabsPersist = {
   openSessionIds: string[];
   openDocuments: { path: string; label: string }[];
@@ -221,6 +222,21 @@ class NavigationStore {
   openSession(sessionId: string): void {
     if (!assistant.sessions[sessionId]) return;
     this.openSessionTab(sessionId);
+    app.openHome();
+  }
+
+  /** Open a fresh chat with the composer prefilled (e.g. Memory "Ask"). */
+  askInChat(text: string, topicPath?: string | null): void {
+    const path = topicPath ?? workspace.activeTopicPath;
+    const sessionId = path
+      ? assistant.newChannelSession(path, {
+          focus: true,
+          channelEmpty: workspace.channelEmpty,
+        })
+      : this.newSessionTab({ projectPath: null });
+    this.ensureSessionTab(sessionId);
+    assistant.input = text;
+    assistant.composerFocusNonce += 1;
     app.openHome();
   }
 

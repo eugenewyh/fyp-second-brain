@@ -217,13 +217,19 @@
         : null);
     if (!sessionId) return;
 
+    const attachmentSnapshot = assistant.attachments.map((a) => ({ ...a }));
+    assistant.stashComposerPause(sessionId, text, attachmentSnapshot);
+
     // Lock before any await — otherwise Enter key-repeat / double-click can
     // run manager+answer twice for the same composer message.
-    if (!assistant.beginPendingTurn(sessionId)) return;
+    if (!assistant.beginPendingTurn(sessionId)) {
+      assistant.clearSubmitPaused(sessionId);
+      return;
+    }
     assistant.input = "";
 
     const clarifyCount = assistant.clarifyCount();
-    const history = assistant.managerHistory();
+    const history = assistant.managerRoutingContext();
     const userContent =
       clarifyCount > 0 ? text : text || (hasAttachments ? "Files" : "");
     assistant.appendUser(userContent || "Attached files", sessionId);
@@ -245,16 +251,20 @@
 
     try {
       try {
-        const turn = await api.managerTurn({
-          message: text,
-          projectPath: assistant.sessions[sessionId]?.projectPath ?? assistant.activeProjectPath(),
-          sessionId,
-          hasAttachments,
-          clarifyCount,
-          history,
-          topics: workspace.projectFolders.map((f) => ({ name: f.name, path: f.path })),
-          forcedJob: forcedSkill,
-        });
+        const turn = await api.managerTurn(
+          {
+            message: text,
+            projectPath: assistant.sessions[sessionId]?.projectPath ?? assistant.activeProjectPath(),
+            sessionId,
+            hasAttachments,
+            clarifyCount,
+            history,
+            topics: workspace.projectFolders.map((f) => ({ name: f.name, path: f.path })),
+            forcedJob: forcedSkill,
+          },
+          assistant.pendingAbortSignal(sessionId),
+        );
+        if (assistant.wasSubmitPaused(sessionId)) return;
         kind = turn.kind;
         job = (turn.job ?? "answer") as ManagerJob;
         refuseMessage = turn.refuse_message || "";
@@ -271,6 +281,7 @@
         // One-shot force: clear after a successful route so Auto resumes
         if (assistant.forcedJob) assistant.setForcedJob(null);
       } catch {
+        if (assistant.wasSubmitPaused(sessionId)) return;
         const intent = classifyIntent({ text, hasAttachments });
         job =
           shouldAutoResearch(text) || forcedSkill === "research"
@@ -288,6 +299,8 @@
         assistant.bumpClarify();
         return;
       }
+
+      if (assistant.wasSubmitPaused(sessionId)) return;
 
       if (kind === "meta") {
         assistant.appendManager(managerText, sessionId);
@@ -404,6 +417,7 @@
       });
     } finally {
       assistant.endPendingTurn(sessionId);
+      assistant.clearSubmitPaused(sessionId);
     }
   }
 

@@ -6,8 +6,11 @@
   import { assistant } from "$lib/stores/assistant.svelte";
   import { tabs } from "$lib/stores/tabs.svelte";
   import Sidebar from "./Sidebar.svelte";
+  import MemorySidebar from "./MemorySidebar.svelte";
   import DocumentView from "./DocumentView.svelte";
   import ChatHome from "./ChatHome.svelte";
+  import WatchHome from "./WatchHome.svelte";
+  import MemoryHome from "./MemoryHome.svelte";
   import KnowledgePanel from "./KnowledgePanel.svelte";
   import AppSheet from "./AppSheet.svelte";
   import NewProjectModal from "./NewProjectModal.svelte";
@@ -117,7 +120,17 @@
         e.preventDefault();
         return;
       }
-      if (app.isMemory) {
+      if (app.isMemory && !app.sheet) {
+        app.openHome();
+        e.preventDefault();
+        return;
+      }
+      if (app.isWatch && app.documentPath) {
+        app.closeDocument();
+        e.preventDefault();
+        return;
+      }
+      if (app.isWatch && !app.sheet) {
         app.openHome();
         e.preventDefault();
         return;
@@ -137,7 +150,11 @@
 
 <div class="shell">
   <div class="body" style="--sidebar-width: {sidebarWidth}px">
-    <Sidebar />
+    {#if app.isMemory}
+      <MemorySidebar />
+    {:else}
+      <Sidebar />
+    {/if}
     <PaneResizer
       onResize={onSidebarResize}
       onResizeEnd={onSidebarResizeEnd}
@@ -152,13 +169,17 @@
       <div class="main-body">
         {#if app.isDocument}
           <DocumentView />
+        {:else if app.isWatch}
+          <WatchHome />
+        {:else if app.isMemory}
+          <MemoryHome />
         {:else}
           <ChatHome />
         {/if}
       </div>
     </div>
 
-    {#if workspace.knowledgePanelOpen && (app.isDocument || app.isDocumentPeek) && (!app.isMemory || workspace.memoryFilesOpen)}
+    {#if workspace.knowledgePanelOpen && (app.isDocument || app.isDocumentPeek) && (!app.isMemory || workspace.memoryFilesOpen || app.isDocumentPeek)}
       <KnowledgePanel />
     {/if}
   </div>

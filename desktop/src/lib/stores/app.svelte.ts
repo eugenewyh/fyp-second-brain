@@ -1,3 +1,5 @@
+import { memory } from "$lib/stores/memory.svelte";
+
 export type AppMode =
   | "agent"
   | "document"
@@ -35,8 +37,6 @@ class AppStore {
   /** Incremented when opening the Watch tab so the list is shown. */
   watchListNonce = $state(0);
   artifactsFilter = $state<ArtifactsFilter>("all");
-  /** When set, Memory graph opens filtered to this workspace folder. */
-  memoryTopicFilter = $state<string | null>(null);
   /** Preferred Settings tab when opening the sheet. */
   settingsTab = $state<"appearance" | "models" | "account">("appearance");
 
@@ -91,15 +91,17 @@ class AppStore {
   }
 
   openWatch() {
-    this.mode = "graph";
-    this.sheet = "watch";
+    this.mode = "watch";
+    this.sheet = null;
     this.watchListNonce += 1;
   }
 
   openMemory(opts?: { topicPath?: string | null }) {
-    this.memoryTopicFilter = opts?.topicPath ?? null;
-    this.mode = "graph";
-    this.sheet = "memory";
+    memory.open(opts?.topicPath ?? null);
+    this.mode = "memory";
+    this.sheet = null;
+    this.documentPath = null;
+    this.documentLabel = null;
   }
 
   openGraph() {
@@ -139,8 +141,8 @@ class AppStore {
       this.mode = "document";
       return;
     }
-    // Memory hosts its own document peek beside the graph.
-    if (this.mode === "memory") {
+    // Memory and Watch host their own document peek beside the main view.
+    if (this.mode === "memory" || this.mode === "watch") {
       return;
     }
     if (this.mode !== "graph" && this.mode !== "agent") {

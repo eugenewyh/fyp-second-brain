@@ -4,15 +4,11 @@
   import SettingsPanel from "$lib/components/settings/SettingsPanel.svelte";
   import SourcesPane from "$lib/components/inspector/SourcesPane.svelte";
   import BacklinksPane from "$lib/components/inspector/BacklinksPane.svelte";
-  import WatchHome from "./WatchHome.svelte";
-  import MemoryHome from "./MemoryHome.svelte";
   import CapabilitiesView from "./CapabilitiesView.svelte";
   import ArtifactsView from "./ArtifactsView.svelte";
 
   const wide = $derived(
-    app.sheet === "watch" ||
-      app.sheet === "memory" ||
-      app.sheet === "capabilities" ||
+    app.sheet === "capabilities" ||
       app.sheet === "artifacts",
   );
 
@@ -20,8 +16,6 @@
     if (app.sheet === "ingest") return "Library";
     if (app.sheet === "settings") return "Settings";
     if (app.sheet === "references") return "References";
-    if (app.sheet === "watch") return "Scheduled Research";
-    if (app.sheet === "memory") return "Memory";
     if (app.sheet === "capabilities") return "Capabilities";
     if (app.sheet === "artifacts") return "Artifacts";
     return "";
@@ -60,10 +54,6 @@
             <div class="sep"></div>
             <BacklinksPane />
           </div>
-        {:else if app.sheet === "watch"}
-          <WatchHome />
-        {:else if app.sheet === "memory"}
-          <MemoryHome />
         {:else if app.sheet === "capabilities"}
           <CapabilitiesView />
         {:else if app.sheet === "artifacts"}
@@ -143,10 +133,6 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
-  }
-
-  .sheet-body-flush :global(.memory-bar) {
-    display: none;
   }
 
   .sheet-body-flush :global(.library) {

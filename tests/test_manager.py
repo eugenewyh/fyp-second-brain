@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT))
 
 from second_brain.agent.manager import take_turn  # noqa: E402
+from second_brain.agent.policy import apply_policy  # noqa: E402
 from second_brain.agent.router.context import MAX_CLARIFY, is_vague, suggest_topic  # noqa: E402
 from second_brain.agent.router.recall import RecallSnapshot  # noqa: E402
 
@@ -82,11 +83,56 @@ def test_dispatch_without_project_proposes_topic(no_recall, no_llm):
     assert "JustGRPO" in turn.text
 
 
+def test_clarify_followup_never_refuses_without_notes_intent():
+    job = apply_policy(
+        "refuse",
+        text="general article on personality types",
+        matching_claim_count=0,
+        clarify_followup=True,
+    )
+    assert job == "research"
+
+
+def test_clarify_followup_still_refuses_explicit_notes_ask():
+    job = apply_policy(
+        "refuse",
+        text="According to my notes, what is MBTI?",
+        matching_claim_count=0,
+        clarify_followup=True,
+    )
+    assert job == "refuse"
+
+
 def test_vague_goal_asks_once(no_recall, no_llm):
     turn = take_turn(VAGUE, project_path="/vault/dlm", clarify_count=0)
     assert turn.kind == "ask"
     assert turn.focus == "clarify"
     assert turn.job is None
+
+
+def test_short_research_skips_clarify(no_recall, no_llm):
+    turn = take_turn("research about mbti", project_path=None, clarify_count=0)
+    assert turn.kind == "dispatch"
+    assert turn.job == "research"
+
+
+def test_clarify_followup_keeps_research_goal(no_recall, no_llm):
+    turn = take_turn(
+        "general article on personality types",
+        project_path=None,
+        clarify_count=1,
+        history=[
+            {"role": "user", "content": "research about mbti"},
+            {
+                "role": "assistant",
+                "content": "Official MBTI theory and papers, or general articles?",
+            },
+        ],
+    )
+    assert turn.kind == "dispatch"
+    assert turn.job == "research"
+    assert "mbti" in (turn.instruction or "").lower()
+    assert "personality" in (turn.instruction or "").lower()
 
 
 def test_second_vague_ask_then_force_dispatch(no_recall, no_llm):

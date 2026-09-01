@@ -5,6 +5,13 @@
   import WatchList from "./WatchList.svelte";
   import WatchEditor from "./WatchEditor.svelte";
   import WatchCreateModal from "./WatchCreateModal.svelte";
+  import DocumentView from "./DocumentView.svelte";
+  import PaneResizer from "$lib/components/workspace/PaneResizer.svelte";
+  import {
+    clampPeekWidth,
+    loadPeekWidth,
+    savePeekWidth,
+  } from "$lib/workspace/layout-prefs";
 
   let selected = $state<{
     projectPath: string;
@@ -14,6 +21,17 @@
 
   const topics = $derived(workspace.projectFolders);
   const initialTopicPath = $derived(workspace.activeTopicPath ?? topics[0]?.path ?? null);
+  const showDocPeek = $derived(app.isDocumentPeek && app.isWatch);
+
+  let peekWidth = $state(loadPeekWidth());
+
+  function onPeekResize(delta: number) {
+    peekWidth = clampPeekWidth(peekWidth - delta);
+  }
+
+  function onPeekResizeEnd() {
+    savePeekWidth(peekWidth);
+  }
 
   let seenWatchListNonce = app.watchListNonce;
   $effect(() => {
@@ -34,17 +52,29 @@
 </script>
 
 <div class="watch-home">
-  {#if selected}
-    <WatchEditor
-      projectPath={selected.projectPath}
-      watchId={selected.watchId}
-      onBack={() => (selected = null)}
-      onMoved={(w) => {
-        selected = { projectPath: w.project_path, watchId: w.watch_id || "legacy" };
-      }}
+  <div class="watch-col">
+    {#if selected}
+      <WatchEditor
+        projectPath={selected.projectPath}
+        watchId={selected.watchId}
+        onBack={() => (selected = null)}
+        onMoved={(w) => {
+          selected = { projectPath: w.project_path, watchId: w.watch_id || "legacy" };
+        }}
+      />
+    {:else}
+      <WatchList onOpen={openItem} onNew={() => (createOpen = true)} />
+    {/if}
+  </div>
+  {#if showDocPeek}
+    <PaneResizer
+      onResize={onPeekResize}
+      onResizeEnd={onPeekResizeEnd}
+      testId="splitter-watch-peek"
     />
-  {:else}
-    <WatchList onOpen={openItem} onNew={() => (createOpen = true)} />
+    <aside class="peek-pane" style="width: {peekWidth}px" aria-label="Brief">
+      <DocumentView peek />
+    </aside>
   {/if}
 </div>
 
@@ -60,9 +90,30 @@
     display: flex;
     height: 100%;
     min-height: 0;
+    background: var(--bg);
+  }
+  .watch-col {
+    flex: 1;
+    min-width: 18rem;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
   }
   .watch-home :global(.watch-list),
   .watch-home :global(.editor) {
+    flex: 1;
+    min-height: 0;
+  }
+  .peek-pane {
+    flex-shrink: 0;
+    border-left: 1px solid var(--border-subtle);
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+  }
+
+  .peek-pane :global(.document) {
     flex: 1;
     min-height: 0;
   }

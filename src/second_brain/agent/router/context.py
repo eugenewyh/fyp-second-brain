@@ -5,7 +5,13 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from second_brain.agent.policy import has_learn_intent, has_notes_intent, has_search_intent, is_question
+from second_brain.agent.policy import (
+    has_learn_intent,
+    has_notes_intent,
+    has_research_intent,
+    has_search_intent,
+    is_question,
+)
 
 MAX_CLARIFY = 1
 
@@ -82,10 +88,31 @@ def prior_user_goal(history: list[dict[str, str]] | None) -> str:
     return goal
 
 
-def specialist_instruction(message: str, history: list[dict[str, str]] | None) -> str:
+def _standalone_routing_intent(text: str) -> bool:
+    """True when this message alone is enough to pick a job."""
+    return (
+        has_search_intent(text)
+        or has_research_intent(text)
+        or has_notes_intent(text)
+        or has_learn_intent(text)
+        or is_question(text)
+    )
+
+
+def resolve_routing_text(
+    message: str,
+    history: list[dict[str, str]] | None,
+    *,
+    clarify_count: int = 0,
+) -> str:
+    """Text used for job rules, recall, and policy — not just the latest line."""
     text = (message or "").strip()
     if is_skip(text):
         return prior_user_goal(history) or text
+    if clarify_count > 0:
+        goal = prior_user_goal(history)
+        if goal and goal.casefold() != text.casefold() and not _standalone_routing_intent(text):
+            return f"{goal}\n{text}"
     return text
 
 
@@ -101,7 +128,7 @@ def is_vague(text: str) -> bool:
     t = (text or "").strip()
     if not t:
         return True
-    if has_search_intent(t) or is_skip(t) or is_watch_intent(t):
+    if has_search_intent(t) or has_research_intent(t) or is_skip(t) or is_watch_intent(t):
         return False
     if has_notes_intent(t) or has_learn_intent(t):
         return False

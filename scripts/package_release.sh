@@ -43,6 +43,8 @@ fi
 
 echo "==> Building Tauri desktop app..."
 export PATH="/opt/homebrew/bin:$PATH"
+export CARGO_TARGET_DIR="$ROOT/desktop/src-tauri/target"
+bash "$ROOT/scripts/clean_stale_dmg.sh"
 cd "$ROOT/desktop"
 npm run tauri build
 

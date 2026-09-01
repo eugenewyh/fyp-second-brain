@@ -13,7 +13,7 @@ from second_brain.agent.router.context import (
     is_skip,
     is_vague,
     is_watch_intent,
-    specialist_instruction,
+    resolve_routing_text,
 )
 from second_brain.agent.policy import (
     Job,
@@ -204,6 +204,7 @@ def _dispatch_from_routing(
     also_project_paths: list[str] | None = None,
     forced_job: Job | None = None,
     choose_fn=None,
+    clarify_count: int = 0,
 ) -> RouteDecision:
     blob = instruction or message
     extras = [p for p in (also_project_paths or []) if p]
@@ -223,6 +224,7 @@ def _dispatch_from_routing(
         matching_claim_count=snapshot.matching_claim_count,
         has_attachments=has_attachments,
         forced=forced_s in {"file", "answer", "research"},
+        clarify_followup=clarify_count > 0,
     )
     refuse = REFUSE_MESSAGE if job == "refuse" else None
     create = create_topic(blob, project_path)
@@ -296,7 +298,7 @@ def route_turn(
     """Single routing pipeline: forced → topic → meta → rules → recall → local → llm → policy."""
     text = (message or "").strip()
     asked = max(0, int(clarify_count or 0))
-    instruction = specialist_instruction(text, history)
+    instruction = resolve_routing_text(text, history, clarify_count=asked)
     available = parse_topics(topics)
     op = parse_topic_op(text, bound_path=project_path, available=available)
     force: Job | None = None
@@ -335,6 +337,7 @@ def route_turn(
             also_project_paths=also_paths,
             forced_job=force,
             choose_fn=choose_fn,
+            clarify_count=asked,
         )
 
     if force_file(text=text, has_attachments=has_attachments):
@@ -346,6 +349,7 @@ def route_turn(
             also_topics=also_topics,
             also_project_paths=also_paths,
             choose_fn=choose_fn,
+            clarify_count=asked,
         )
 
     if is_watch_intent(text):
@@ -383,6 +387,7 @@ def route_turn(
             also_topics=also_topics,
             also_project_paths=also_paths,
             choose_fn=choose_fn,
+            clarify_count=asked,
         )
 
     if asked < MAX_CLARIFY and is_vague(text) and not also_topics:
@@ -396,4 +401,5 @@ def route_turn(
         also_topics=also_topics,
         also_project_paths=also_paths,
         choose_fn=choose_fn,
+        clarify_count=asked,
     )
