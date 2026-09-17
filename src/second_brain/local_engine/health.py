@@ -23,7 +23,11 @@ class Loading:
 
 @dataclass(frozen=True, slots=True)
 class WrongModel:
-    serving_id: str
+    served_ids: tuple[str, ...]
+
+    @property
+    def serving_id(self) -> str:
+        return self.served_ids[0]
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,7 +40,13 @@ class Malformed:
     detail: str
 
 
-HealthReport = Serving | Loading | WrongModel | Unreachable | Malformed
+@dataclass(frozen=True, slots=True)
+class Exited:
+    code: int
+    detail: str
+
+
+HealthReport = Serving | Loading | WrongModel | Unreachable | Malformed | Exited
 
 
 def parse_models_payload(raw: object, *, expect_model: str) -> HealthReport:
@@ -66,17 +76,10 @@ def parse_models_payload(raw: object, *, expect_model: str) -> HealthReport:
                 total_params_b=0.0,
             )
         )
-    return WrongModel(serving_id=ids[0])
+    return WrongModel(served_ids=tuple(ids))
 
 
-def mint_endpoint(
-    raw: object,
-    *,
-    expect_model: str,
-    base_url: str,
-    token: str,
-) -> Endpoint:
-    report = parse_models_payload(raw, expect_model=expect_model)
+def mint_endpoint(report: HealthReport, *, base_url: str, token: str) -> Endpoint:
     if not isinstance(report, Serving):
         raise TypeError(f"cannot mint Endpoint from {type(report).__name__}")
     return Endpoint(base_url=base_url, token=token, _proof=_ENDPOINT_PROOF)

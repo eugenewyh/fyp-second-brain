@@ -21,3 +21,10 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "."]
+addopts = '-m "not edge0_real"'
+markers = [
+    "edge0_real: needs a real edge0 CLI and a real checkpoint on this machine",
+]

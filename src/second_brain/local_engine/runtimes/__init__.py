@@ -1,12 +1,18 @@
 from __future__ import annotations
 
 import os
+import threading
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, Protocol
+from typing import TYPE_CHECKING, Literal, Protocol
 
-from ..state import ModelCard, UnsupportedReason
+from ..state import ModelCard, Progress, UnsupportedReason
 from ..store import Artifact
+
+if TYPE_CHECKING:
+    from ..health import HealthReport
+    from ..store import InstallPlan, RunRecord
 
 
 @dataclass(frozen=True, slots=True)
@@ -15,7 +21,12 @@ class Refused:
     detail: str
 
 
-Capability = Literal["ok"] | Refused
+@dataclass(frozen=True, slots=True)
+class Unavailable:
+    detail: str
+
+
+Capability = Literal["ok"] | Refused | Unavailable
 
 
 class Runtime(Protocol):
@@ -25,7 +36,26 @@ class Runtime(Protocol):
     def capability(self) -> Capability: ...
     def catalog(self) -> tuple[ModelCard, ...]: ...
     def artifacts(self, model: ModelCard) -> tuple[Artifact, ...]: ...
+
+    def acquire(
+        self,
+        plan: InstallPlan,
+        on_progress: Callable[[Progress], None],
+        *,
+        cancel: threading.Event,
+    ) -> None: ...
+
     def spawn(self, model: ModelCard, *, home: Path, port: int, token: str) -> int: ...
+
+    def health(
+        self,
+        rec: RunRecord,
+        *,
+        expect_model: str,
+        timeout_s: float,
+    ) -> HealthReport: ...
+
+    def terminate(self, pid: int) -> None: ...
 
 
 def resolve() -> Runtime:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import threading
 from collections.abc import Callable
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
@@ -44,6 +45,14 @@ class RunRecord:
 
 _memory_bytes: dict[str, int] = {}
 _run_record: RunRecord | None = None
+
+
+class AcquireCrash(Exception):
+    pass
+
+
+class AcquireCancelled(Exception):
+    pass
 
 
 def home() -> Path:
@@ -90,16 +99,14 @@ def install_plan(model_id: str, runtime: Runtime) -> InstallPlan:
     return InstallPlan(model=model, missing=missing, total_bytes=total)
 
 
-def acquire(plan: InstallPlan, on_progress: Callable[[Progress], None]) -> None:
-    from .runtimes import resolve
-
-    runtime = resolve()
-    if runtime.name == "stub":
-        from .runtimes import stub as stub_mod
-
-        stub_mod.run_acquire(plan, on_progress)
-        return
-    raise NotImplementedError("disk acquire is not in this unit")
+def acquire(
+    plan: InstallPlan,
+    on_progress: Callable[[Progress], None],
+    *,
+    runtime: Runtime,
+    cancel: threading.Event,
+) -> None:
+    runtime.acquire(plan, on_progress, cancel=cancel)
 
 
 def read_run_record() -> RunRecord | None:
