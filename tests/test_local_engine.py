@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 import pytest
 
 from second_brain.local_engine import Failed, NotInstalled, Ready, engine_state, ensure_ready
-from second_brain.local_engine.engine import _reset
+from second_brain.local_engine.engine import _reset, worker_starts
 from second_brain.local_engine.health import (
     Malformed,
     Serving,
@@ -113,7 +113,7 @@ def test_concurrent_ensure_ready_joins_in_flight(monkeypatch):
         first.result(timeout=2)
         second.result(timeout=2)
 
-    assert stub.worker_starts == 1
+    assert worker_starts() == 1
     stub.settle()
     assert isinstance(engine_state(), Ready)
 

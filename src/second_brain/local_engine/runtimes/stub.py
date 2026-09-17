@@ -5,8 +5,9 @@ import threading
 from collections.abc import Callable
 from pathlib import Path
 
+from ..health import HealthReport, parse_models_payload
 from ..state import ModelCard, Progress
-from ..store import Artifact, InstallPlan, remember_bytes
+from ..store import AcquireCancelled, AcquireCrash, Artifact, InstallPlan, RunRecord, remember_bytes
 from . import Capability
 
 TINY_MOE = ModelCard(
@@ -28,7 +29,6 @@ _WEIGHTS = Artifact(
 
 total_bytes = TINY_MOE.disk_bytes
 bytes_refetched = 0
-worker_starts = 0
 acquire_starts = 0
 
 _have_bytes = 0
@@ -41,14 +41,6 @@ _pid = 0
 _alive = False
 _port = 9
 _token = "stub-token"
-
-
-class AcquireCrash(Exception):
-    pass
-
-
-class AcquireCancelled(Exception):
-    pass
 
 
 class StubRuntime:
@@ -66,6 +58,15 @@ class StubRuntime:
             return ()
         return (_WEIGHTS,)
 
+    def acquire(
+        self,
+        plan: InstallPlan,
+        on_progress: Callable[[Progress], None],
+        *,
+        cancel: threading.Event,
+    ) -> None:
+        run_acquire(plan, on_progress, cancel=cancel)
+
     def spawn(self, model: ModelCard, *, home: Path, port: int, token: str) -> int:
         del home
         global _pid, _alive, _port, _token
@@ -74,6 +75,23 @@ class StubRuntime:
         _pid = 4242
         _alive = True
         return _pid
+
+    def health(
+        self,
+        rec: RunRecord,
+        *,
+        expect_model: str,
+        timeout_s: float,
+    ) -> HealthReport:
+        del rec, timeout_s
+        return parse_models_payload(
+            models_payload(expect_model),
+            expect_model=expect_model,
+        )
+
+    def terminate(self, pid: int) -> None:
+        del pid
+        stop_child()
 
 
 runtime = StubRuntime()
@@ -93,12 +111,6 @@ def models_payload(model_id: str) -> dict[str, object]:
     }
 
 
-def note_worker_start() -> None:
-    global worker_starts
-    with _lock:
-        worker_starts += 1
-
-
 def is_alive(pid: int) -> bool:
     return _alive and pid == _pid
 
@@ -111,11 +123,18 @@ def token() -> str:
     return _token
 
 
-def run_acquire(plan: InstallPlan, on_progress: Callable[[Progress], None]) -> None:
+def run_acquire(
+    plan: InstallPlan,
+    on_progress: Callable[[Progress], None],
+    *,
+    cancel: threading.Event,
+) -> None:
     global acquire_starts, bytes_refetched, _have_bytes, _instruction
     with _lock:
         acquire_starts += 1
-    _instruction_event.wait()
+    while not _instruction_event.wait(0.01):
+        if cancel.is_set():
+            raise AcquireCancelled()
     with _lock:
         instruction = _instruction
         frac = _crash_frac
@@ -174,11 +193,10 @@ def crash_during(*, step: str, at_fraction: float) -> None:
 
 
 def reset() -> None:
-    global bytes_refetched, worker_starts, acquire_starts, _have_bytes
+    global bytes_refetched, acquire_starts, _have_bytes
     global _instruction, _crash_frac, _crash_step, _pid, _alive
     with _lock:
         bytes_refetched = 0
-        worker_starts = 0
         acquire_starts = 0
         _have_bytes = 0
         _instruction = "cancel"

@@ -16,7 +16,7 @@ DEFAULT_NVIDIA_FALLBACK = "nvidia/nemotron-3-nano-30b-a3b"
 # Optional BYOK on Groq
 DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b"
 DEFAULT_GROQ_FALLBACK = "qwen/qwen3-32b"
-DEFAULT_LOCAL_MODEL = "edge0/moe-120b-a6b-mxfp4"
+DEFAULT_LOCAL_MODEL = "edge0-8b"
 
 LlmRole = Literal["main", "fast"]
 
