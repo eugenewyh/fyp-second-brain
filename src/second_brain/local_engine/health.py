@@ -40,8 +40,6 @@ HealthReport = Serving | Loading | WrongModel | Unreachable | Malformed
 
 
 def parse_models_payload(raw: object, *, expect_model: str) -> HealthReport:
-    """Pure. Untrusted JSON to a domain report. Unknown fields ignored,
-    missing required fields become Malformed."""
     if not isinstance(raw, dict):
         return Malformed(detail="payload is not an object")
     data = raw.get("data")
@@ -85,7 +83,6 @@ def mint_endpoint(
 
 
 def probe(rec: RunRecord, *, expect_model: str, timeout_s: float) -> HealthReport:
-    """Thin IO shell. GET {base}/v1/models, delegate to parse_models_payload."""
     url = f"http://127.0.0.1:{rec.port}/v1/models"
     try:
         req = Request(url, headers={"Authorization": f"Bearer {rec.token}"})

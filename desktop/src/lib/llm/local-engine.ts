@@ -66,7 +66,6 @@ function parseEta(value: unknown): number | null | undefined {
   return num(value) ?? undefined;
 }
 
-/** Wire view of /api/local-engine. Copies known keys only, so endpoint fields never leak. */
 export function parseLocalEngine(raw: unknown): LocalEngine | null {
   const o = asRecord(raw);
   if (!o) return null;

@@ -5,8 +5,12 @@ from collections.abc import Callable
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from .state import ModelCard, Progress
+
+if TYPE_CHECKING:
+    from .runtimes import Runtime
 
 OBJECTS_DIR = "objects"
 PARTIAL_DIR = "partial"
@@ -75,12 +79,12 @@ def installed_bytes(sha256: str) -> int:
     return 0
 
 
-def install_plan(model_id: str, runtime: object) -> InstallPlan:
-    catalog = runtime.catalog()  # type: ignore[attr-defined]
+def install_plan(model_id: str, runtime: Runtime) -> InstallPlan:
+    catalog = runtime.catalog()
     model = next((m for m in catalog if m.id == model_id), None)
     if model is None:
         raise KeyError(model_id)
-    artifacts: tuple[Artifact, ...] = runtime.artifacts(model)  # type: ignore[attr-defined]
+    artifacts: tuple[Artifact, ...] = runtime.artifacts(model)
     missing = tuple(a for a in artifacts if installed_bytes(a.sha256) < a.size_bytes)
     total = sum(a.size_bytes for a in artifacts)
     return InstallPlan(model=model, missing=missing, total_bytes=total)

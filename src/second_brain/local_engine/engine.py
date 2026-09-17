@@ -5,7 +5,7 @@ import threading
 import time
 
 from .health import mint_endpoint
-from .runtimes import Refused, resolve
+from .runtimes import Refused, Runtime, resolve
 from .runtimes.stub import AcquireCrash, AcquireCancelled
 from .state import (
     Acquiring,
@@ -28,8 +28,8 @@ from .store import (
 )
 
 
-def _target_model_id(runtime: object) -> str:
-    catalog = runtime.catalog()  # type: ignore[attr-defined]
+def _target_model_id(runtime: Runtime) -> str:
+    catalog = runtime.catalog()
     wanted = (os.getenv("LLM_MODEL") or "").strip()
     if wanted and any(m.id == wanted for m in catalog):
         return wanted
@@ -127,7 +127,7 @@ class _Supervisor:
             return NotInstalled(model=plan.model, download_bytes=plan.total_bytes)
         return NotInstalled(model=plan.model, download_bytes=0)
 
-    def _run(self, plan: InstallPlan, runtime: object) -> None:
+    def _run(self, plan: InstallPlan, runtime: Runtime) -> None:
         try:
             def on_progress(progress: Progress) -> None:
                 with self._lock:
@@ -201,7 +201,6 @@ _supervisor = _Supervisor()
 
 
 def engine_state() -> EngineState:
-    """Current state. Cheap. At most one cached localhost health ping."""
     return _supervisor.snapshot()
 
 
