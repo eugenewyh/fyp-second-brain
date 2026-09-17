@@ -46,6 +46,16 @@ def test_stub_engine_starts_not_installed(monkeypatch):
     assert isinstance(engine_state(), NotInstalled)
 
 
+def test_stub_ignores_cloud_llm_model(monkeypatch):
+    monkeypatch.setenv("LOCAL_ENGINE_RUNTIME", "stub")
+    monkeypatch.setenv("LLM_PROVIDER", "nvidia")
+    monkeypatch.setenv("LLM_MODEL", "nvidia/nemotron-3-super-120b-a12b")
+
+    state = engine_state()
+    assert isinstance(state, NotInstalled)
+    assert state.model.id == "stub/tiny-moe"
+
+
 def test_ensure_ready_settles_to_ready(monkeypatch):
     monkeypatch.setenv("LOCAL_ENGINE_RUNTIME", "stub")
     monkeypatch.setenv("LLM_PROVIDER", "local")
@@ -70,6 +80,10 @@ def test_parse_models_payload_recorded_json():
     assert isinstance(parse_models_payload("not-a-payload", expect_model="stub/tiny-moe"), Malformed)
     assert isinstance(parse_models_payload(None, expect_model="stub/tiny-moe"), Malformed)
     assert isinstance(parse_models_payload({"object": "list"}, expect_model="stub/tiny-moe"), Malformed)
+    assert isinstance(
+        parse_models_payload({"object": "list", "data": []}, expect_model="stub/tiny-moe"),
+        Malformed,
+    )
 
 
 def test_retry_after_crash_mid_download_resumes(tmp_path, monkeypatch):

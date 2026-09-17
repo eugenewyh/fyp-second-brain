@@ -55,6 +55,8 @@ def parse_models_payload(raw: object, *, expect_model: str) -> HealthReport:
         if not isinstance(model_id, str) or not model_id:
             return Malformed(detail="model entry missing id")
         ids.append(model_id)
+    if not ids:
+        return Malformed(detail="data list is empty")
     if expect_model in ids:
         return Serving(
             model=ModelCard(
@@ -66,8 +68,7 @@ def parse_models_payload(raw: object, *, expect_model: str) -> HealthReport:
                 total_params_b=0.0,
             )
         )
-    serving_id = ids[0] if ids else ""
-    return WrongModel(serving_id=serving_id)
+    return WrongModel(serving_id=ids[0])
 
 
 def mint_endpoint(

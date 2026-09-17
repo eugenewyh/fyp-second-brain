@@ -28,8 +28,14 @@ from .store import (
 )
 
 
-def _target_model_id() -> str:
-    return (os.getenv("LLM_MODEL") or "").strip()
+def _target_model_id(runtime: object) -> str:
+    catalog = runtime.catalog()  # type: ignore[attr-defined]
+    wanted = (os.getenv("LLM_MODEL") or "").strip()
+    if wanted and any(m.id == wanted for m in catalog):
+        return wanted
+    if catalog:
+        return catalog[0].id
+    return wanted
 
 
 class _Supervisor:
@@ -57,11 +63,11 @@ class _Supervisor:
             if isinstance(cap, Refused):
                 self._state = Unsupported(reason=cap.reason, detail=cap.detail)
                 return self._state
-            model_id = _target_model_id()
+            model_id = _target_model_id(runtime)
             if not model_id:
                 self._state = Failed(
                     stage="precheck",
-                    message="LLM_MODEL is not set",
+                    message="runtime catalog is empty",
                     retryable=True,
                 )
                 return self._state
@@ -102,11 +108,11 @@ class _Supervisor:
         cap = runtime.capability()
         if isinstance(cap, Refused):
             return Unsupported(reason=cap.reason, detail=cap.detail)
-        model_id = _target_model_id()
+        model_id = _target_model_id(runtime)
         if not model_id:
             return Failed(
                 stage="precheck",
-                message="LLM_MODEL is not set",
+                message="runtime catalog is empty",
                 retryable=True,
             )
         try:
@@ -204,8 +210,8 @@ def ensure_ready() -> EngineState:
 
     Level-triggered. Returns immediately. Long work runs on a
     supervisor-owned thread. Concurrent callers join the same
-    in-flight work. Reads LLM_MODEL and LOCAL_ENGINE_RUNTIME from
-    the environment at call time.
+    in-flight work. Reads LOCAL_ENGINE_RUNTIME at call time.
+    Uses LLM_MODEL only when that id is in the runtime catalog.
     """
     return _supervisor.converge()
 

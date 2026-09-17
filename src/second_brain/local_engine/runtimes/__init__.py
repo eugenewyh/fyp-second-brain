@@ -29,8 +29,8 @@ class Runtime(Protocol):
 
 
 def resolve() -> Runtime:
-    """LOCAL_ENGINE_RUNTIME: edge0 (default) | external | stub. Read at call time."""
-    name = (os.getenv("LOCAL_ENGINE_RUNTIME") or "edge0").strip().lower()
+    """LOCAL_ENGINE_RUNTIME: stub (default) | external | edge0. Read at call time."""
+    name = (os.getenv("LOCAL_ENGINE_RUNTIME") or "stub").strip().lower()
     if name == "stub":
         from .stub import runtime
 
