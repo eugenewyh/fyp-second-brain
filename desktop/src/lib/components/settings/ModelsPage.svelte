@@ -1,10 +1,12 @@
 <script lang="ts">
+  import type { LocalEngine } from "$lib/api";
   import { LLM_PROVIDERS, type LlmProviderId } from "$lib/llm/models";
   import {
     modelHint,
     modelsForProvider,
     shortModelLabel,
   } from "$lib/llm/models";
+  import LocalEngineCard from "./LocalEngineCard.svelte";
 
   type Provider = (typeof LLM_PROVIDERS)[number];
 
@@ -14,11 +16,13 @@
     connectedList: Provider[];
     availableList: Provider[];
     saving: boolean;
+    localEngine?: LocalEngine | null;
     onConnect: (id: LlmProviderId) => void;
     onConfig: (id: LlmProviderId) => void;
     onUse: (id: LlmProviderId) => void;
     onDisconnect: (id: LlmProviderId) => void;
     onPersist: (partial: Record<string, string>) => void;
+    onLocalEngine: (next: LocalEngine) => void;
   }
 
   let {
@@ -27,11 +31,13 @@
     connectedList,
     availableList,
     saving,
+    localEngine = null,
     onConnect,
     onConfig,
     onUse,
     onDisconnect,
     onPersist,
+    onLocalEngine,
   }: Props = $props();
 
   let showAdvanced = $state(false);
@@ -60,10 +66,20 @@
   }
 </script>
 
+{#if localEngine}
+  <LocalEngineCard
+    engine={localEngine}
+    active={activeId === "local"}
+    {saving}
+    onEngine={onLocalEngine}
+    onUse={() => onUse("local")}
+  />
+{/if}
+
 <section class="st-card">
   <div class="st-card-head">
     <h3 class="st-card-title">Providers</h3>
-    <p class="st-card-sub">NVIDIA is included with Nous. Other providers are optional BYOK.</p>
+    <p class="st-card-sub">Cloud providers. NVIDIA is included with Nous. Other clouds are optional BYOK.</p>
   </div>
 
   <h4 class="list-label">Connected</h4>

@@ -9,6 +9,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT))
 
+from typing import assert_never
+
+from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -52,6 +55,19 @@ from second_brain.memory.retriever import retrieve  # noqa: E402
 from second_brain.rag.chain import ChatContext, ChatMessage, ask, chat_with_context  # noqa: E402
 from second_brain.tools.mcp_client import mcp_status  # noqa: E402
 
+from second_brain.local_engine import (  # noqa: E402
+    Acquiring,
+    EngineState,
+    Failed,
+    ModelCard,
+    NotInstalled,
+    Ready,
+    Starting,
+    Unsupported,
+    engine_state,
+    ensure_ready,
+    stop as stop_engine,
+)
 from sidecar.runs import MAX_CONCURRENT_RUNS, RUNS  # noqa: E402
 from sidecar.scheduler import start_scheduler  # noqa: E402
 
@@ -126,6 +142,9 @@ ENV_KEYS = [
     "DAILY_REVIEW_CATCH_UP",
     "ENABLE_SELF_CRITIQUE",
     "CLOUD_WATCH_URL",
+    "LOCAL_ENGINE_RUNTIME",
+    "LOCAL_ENGINE_BASE_URL",
+    "LOCAL_ENGINE_HOME",
 ]
 
 # Kept in .env for the sidecar; never shown or writable via Settings UI.
@@ -139,6 +158,9 @@ _HIDDEN_ENV_KEYS = frozenset(
         "CLOUD_WATCH_URL",
         # Nous-included NVIDIA access — never exposed in Settings UI.
         "NOUS_NVIDIA_API_KEY",
+        "LOCAL_ENGINE_RUNTIME",
+        "LOCAL_ENGINE_BASE_URL",
+        "LOCAL_ENGINE_HOME",
     }
 )
 
@@ -1550,12 +1572,82 @@ def digest_notes(req: DigestRequest):
     }
 
 
+def _model_card_view(model: ModelCard) -> dict:
+    return {
+        "id": model.id,
+        "display_name": model.display_name,
+        "disk_bytes": model.disk_bytes,
+        "context_window": model.context_window,
+        "active_params_b": model.active_params_b,
+        "total_params_b": model.total_params_b,
+    }
+
+
+def _local_view(state: EngineState) -> dict:
+    match state:
+        case Unsupported(reason=reason, detail=detail):
+            return {"kind": "unsupported", "reason": reason, "detail": detail}
+        case NotInstalled(model=model, download_bytes=download_bytes):
+            return {
+                "kind": "not_installed",
+                "model": _model_card_view(model),
+                "download_bytes": download_bytes,
+            }
+        case Acquiring(model=model, step=step, progress=progress):
+            return {
+                "kind": "acquiring",
+                "model": _model_card_view(model),
+                "step": step,
+                "done_bytes": progress.done_bytes,
+                "total_bytes": progress.total_bytes,
+                "eta_s": progress.eta_s,
+            }
+        case Starting(model=model, elapsed_s=elapsed_s):
+            return {
+                "kind": "starting",
+                "model": _model_card_view(model),
+                "elapsed_s": elapsed_s,
+            }
+        case Ready(model=model, started_at=started_at):
+            return {
+                "kind": "ready",
+                "model": _model_card_view(model),
+                "started_at": started_at,
+            }
+        case Failed(stage=stage, message=message, retryable=retryable):
+            return {
+                "kind": "failed",
+                "stage": stage,
+                "message": message,
+                "retryable": retryable,
+            }
+        case _ as unreachable:
+            assert_never(unreachable)
+
+
+@app.get("/api/local-engine")
+def get_local_engine():
+    return _local_view(engine_state())
+
+
+@app.post("/api/local-engine/ensure")
+def post_local_engine_ensure():
+    return _local_view(ensure_ready())
+
+
+@app.post("/api/local-engine/stop")
+def post_local_engine_stop():
+    return _local_view(stop_engine())
+
+
 @app.get("/api/settings")
 def get_settings():
-    from second_brain.memory.llm import using_bundled_nvidia
+    from second_brain.memory.llm import llm_is_configured, using_bundled_nvidia
 
     env = _read_env()
     provider = (env.get("LLM_PROVIDER") or "nvidia").strip().lower()
+    local_state = engine_state()
+    local_view = _local_view(local_state)
 
     def _has(k: str) -> bool:
         return bool((env.get(k) or "").strip())
@@ -1570,10 +1662,13 @@ def get_settings():
             _has("CUSTOM_BASE_URL") or _has("LLM_BASE_URL")
         ),
         "ollama": True,
+        "local": isinstance(local_state, Ready),
     }
     # Active provider ready?
     if provider == "ollama":
         llm_configured = True
+    elif provider == "local":
+        llm_configured = llm_is_configured()
     elif provider == "nvidia":
         llm_configured = connected["nvidia"] or _has("LLM_API_KEY")
     elif provider == "groq":
@@ -1602,6 +1697,7 @@ def get_settings():
         "llm_bundled": using_bundled_nvidia(),
         "llm_provider": provider,
         "connected_providers": connected,
+        "local_engine": local_view,
     }
 
 

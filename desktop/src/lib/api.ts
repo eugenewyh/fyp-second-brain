@@ -1,4 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
+import { parseLocalEngine } from "$lib/llm/local-engine";
+import type { LocalEngine, LocalModelCard } from "$lib/llm/local-engine";
 
 const DEFAULT_URL = "http://127.0.0.1:8765";
 
@@ -418,18 +420,22 @@ export interface IngestResult {
   reset?: boolean;
 }
 
+export type { LocalEngine, LocalModelCard };
+export { parseLocalEngine };
+
 export interface Settings {
   values: Record<string, string>;
   tavily_configured: boolean;
   notion_configured?: boolean;
   groq_configured: boolean;
-  /** True when current provider can run (ollama always; cloud needs a key). */
+  /** True when the active provider can run. */
   llm_configured?: boolean;
   /** True when Nous-included NVIDIA access is active (no user key). */
   llm_bundled?: boolean;
   llm_provider: string;
   /** Which providers have credentials stored (BYOK connect status). */
   connected_providers?: Record<string, boolean>;
+  local_engine?: LocalEngine;
 }
 
 export interface VaultSearchResult {
@@ -1014,7 +1020,29 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ path }),
     }),
-  getSettings: () => apiFetch<Settings>("/api/settings"),
+  getSettings: async () => {
+    const s = await apiFetch<Settings & { local_engine?: unknown }>("/api/settings");
+    return { ...s, local_engine: parseLocalEngine(s.local_engine) ?? undefined };
+  },
+  localEngine: async (): Promise<LocalEngine> => {
+    const parsed = parseLocalEngine(await apiFetch<unknown>("/api/local-engine"));
+    if (!parsed) throw new Error("Invalid on-device status");
+    return parsed;
+  },
+  localEngineEnsure: async (): Promise<LocalEngine> => {
+    const parsed = parseLocalEngine(
+      await apiFetch<unknown>("/api/local-engine/ensure", { method: "POST" }),
+    );
+    if (!parsed) throw new Error("Invalid on-device status");
+    return parsed;
+  },
+  localEngineStop: async (): Promise<LocalEngine> => {
+    const parsed = parseLocalEngine(
+      await apiFetch<unknown>("/api/local-engine/stop", { method: "POST" }),
+    );
+    if (!parsed) throw new Error("Invalid on-device status");
+    return parsed;
+  },
   /** Gemini Flash-Lite chat rename. Returns null title when unconfigured / failed. */
   suggestSessionTitle: (message: string) =>
     apiFetch<{ title: string | null; configured: boolean; model: string }>(

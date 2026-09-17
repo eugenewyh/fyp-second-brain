@@ -30,17 +30,13 @@
   }
 
   let noteExcerpt = $state("");
-  let groqConfigured = $state(false);
-  let llmProvider = $state("nvidia");
   let llmConfigured = $state(false);
 
   const noteTitle = $derived(
     workspace.activeNotePath?.split("/").pop()?.replace(/\.md$/, "") ?? null,
   );
   const offline = $derived(!connection.connected);
-  const aiConfigured = $derived(
-    llmProvider === "ollama" || llmConfigured || groqConfigured,
-  );
+  const aiConfigured = $derived(llmConfigured);
   const libraryReady = $derived(connection.collectionCount > 0);
   const hasWorkspace = $derived(workspace.projectFolders.length > 0);
   const channelEmpty = $derived(workspace.channelEmpty);
@@ -92,11 +88,8 @@
     if (!connection.connected) return;
     try {
       const settings = await api.getSettings();
-      groqConfigured = settings.groq_configured;
-      llmConfigured = settings.llm_configured ?? settings.groq_configured;
-      llmProvider = settings.llm_provider || settings.values.LLM_PROVIDER || "nvidia";
+      llmConfigured = settings.llm_configured ?? false;
     } catch {
-      groqConfigured = false;
       llmConfigured = false;
     }
   }

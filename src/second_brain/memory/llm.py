@@ -16,6 +16,7 @@ DEFAULT_NVIDIA_FALLBACK = "nvidia/nemotron-3-nano-30b-a3b"
 # Optional BYOK on Groq
 DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b"
 DEFAULT_GROQ_FALLBACK = "qwen/qwen3-32b"
+DEFAULT_LOCAL_MODEL = "edge0/moe-120b-a6b-mxfp4"
 
 LlmRole = Literal["main", "fast"]
 
@@ -51,6 +52,9 @@ def _primary_model() -> str:
         default = DEFAULT_GROQ_MODEL
     elif provider == "ollama":
         default = "qwen3:8b"
+    elif provider == "local":
+        runtime = os.getenv("LOCAL_ENGINE_RUNTIME", "").strip().lower()
+        default = "stub/tiny-moe" if runtime == "stub" else DEFAULT_LOCAL_MODEL
     elif provider == "xai":
         default = "grok-3-mini"
     elif provider == "openrouter":
@@ -146,8 +150,7 @@ def _fallback_model() -> str | None:
         fb = DEFAULT_GROQ_FALLBACK
     if not fb or fb == primary:
         return None
-    # Only use automatic fallback for cloud providers with keys
-    if provider == "ollama":
+    if provider in {"ollama", "local"}:
         return None
     return fb
 
@@ -209,6 +212,24 @@ def get_llm(
             temperature=temperature,
         )
 
+    if provider == "local":
+        from second_brain.local_engine import LocalEngineNotReady, Ready, engine_state
+
+        state = engine_state()
+        if not isinstance(state, Ready):
+            raise LocalEngineNotReady(state)
+        if model is not None and model.strip() != state.model.id:
+            raise ValueError(
+                f"requested model {model.strip()!r} does not match "
+                f"local engine {state.model.id!r}"
+            )
+        return _chat_openai_compatible(
+            model_name=state.model.id,
+            api_key=state.endpoint.token,
+            base_url=state.endpoint.base_url,
+            temperature=temperature,
+        )
+
     if provider in {"nvidia", "openai", "xai", "openrouter", "openai_compatible"}:
         api_key = _api_key()
         if not api_key:
@@ -236,7 +257,7 @@ def get_llm(
 
     raise ValueError(
         f"Unknown LLM_PROVIDER: {provider!r}. "
-        "Use nvidia, groq, ollama, openai, xai, openrouter, or openai_compatible."
+        "Use nvidia, groq, ollama, local, openai, xai, openrouter, or openai_compatible."
     )
 
 
@@ -346,6 +367,10 @@ def invoke_llm(
 def llm_is_configured() -> bool:
     """True if the current provider has enough config to run (for /api/settings status)."""
     provider = _provider()
+    if provider == "local":
+        from second_brain.local_engine import Ready, engine_state
+
+        return isinstance(engine_state(), Ready)
     if provider == "ollama":
         return True
     return bool(_api_key())
