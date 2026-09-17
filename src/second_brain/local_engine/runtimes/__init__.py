@@ -57,6 +57,8 @@ class Runtime(Protocol):
 
     def terminate(self, pid: int) -> None: ...
 
+    def is_alive(self, pid: int) -> bool: ...
+
 
 def resolve() -> Runtime:
     name = (os.getenv("LOCAL_ENGINE_RUNTIME") or "stub").strip().lower()

@@ -57,5 +57,9 @@ class ExternalRuntime:
     def terminate(self, pid: int) -> None:
         del pid
 
+    def is_alive(self, pid: int) -> bool:
+        del pid
+        return False
+
 
 runtime = ExternalRuntime()

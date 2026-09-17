@@ -12,7 +12,8 @@ from second_brain.memory.llm import get_llm, llm_is_configured
 
 
 @pytest.fixture(autouse=True)
-def _isolate_local_engine():
+def _isolate_local_engine(monkeypatch, tmp_path):
+    monkeypatch.setenv("LOCAL_ENGINE_HOME", str(tmp_path / "home"))
     stub.reset()
     _reset()
     yield

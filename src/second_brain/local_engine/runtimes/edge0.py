@@ -4,8 +4,10 @@ import hashlib
 import os
 import platform
 import shutil
+import signal
 import subprocess
 import threading
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -147,6 +149,61 @@ def _download_artifacts(tier: Edge0Tier) -> tuple[Artifact, ...]:
     )
 
 
+def _collect(pid: int) -> bool:
+    """True when pid was a child of this process and has now been reaped.
+
+    A pid we spawned but no longer hold a Popen for lingers as a zombie, and a
+    zombie still answers signal 0. Reaping it first keeps _pid_alive honest.
+    """
+    try:
+        reaped, _status = os.waitpid(pid, os.WNOHANG)
+    except (ChildProcessError, OSError):
+        return False
+    return reaped == pid
+
+
+def _pid_alive(pid: int) -> bool:
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def _signal_group(pid: int, sig: int) -> bool:
+    # spawn starts a new session, so a pid we own always leads its own group.
+    # killpg refuses a reused pid that leads nothing, which is the guard we want.
+    try:
+        os.killpg(pid, sig)
+    except (ProcessLookupError, PermissionError):
+        return False
+    return True
+
+
+def _wait_gone(pid: int, *, timeout_s: float) -> bool:
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        _collect(pid)
+        if not _pid_alive(pid):
+            return True
+        time.sleep(0.05)
+    return False
+
+
+def _terminate_group(pid: int) -> None:
+    if not _signal_group(pid, signal.SIGTERM):
+        _collect(pid)
+        return
+    if _wait_gone(pid, timeout_s=10.0):
+        return
+    _signal_group(pid, signal.SIGKILL)
+    _wait_gone(pid, timeout_s=5.0)
+
+
 def _log_tail(path: Path, *, limit: int = 400) -> str:
     try:
         raw = path.read_bytes()[-4096:].decode(errors="replace")
@@ -240,6 +297,7 @@ class Edge0Runtime:
     def terminate(self, pid: int) -> None:
         child = _children.pop(pid, None)
         if child is None:
+            _terminate_group(pid)
             return
         proc = child.proc
         if proc.poll() is None:
@@ -249,6 +307,14 @@ class Edge0Runtime:
             except subprocess.TimeoutExpired:
                 proc.kill()
         proc.wait()
+
+    def is_alive(self, pid: int) -> bool:
+        child = _children.get(pid)
+        if child is not None:
+            return child.proc.poll() is None
+        if _collect(pid):
+            return False
+        return _pid_alive(pid)
 
 
 runtime = Edge0Runtime()
