@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { api, type Settings } from "$lib/api";
+  import { api, type LocalEngine, type Settings } from "$lib/api";
   import { connection } from "$lib/stores/connection.svelte";
   import { assistant } from "$lib/stores/assistant.svelte";
   import Button from "$lib/ui/Button.svelte";
@@ -14,6 +14,7 @@
     NVIDIA_DEFAULT_MODEL,
     LLM_PROVIDERS,
     type LlmProviderId,
+    disconnectChoose,
     isProviderConnected,
     modelHint,
     modelsForProvider,
@@ -59,16 +60,19 @@
 
   const activeId = $derived((settingsForm.LLM_PROVIDER ?? "nvidia") as LlmProviderId);
   const connectedList = $derived(
-    LLM_PROVIDERS.filter((p) =>
-      isProviderConnected(p.id, settingsForm, {
-        connected: settings?.connected_providers,
-        llmBundled: settings?.llm_bundled,
-      }),
+    LLM_PROVIDERS.filter(
+      (p) =>
+        p.id !== "local" &&
+        isProviderConnected(p.id, settingsForm, {
+          connected: settings?.connected_providers,
+          llmBundled: settings?.llm_bundled,
+        }),
     ),
   );
   const availableList = $derived(
     LLM_PROVIDERS.filter(
       (p) =>
+        p.id !== "local" &&
         !p.bundled &&
         !isProviderConnected(p.id, settingsForm, {
           connected: settings?.connected_providers,
@@ -183,6 +187,25 @@
     }
   }
 
+  function onLocalEngine(next: LocalEngine) {
+    if (!settings) return;
+    const prev = settings.local_engine?.kind;
+    settings = {
+      ...settings,
+      local_engine: next,
+      connected_providers: {
+        ...(settings.connected_providers ?? {}),
+        local: next.kind === "ready",
+      },
+    };
+    if (
+      (prev === "acquiring" || prev === "starting") &&
+      (next.kind === "ready" || next.kind === "failed" || next.kind === "not_installed")
+    ) {
+      void loadSettings();
+    }
+  }
+
   function openConnect(id: LlmProviderId) {
     const m = providerMeta(id);
     modalProvider = id;
@@ -283,7 +306,9 @@
   }
 
   async function setActive(id: LlmProviderId) {
+    const localReady = id === "local" && settings?.local_engine?.kind === "ready";
     if (
+      !localReady &&
       !isProviderConnected(id, settingsForm, {
         connected: settings?.connected_providers,
         llmBundled: settings?.llm_bundled,
@@ -299,10 +324,19 @@
         LLM_PROVIDER: id,
         LLM_MODEL: resolveModelForProvider(id, settingsForm.LLM_MODEL),
       };
-      if (m.defaultBaseUrl) patch.LLM_BASE_URL = m.defaultBaseUrl;
-      if (m.defaultFallback) patch.LLM_FALLBACK_MODEL = m.defaultFallback;
-      if (m.keyEnv && settingsForm[m.keyEnv]?.trim()) {
-        patch.LLM_API_KEY = settingsForm[m.keyEnv];
+      if (id === "local") {
+        const ready =
+          settings?.local_engine?.kind === "ready" ? settings.local_engine.model.id : "";
+        patch.LLM_MODEL = ready || patch.LLM_MODEL;
+        patch.LLM_BASE_URL = "";
+        patch.LLM_API_KEY = "";
+        patch.LLM_FALLBACK_MODEL = "";
+      } else {
+        if (m.defaultBaseUrl) patch.LLM_BASE_URL = m.defaultBaseUrl;
+        if (m.defaultFallback) patch.LLM_FALLBACK_MODEL = m.defaultFallback;
+        if (m.keyEnv && settingsForm[m.keyEnv]?.trim()) {
+          patch.LLM_API_KEY = settingsForm[m.keyEnv];
+        }
       }
       await persist(patch);
       settingsMessage = `Active: ${m.label}`;
@@ -338,20 +372,21 @@
       }
 
       if (activeId === id) {
-        let chosen: LlmProviderId = "ollama";
-        for (const p of LLM_PROVIDERS) {
-          if (p.id === id || p.id === "ollama") continue;
-          if (p.keyEnv && settingsForm[p.keyEnv]?.trim()) {
-            chosen = p.id;
-            break;
-          }
-        }
+        const nextForm = { ...settingsForm, ...patch };
+        const chosen = disconnectChoose(
+          LLM_PROVIDERS,
+          nextForm,
+          settings?.local_engine?.kind,
+        );
         const nm = providerMeta(chosen);
         patch.LLM_PROVIDER = chosen;
-        patch.LLM_MODEL = nm.defaultModel ?? "qwen3:8b";
+        patch.LLM_MODEL =
+          chosen === "local" && settings?.local_engine?.kind === "ready"
+            ? settings.local_engine.model.id
+            : (nm.defaultModel ?? NVIDIA_DEFAULT_MODEL);
         patch.LLM_FALLBACK_MODEL = nm.defaultFallback ?? "";
-        if (nm.keyEnv && settingsForm[nm.keyEnv]?.trim()) {
-          patch.LLM_API_KEY = settingsForm[nm.keyEnv];
+        if (nm.keyEnv && nextForm[nm.keyEnv]?.trim()) {
+          patch.LLM_API_KEY = nextForm[nm.keyEnv];
         } else {
           patch.LLM_API_KEY = "";
         }
@@ -445,11 +480,13 @@
             {connectedList}
             {availableList}
             saving={settingsSaving}
+            localEngine={settings?.local_engine}
             onConnect={openConnect}
             onConfig={openConfig}
             onUse={(id) => void setActive(id)}
             onDisconnect={(id) => void disconnect(id)}
             onPersist={(p) => void persistPartial(p)}
+            onLocalEngine={onLocalEngine}
           />
         {/if}
       </div>

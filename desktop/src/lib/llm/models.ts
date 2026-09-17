@@ -62,6 +62,7 @@ export const MODEL_HINTS: Record<string, string> = {
 
 export type LlmProviderId =
   | "nvidia"
+  | "local"
   | "groq"
   | "ollama"
   | "openai"
@@ -122,6 +123,18 @@ export const LLM_PROVIDERS: {
     docsLabel: "Get your own key",
     hint: "No API key needed. Optional: add your own NVIDIA key to use your credits.",
     recommended: true,
+  },
+  {
+    id: "local",
+    label: "On-device",
+    short: "Large model on this Mac",
+    monogram: "On",
+    needsKey: false,
+    needsBaseUrl: false,
+    showBaseUrl: false,
+    keyEnv: null,
+    hint: "Runs on this Mac. NVIDIA remains the included cloud default.",
+    recommended: false,
   },
   {
     id: "groq",
@@ -229,6 +242,9 @@ export function isProviderConnected(
     llmBundled?: boolean;
   },
 ): boolean {
+  if (id === "local") {
+    return !!opts?.connected?.local;
+  }
   const m = providerMeta(id);
   // Shipped with Nous — always in Connected; optional BYOK via Config only.
   if (m.bundled) {
@@ -254,6 +270,9 @@ export function modelsForProvider(provider: string, currentModel?: string | null
   switch (provider) {
     case "nvidia":
       base = [...NVIDIA_MODELS];
+      break;
+    case "local":
+      base = [];
       break;
     case "ollama":
       base = [...OLLAMA_MODELS];
@@ -303,12 +322,32 @@ export function resolveModelForProvider(provider: string, current: string | unde
     if (
       provider === "openrouter" ||
       provider === "openai_compatible" ||
-      provider === "ollama"
+      provider === "ollama" ||
+      provider === "local"
     ) {
       return cur;
     }
   }
   return meta.defaultModel ?? list[0] ?? cur ?? "";
+}
+
+/**
+ * Next active provider after disconnecting a BYOK key.
+ * Caller must pass `form` with that key already cleared.
+ */
+export function disconnectChoose(
+  providers: readonly { id: LlmProviderId; keyEnv: ProviderKeyEnv; bundled?: boolean }[],
+  form: Record<string, string>,
+  localKind: string | null | undefined,
+): LlmProviderId {
+  const nvidia = providers.find((p) => p.id === "nvidia");
+  if (nvidia?.bundled || form.NVIDIA_API_KEY?.trim()) return "nvidia";
+  for (const p of providers) {
+    if (p.id === "nvidia" || p.id === "ollama" || p.id === "local") continue;
+    if (p.keyEnv && form[p.keyEnv]?.trim()) return p.id;
+  }
+  if (localKind === "ready") return "local";
+  return "nvidia";
 }
 
 export function shortModelLabel(model: string): string {
