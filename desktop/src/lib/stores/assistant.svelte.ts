@@ -1810,17 +1810,40 @@ class AssistantStore {
 
     const started = this.beginJob(sid, "quick");
     if ("error" in started) return { thinMemory: false };
+    const turnId = newId();
+    this.appendTurn(
+      {
+        id: turnId,
+        kind: "quick",
+        role: "assistant",
+        content: "",
+        sources: [],
+        thinMemory: false,
+      },
+      sid,
+    );
     try {
-      const result = await api.chat(messages, context, 5, {
-        projectPath: this.projectPathForSession(sid),
-        sessionId: sid,
-        alsoProjectPaths: opts?.alsoProjectPaths,
-        signal: started.abort.signal,
-      });
-      const thin = !!result.thin_memory;
-      this.appendTurn(
+      const result = await api.chatStream(
+        messages,
+        context,
+        (text) => {
+          const located = this.locateAnyTurn(turnId);
+          const prev =
+            located?.turn && "content" in located.turn ? String(located.turn.content ?? "") : "";
+          this.updateTurn(turnId, { content: prev + text }, sid);
+        },
+        5,
         {
-          id: newId(),
+          projectPath: this.projectPathForSession(sid),
+          sessionId: sid,
+          alsoProjectPaths: opts?.alsoProjectPaths,
+          signal: started.abort.signal,
+        },
+      );
+      const thin = !!result.thin_memory;
+      this.updateTurn(
+        turnId,
+        {
           kind: "quick",
           role: "assistant",
           content: result.answer,
@@ -1852,13 +1875,14 @@ class AssistantStore {
     } catch (e) {
       if (this.wasSubmitPaused(sid)) return { thinMemory: false };
       const message = e instanceof Error ? e.message : "Quick answer failed";
-      this.appendTurn(
+      this.updateTurn(
+        turnId,
         {
-          id: newId(),
           kind: "quick",
           role: "assistant",
           content: "",
           sources: [],
+          thinMemory: false,
           error: message,
         },
         sid,

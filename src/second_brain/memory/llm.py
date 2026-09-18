@@ -65,8 +65,17 @@ def _primary_model() -> str:
 
 
 def _fast_model() -> str | None:
-    """Optional light-tier model (Ask / verifier). Empty → use main."""
-    return os.getenv("LLM_FAST_MODEL", "").strip() or None
+    """Light-tier model for Ask / verifier.
+
+    Explicit LLM_FAST_MODEL wins. On NVIDIA with no override, use nano so
+    role=fast is not Super 120B. Other providers keep falling back to main.
+    """
+    explicit = os.getenv("LLM_FAST_MODEL", "").strip()
+    if explicit:
+        return explicit
+    if _provider() == "nvidia":
+        return DEFAULT_NVIDIA_FALLBACK
+    return None
 
 
 def _model_for_role(role: LlmRole) -> str:
@@ -184,7 +193,8 @@ def get_llm(
     """Return the configured chat model (BYOK multi-provider).
 
     role=main → LLM_MODEL (planner / synthesizer)
-    role=fast → LLM_FAST_MODEL if set, else main (Ask / verifier)
+    role=fast → LLM_FAST_MODEL if set, else NVIDIA nano when provider is nvidia,
+    else main (Ask / verifier)
     """
     provider = _provider()
     model_name = (model or _model_for_role(role)).strip()
@@ -362,6 +372,58 @@ def invoke_llm(
                     f"({primary} → {fallback}). Wait before the next research run."
                 ) from e2
             raise
+
+
+def _chunk_text(chunk: Any) -> str:
+    content = getattr(chunk, "content", chunk)
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts: list[str] = []
+        for item in content:
+            if isinstance(item, str):
+                parts.append(item)
+            elif isinstance(item, dict) and item.get("type") == "text":
+                parts.append(str(item.get("text") or ""))
+            else:
+                text = getattr(item, "text", None)
+                if text:
+                    parts.append(str(text))
+        return "".join(parts)
+    return str(content) if content is not None else ""
+
+
+def stream_llm(
+    messages: list[BaseMessage] | list[Any],
+    temperature: float = 0.2,
+    *,
+    role: LlmRole = "fast",
+):
+    """Yield text pieces from the configured LLM. No rate-limit sleep loop."""
+    primary = _model_for_role(role)
+    llm = get_llm(temperature=temperature, model=primary, role=role)
+    try:
+        for chunk in llm.stream(messages):
+            text = _chunk_text(chunk)
+            if text:
+                yield text
+        return
+    except Exception as e:
+        if not _is_rate_limit_error(e):
+            raise
+        fallback = _fallback_model()
+        if not fallback or fallback == primary:
+            raise
+        logger.warning(
+            "Primary model %s rate-limited during stream — falling back to %s",
+            primary,
+            fallback,
+        )
+        fb_llm = get_llm(temperature=temperature, model=fallback, role=role)
+        for chunk in fb_llm.stream(messages):
+            text = _chunk_text(chunk)
+            if text:
+                yield text
 
 
 def llm_is_configured() -> bool:

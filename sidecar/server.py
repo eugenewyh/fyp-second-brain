@@ -52,7 +52,7 @@ from second_brain.ingestion.pipeline import ingest_directory, ingest_file  # noq
 from second_brain.memory.chroma_store import collection_count, reset_vector_store  # noqa: E402
 from second_brain.memory.embeddings import probe_embeddings  # noqa: E402
 from second_brain.memory.retriever import retrieve  # noqa: E402
-from second_brain.rag.chain import ChatContext, ChatMessage, ask, chat_with_context  # noqa: E402
+from second_brain.rag.chain import ChatContext, ChatMessage, ask, chat_with_context, iter_chat_events  # noqa: E402
 from second_brain.tools.mcp_client import mcp_status  # noqa: E402
 
 from second_brain.local_engine import (  # noqa: E402
@@ -401,7 +401,7 @@ _ENV_INT_DEFAULTS = {
     "LLM_MAX_TOKENS": "4096",
     "RETRIEVAL_TOP_K": "5",
     "MAX_REVISIONS": "2",
-    "MAX_GOAL_PASSES": "2",
+    "MAX_GOAL_PASSES": "1",
     "WATCH_MAX_PASSES": "1",
 }
 
@@ -557,6 +557,59 @@ def chat(req: ChatRequest):
             for s in response.sources
         ],
     }
+
+
+def _chat_result_payload(response) -> dict:
+    return {
+        "question": response.question,
+        "answer": response.answer,
+        "thin_memory": response.thin_memory,
+        "contested_claims": response.contested_claims or [],
+        "sources": [
+            {
+                "index": s.index,
+                "source": s.source,
+                "page": s.page,
+                "excerpt": s.excerpt,
+            }
+            for s in response.sources
+        ],
+    }
+
+
+@app.post("/api/chat/stream")
+def chat_stream(req: ChatRequest):
+    if collection_count() == 0:
+        raise HTTPException(400, "Knowledge base is empty. Ingest documents first.")
+    _require_embeddings_ready()
+    messages = [ChatMessage(role=m.role, content=m.content) for m in req.messages]
+    ctx = None
+    if req.context:
+        ctx = ChatContext(
+            note_path=req.context.note_path,
+            selected_text=req.context.selected_text,
+            note_excerpt=req.context.note_excerpt,
+        )
+
+    def event_gen():
+        try:
+            for kind, payload in iter_chat_events(
+                messages,
+                context=ctx,
+                top_k=req.top_k,
+                project_path=req.project_path,
+                session_id=req.session_id,
+                also_project_paths=req.also_project_paths or None,
+            ):
+                if kind == "token":
+                    yield f"data: {json.dumps({'type': 'token', 'text': payload})}\n\n"
+                elif kind == "result":
+                    body = _chat_result_payload(payload)
+                    yield f"data: {json.dumps({'type': 'done', **body})}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    return StreamingResponse(event_gen(), media_type="text/event-stream")
 
 
 @app.post("/api/memory/merge")
