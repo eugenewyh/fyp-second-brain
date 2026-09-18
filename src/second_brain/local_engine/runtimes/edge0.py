@@ -14,7 +14,16 @@ from pathlib import Path
 
 from ..health import Exited, HealthReport, Serving, WrongModel, probe
 from ..state import ModelCard, Progress
-from ..store import Artifact, InstallPlan, RunRecord, home
+from ..store import (
+    Artifact,
+    InstallPlan,
+    RunRecord,
+    download_artifacts,
+    home,
+    is_http_url,
+    layout_path,
+    materialize_layout,
+)
 from . import Capability, Refused, Unavailable
 
 CLI_ENV = "EDGE0_CLI"
@@ -82,6 +91,16 @@ EDGE0_35B = Edge0Tier(
 TIERS: tuple[Edge0Tier, ...] = (EDGE0_8B, EDGE0_35B)
 
 _children: dict[int, Child] = {}
+_test_artifacts: dict[str, tuple[Artifact, ...]] = {}
+
+
+def install_test_catalog(model_id: str, artifacts: tuple[Artifact, ...]) -> None:
+    """Point a tier at artifacts a test serves itself. Production never calls this."""
+    _test_artifacts[model_id] = artifacts
+
+
+def clear_test_catalog() -> None:
+    _test_artifacts.clear()
 
 
 def _cli() -> str:
@@ -132,13 +151,19 @@ def resolve_checkpoint(tier: Edge0Tier) -> Checkpoint | None:
     raw = (os.getenv(tier.checkpoint_env) or "").strip()
     candidates = [Path(raw).expanduser()] if raw else []
     candidates.append(home() / tier.home_dirname)
+    candidates.append(layout_path(tier.card.id))
     for path in candidates:
         if (path / "config.json").is_file():
             return Checkpoint(tier=tier, path=path.resolve())
     return None
 
 
-def _download_artifacts(tier: Edge0Tier) -> tuple[Artifact, ...]:
+def _pending_artifacts(tier: Edge0Tier) -> tuple[Artifact, ...]:
+    """What the card offers to download when no checkpoint is on disk yet.
+
+    The url has no http scheme, so acquire refuses it and asks the operator for a
+    checkpoint. Pinned per-file shas replace this row once they exist.
+    """
     return (
         Artifact(
             name=f"{tier.cli_arg}-checkpoint",
@@ -225,9 +250,12 @@ class Edge0Runtime:
 
     def artifacts(self, model: ModelCard) -> tuple[Artifact, ...]:
         tier = _tier_for(model.id)
+        injected = _test_artifacts.get(tier.card.id)
+        if injected is not None:
+            return injected
         if resolve_checkpoint(tier) is not None:
             return ()
-        return _download_artifacts(tier)
+        return _pending_artifacts(tier)
 
     def acquire(
         self,
@@ -236,12 +264,19 @@ class Edge0Runtime:
         *,
         cancel: threading.Event,
     ) -> None:
-        del on_progress, cancel
         tier = _tier_for(plan.model.id)
-        raise RuntimeError(
-            f"no {tier.card.id} checkpoint on disk. Point {tier.checkpoint_env} at a "
-            f"checkpoint directory, or put one at {home() / tier.home_dirname}."
-        )
+        if not plan.missing:
+            return
+        # Read the catalog once. The layout we are about to write would otherwise
+        # change the answer between the download and the materialize.
+        wanted = self.artifacts(plan.model)
+        if not all(is_http_url(a.url) for a in plan.missing):
+            raise RuntimeError(
+                f"no {tier.card.id} checkpoint on disk. Point {tier.checkpoint_env} at a "
+                f"checkpoint directory, or put one at {home() / tier.home_dirname}."
+            )
+        download_artifacts(plan, on_progress, cancel=cancel)
+        materialize_layout(tier.card.id, wanted)
 
     def spawn(self, model: ModelCard, *, home: Path, port: int, token: str) -> int:
         del token  # edge0 serve has no auth flag; the loopback bind is the boundary

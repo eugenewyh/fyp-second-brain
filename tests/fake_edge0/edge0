@@ -5,12 +5,14 @@ import json
 import sys
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 
-def _parse(argv: list[str]) -> tuple[int, list[str], float]:
+def _parse(argv: list[str]) -> tuple[int, list[str], float, Path | None]:
     port = 0
     ids = ["edge0-8b"]
     load_s = 0.0
+    checkpoint = None
     for i, arg in enumerate(argv):
         if arg == "--port":
             port = int(argv[i + 1])
@@ -18,7 +20,9 @@ def _parse(argv: list[str]) -> tuple[int, list[str], float]:
             ids = [part for part in argv[i + 1].split(",") if part]
         elif arg == "--load-s":
             load_s = float(argv[i + 1])
-    return port, ids, load_s
+        elif arg == "serve":
+            checkpoint = Path(argv[i + 1])
+    return port, ids, load_s, checkpoint
 
 
 def main() -> int:
@@ -27,7 +31,11 @@ def main() -> int:
         print("edge0: failed to load checkpoint", file=sys.stderr, flush=True)
         return 3
 
-    port, ids, load_s = _parse(argv)
+    port, ids, load_s, checkpoint = _parse(argv)
+    if checkpoint is None or not (checkpoint / "config.json").is_file():
+        print(f"edge0: no checkpoint at {checkpoint}", file=sys.stderr, flush=True)
+        return 3
+
     time.sleep(load_s)
     payload = json.dumps(
         {
