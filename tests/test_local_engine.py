@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 import pytest
 
 from second_brain.local_engine import Failed, NotInstalled, Ready, engine_state, ensure_ready
+from second_brain.local_engine import engine, store
 from second_brain.local_engine.engine import _reset, worker_starts
 from second_brain.local_engine.health import (
     Malformed,
@@ -30,7 +31,8 @@ MODELS_PAYLOAD = {
 
 
 @pytest.fixture(autouse=True)
-def _isolate_local_engine():
+def _isolate_local_engine(monkeypatch, tmp_path):
+    monkeypatch.setenv("LOCAL_ENGINE_HOME", str(tmp_path / "home"))
     stub.reset()
     _reset()
     yield
@@ -69,6 +71,30 @@ def test_ensure_ready_settles_to_ready(monkeypatch):
     assert parsed.scheme == "http"
     assert parsed.hostname == "127.0.0.1"
     assert state.model.id == "stub/tiny-moe"
+
+
+def test_restart_reattaches_from_run_json(monkeypatch):
+    monkeypatch.setenv("LOCAL_ENGINE_RUNTIME", "stub")
+    monkeypatch.setenv("LLM_PROVIDER", "local")
+    monkeypatch.setenv("LLM_MODEL", "stub/tiny-moe")
+
+    ensure_ready()
+    stub.settle()
+    first = engine_state()
+    assert isinstance(first, Ready)
+
+    monkeypatch.setattr(store, "_run_record", None)
+    monkeypatch.setattr(engine, "_supervisor", engine._Supervisor())
+
+    again = engine_state()
+    assert isinstance(again, Ready), again
+    assert again.model.id == "stub/tiny-moe"
+    assert again.started_at == first.started_at
+    assert again.endpoint.base_url == first.endpoint.base_url
+    rec = store.read_run_record()
+    assert rec is not None
+    assert rec.port == urlparse(first.endpoint.base_url).port
+    assert stub.is_alive(rec.pid) is True
 
 
 def test_parse_models_payload_recorded_json():

@@ -3,18 +3,22 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 
-def _parse(argv: list[str]) -> tuple[int, list[str]]:
+def _parse(argv: list[str]) -> tuple[int, list[str], float]:
     port = 0
     ids = ["edge0-8b"]
+    load_s = 0.0
     for i, arg in enumerate(argv):
         if arg == "--port":
             port = int(argv[i + 1])
         elif arg == "--serve-id":
             ids = [part for part in argv[i + 1].split(",") if part]
-    return port, ids
+        elif arg == "--load-s":
+            load_s = float(argv[i + 1])
+    return port, ids, load_s
 
 
 def main() -> int:
@@ -23,7 +27,8 @@ def main() -> int:
         print("edge0: failed to load checkpoint", file=sys.stderr, flush=True)
         return 3
 
-    port, ids = _parse(argv)
+    port, ids, load_s = _parse(argv)
+    time.sleep(load_s)
     payload = json.dumps(
         {
             "object": "list",

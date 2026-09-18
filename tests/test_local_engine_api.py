@@ -26,10 +26,11 @@ STUB_MODEL = {
 
 
 @pytest.fixture(autouse=True)
-def _isolate_local_engine():
+def _isolate_local_engine(tmp_path: Path):
+    saved = dict(os.environ)
+    os.environ["LOCAL_ENGINE_HOME"] = str(tmp_path / "home")
     stub.reset()
     _reset()
-    saved = dict(os.environ)
     yield
     stub.reset()
     _reset()

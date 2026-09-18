@@ -93,6 +93,9 @@ class StubRuntime:
         del pid
         stop_child()
 
+    def is_alive(self, pid: int) -> bool:
+        return is_alive(pid)
+
 
 runtime = StubRuntime()
 

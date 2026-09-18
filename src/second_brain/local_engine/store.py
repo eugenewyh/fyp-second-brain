@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import fcntl
+import json
 import os
 import threading
-from collections.abc import Callable
-from contextlib import AbstractContextManager, nullcontext
-from dataclasses import dataclass
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -16,6 +18,8 @@ if TYPE_CHECKING:
 OBJECTS_DIR = "objects"
 PARTIAL_DIR = "partial"
 MANIFEST_NAME = "manifest.json"
+RUN_RECORD_NAME = "run.json"
+SPAWN_LOCK_NAME = "spawn.lock"
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,22 +113,59 @@ def acquire(
     runtime.acquire(plan, on_progress, cancel=cancel)
 
 
+def run_record_path() -> Path:
+    return home() / RUN_RECORD_NAME
+
+
 def read_run_record() -> RunRecord | None:
-    return _run_record
+    if _run_record is not None:
+        return _run_record
+    return _parse_run_record(run_record_path())
 
 
 def write_run_record(rec: RunRecord) -> None:
     global _run_record
     _run_record = rec
+    path = run_record_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    staging = path.with_name(f"{RUN_RECORD_NAME}.{os.getpid()}.tmp")
+    staging.write_text(json.dumps(asdict(rec)), encoding="utf-8")
+    os.replace(staging, path)
 
 
 def reap_run_record() -> None:
     global _run_record
     _run_record = None
+    run_record_path().unlink(missing_ok=True)
 
 
-def acquire_spawn_lock() -> AbstractContextManager[None]:
-    return nullcontext()
+def _parse_run_record(path: Path) -> RunRecord | None:
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(raw, dict):
+        return None
+    try:
+        return RunRecord(
+            pid=int(raw["pid"]),
+            port=int(raw["port"]),
+            token=str(raw["token"]),
+            model_id=str(raw["model_id"]),
+            runtime_version=str(raw["runtime_version"]),
+            started_at=float(raw["started_at"]),
+        )
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+@contextmanager
+def acquire_spawn_lock() -> Iterator[None]:
+    path = home() / SPAWN_LOCK_NAME
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        yield
 
 
 def reset_memory() -> None:
