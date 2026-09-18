@@ -5,7 +5,7 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from second_brain.agent.router.copy import REFUSE_MESSAGE
 from second_brain.config import DEEP_ASK_STUDY_CACHE, DEEP_ASK_TOP_K, RETRIEVAL_TOP_K
-from second_brain.memory.llm import invoke_llm
+from second_brain.memory.llm import invoke_llm, stream_llm
 from second_brain.memory.recall import memory_is_useful, recall_for_query
 from second_brain.memory.retriever import retrieve
 from second_brain.ingestion.sections import load_section_index
@@ -43,6 +43,18 @@ class RAGResponse:
     sources: list[SourceCitation] = field(default_factory=list)
     thin_memory: bool = False
     contested_claims: list[dict] = field(default_factory=list)
+
+
+@dataclass
+class _ChatReady:
+    question: str
+    llm_messages: list
+    llm_role: str
+    citations: list[SourceCitation]
+    contested_claims: list[dict]
+    comprehensive: bool
+    pinned_source: str | None
+    project_path: str | None
 
 
 def _build_citations(documents) -> list[SourceCitation]:
@@ -170,14 +182,14 @@ def _has_ephemeral_context(context: ChatContext | None) -> bool:
     )
 
 
-def chat_with_context(
+def _prepare_chat(
     messages: list[ChatMessage],
     context: ChatContext | None = None,
     top_k: int = RETRIEVAL_TOP_K,
     project_path: str | None = None,
     session_id: str | None = None,
     also_project_paths: list[str] | None = None,
-) -> RAGResponse:
+) -> RAGResponse | _ChatReady:
     question = _last_user_message(messages)
     if not question:
         return RAGResponse(
@@ -301,18 +313,105 @@ def chat_with_context(
         )
     )
 
-    response = invoke_llm(llm_messages, role=llm_role)
+    return _ChatReady(
+        question=question,
+        llm_messages=llm_messages,
+        llm_role=llm_role,
+        citations=citations,
+        contested_claims=list(memory.contested_claims or []),
+        comprehensive=comprehensive,
+        pinned_source=pinned_source,
+        project_path=project_path,
+    )
+
+
+def chat_with_context(
+    messages: list[ChatMessage],
+    context: ChatContext | None = None,
+    top_k: int = RETRIEVAL_TOP_K,
+    project_path: str | None = None,
+    session_id: str | None = None,
+    also_project_paths: list[str] | None = None,
+) -> RAGResponse:
+    prepared = _prepare_chat(
+        messages,
+        context=context,
+        top_k=top_k,
+        project_path=project_path,
+        session_id=session_id,
+        also_project_paths=also_project_paths,
+    )
+    if isinstance(prepared, RAGResponse):
+        return prepared
+
+    response = invoke_llm(prepared.llm_messages, role=prepared.llm_role)
     answer = response.content if isinstance(response.content, str) else str(response.content)
-    if comprehensive and pinned_source and DEEP_ASK_STUDY_CACHE and answer.strip():
+    if (
+        prepared.comprehensive
+        and prepared.pinned_source
+        and DEEP_ASK_STUDY_CACHE
+        and answer.strip()
+    ):
         save_study_guide(
-            question,
-            pinned_source,
+            prepared.question,
+            prepared.pinned_source,
             answer,
-            project_path=project_path,
+            project_path=prepared.project_path,
         )
     return RAGResponse(
-        question=question,
+        question=prepared.question,
         answer=answer,
-        sources=citations,
-        contested_claims=list(memory.contested_claims or []),
+        sources=prepared.citations,
+        contested_claims=prepared.contested_claims,
+    )
+
+
+def iter_chat_events(
+    messages: list[ChatMessage],
+    context: ChatContext | None = None,
+    top_k: int = RETRIEVAL_TOP_K,
+    project_path: str | None = None,
+    session_id: str | None = None,
+    also_project_paths: list[str] | None = None,
+):
+    """Yield ("token", text) then ("result", RAGResponse)."""
+    prepared = _prepare_chat(
+        messages,
+        context=context,
+        top_k=top_k,
+        project_path=project_path,
+        session_id=session_id,
+        also_project_paths=also_project_paths,
+    )
+    if isinstance(prepared, RAGResponse):
+        if prepared.answer:
+            yield ("token", prepared.answer)
+        yield ("result", prepared)
+        return
+
+    pieces: list[str] = []
+    for text in stream_llm(prepared.llm_messages, role=prepared.llm_role):
+        pieces.append(text)
+        yield ("token", text)
+    answer = "".join(pieces)
+    if (
+        prepared.comprehensive
+        and prepared.pinned_source
+        and DEEP_ASK_STUDY_CACHE
+        and answer.strip()
+    ):
+        save_study_guide(
+            prepared.question,
+            prepared.pinned_source,
+            answer,
+            project_path=prepared.project_path,
+        )
+    yield (
+        "result",
+        RAGResponse(
+            question=prepared.question,
+            answer=answer,
+            sources=prepared.citations,
+            contested_claims=prepared.contested_claims,
+        ),
     )

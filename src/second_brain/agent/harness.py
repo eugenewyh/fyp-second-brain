@@ -96,7 +96,7 @@ def live_allow_list() -> HarnessTools:
 def live_max_passes(kind: RunKind) -> int:
     if kind == "watch":
         return _env_int("WATCH_MAX_PASSES", 1)
-    return _env_int("MAX_GOAL_PASSES", 2)
+    return _env_int("MAX_GOAL_PASSES", 1)
 
 
 def live_min_confidence() -> float:

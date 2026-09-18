@@ -134,7 +134,7 @@ SUPPORTED_EXTENSIONS = {".pdf", ".txt", ".md", ".docx"}
 # Agent layer (Hermes-like memory + goal loops around LangGraph)
 AUTO_MEMORY = os.getenv("AUTO_MEMORY", "true").lower() == "true"
 AUTO_RECALL = os.getenv("AUTO_RECALL", "true").lower() == "true"
-MAX_GOAL_PASSES = max(1, min(4, _env_int("MAX_GOAL_PASSES", 2)))
+MAX_GOAL_PASSES = max(1, min(4, _env_int("MAX_GOAL_PASSES", 1)))
 WATCH_MAX_PASSES = max(1, min(4, _env_int("WATCH_MAX_PASSES", 1)))
 MIN_GOAL_CONFIDENCE = float(os.getenv("MIN_GOAL_CONFIDENCE", "0.65") or "0.65")
 AGENT_MODE_DEFAULT = os.getenv("AGENT_MODE_DEFAULT", "goal").strip().lower()

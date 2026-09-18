@@ -622,6 +622,80 @@ export const api = {
       }),
       signal: opts?.signal,
     }),
+  chatStream: async (
+    messages: ChatMessage[],
+    context: ChatContext | undefined,
+    onToken: (text: string) => void,
+    top_k = 5,
+    opts?: {
+      projectPath?: string | null;
+      sessionId?: string | null;
+      alsoProjectPaths?: string[];
+      signal?: AbortSignal;
+    },
+  ): Promise<ChatResult> => {
+    const base = await getBaseUrl();
+    const res = await fetch(`${base}/api/chat/stream`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+      body: JSON.stringify({
+        messages,
+        context: context ?? null,
+        top_k,
+        project_path: opts?.projectPath ?? null,
+        session_id: opts?.sessionId ?? null,
+        also_project_paths: opts?.alsoProjectPaths ?? [],
+      }),
+      signal: opts?.signal,
+    });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(streamErrorMessage(res, errBody));
+    }
+    if (!res.body) throw new Error("No response body from chat stream");
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let finalResult: ChatResult | null = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const parts = buffer.split("\n\n");
+      buffer = parts.pop() ?? "";
+      for (const part of parts) {
+        const line = part.split("\n").find((l) => l.startsWith("data: "));
+        if (!line) continue;
+        let raw: { type?: string; text?: string; message?: string } & Partial<ChatResult>;
+        try {
+          raw = JSON.parse(line.slice(6));
+        } catch {
+          continue;
+        }
+        if (raw.type === "token" && typeof raw.text === "string") {
+          onToken(raw.text);
+          continue;
+        }
+        if (raw.type === "error") {
+          throw new Error(raw.message || "Chat stream failed");
+        }
+        if (raw.type === "done") {
+          finalResult = {
+            question: raw.question ?? "",
+            answer: raw.answer ?? "",
+            sources: raw.sources ?? [],
+            thin_memory: raw.thin_memory,
+            contested_claims: raw.contested_claims ?? null,
+          };
+        }
+      }
+    }
+
+    if (!finalResult) throw new Error("Chat stream ended without a result");
+    return finalResult;
+  },
   managerTurn: (
     body: {
       message: string;
