@@ -31,7 +31,7 @@
   }
 </script>
 
-<aside class="memory-sidebar" aria-label="Memory">
+<aside class="memory-sidebar" data-chrome-layer aria-label="Memory">
   <div class="titlebar" data-tauri-drag-region></div>
 
   <div class="mem-head">

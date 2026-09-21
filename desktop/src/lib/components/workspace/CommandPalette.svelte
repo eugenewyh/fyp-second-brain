@@ -162,6 +162,7 @@
   >
     <div
       class="palette"
+      data-chrome-solid
       role="dialog"
       aria-label="Search library"
       tabindex="-1"

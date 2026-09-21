@@ -57,7 +57,7 @@
   });
 </script>
 
-<div class="chat-home">
+<div class="chat-home" data-chrome-layer>
   <div class="thread-col">
     <ChatHeader
       chatTitle={chatTitle}

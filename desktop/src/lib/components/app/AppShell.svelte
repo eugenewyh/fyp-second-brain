@@ -3,8 +3,9 @@
   import { app } from "$lib/stores/app.svelte";
   import { workspace } from "$lib/stores/workspace.svelte";
   import { connection } from "$lib/stores/connection.svelte";
-  import { assistant } from "$lib/stores/assistant.svelte";
+  import { assistant, isIdleSession } from "$lib/stores/assistant.svelte";
   import { tabs } from "$lib/stores/tabs.svelte";
+  import { syncChromeMode } from "$lib/chrome/chrome-mode";
   import Sidebar from "./Sidebar.svelte";
   import MemorySidebar from "./MemorySidebar.svelte";
   import DocumentView from "./DocumentView.svelte";
@@ -79,6 +80,13 @@
     if (!app.isMemory) workspace.memoryFilesOpen = false;
   });
 
+  $effect(() => {
+    syncChromeMode({
+      isHome: app.isHome,
+      sessionIdle: isIdleSession({ turns: assistant.getActiveThread() }),
+    });
+  });
+
   function onKeydown(e: KeyboardEvent) {
     if ((e.metaKey || e.ctrlKey) && e.key === "k") {
       e.preventDefault();
@@ -148,7 +156,7 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<div class="shell">
+<div class="shell" data-chrome-layer>
   <div class="body" style="--sidebar-width: {sidebarWidth}px">
     {#if app.isMemory}
       <MemorySidebar />
@@ -161,7 +169,7 @@
       testId="splitter-sidebar"
     />
 
-    <div class="main-col">
+    <div class="main-col" data-chrome-layer>
       <div class="chrome-drag" data-tauri-drag-region aria-hidden="true"></div>
       <CommandPalette />
       <AppSheet />

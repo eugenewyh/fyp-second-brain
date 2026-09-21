@@ -206,6 +206,7 @@
   >
     <div
       class="overlay-panel dialog"
+      data-chrome-solid
       role="dialog"
       aria-modal="true"
       aria-labelledby="new-project-title"
