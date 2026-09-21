@@ -60,6 +60,10 @@
   }
 
   function newChat() {
+    if (!workspace.activeTopicPath && workspace.projectFolders.length === 0) {
+      app.openNewProject();
+      return;
+    }
     ensureTopic();
     tabs.newWorkspaceChat();
   }

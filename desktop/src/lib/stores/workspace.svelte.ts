@@ -6,6 +6,7 @@ import {
   projectPathExists,
   channelIsEmpty,
 } from "$lib/vault/load";
+import { reconcileWorkspaceBindings } from "$lib/assistant/workspace-chats";
 import { rewritePathPrefix } from "$lib/vault/project-edit";
 
 const SYSTEM = new Set(["research", "memory"]);
@@ -78,35 +79,31 @@ class WorkspaceStore {
         savePinnedPaths(stillPinned);
       }
 
-      // Active topic must still exist
-      const current = this.activeTopicPath;
-      if (current) {
-        const stillThere = this.projectFolders.some((p) => pathsEqual(p.path, current));
-        if (!stillThere) {
-          const ok = await projectPathExists(current);
-          if (!ok) {
-            this.setActiveTopic(this.projectFolders[0]?.path ?? null);
-          }
-        }
-      } else if (this.projectFolders.length > 0) {
-        this.setActiveTopic(this.projectFolders[0].path);
-      }
-
-      // Sessions pointing at deleted projects → reassign or clear
+      const folderPaths = this.projectFolders.map((f) => f.path);
+      let sessionList: { id: string; projectPath: string | null }[] = [];
+      let deleteOrphan: ((id: string) => void) | null = null;
       try {
         const { assistant } = await import("$lib/stores/assistant.svelte");
-        const folders = this.projectFolders;
-        const fallback = this.activeTopicPath ?? this.projectFolders[0]?.path ?? null;
-        for (const s of Object.values(assistant.sessions)) {
-          if (
-            s.projectPath &&
-            !folders.some((f) => pathsEqual(f.path, s.projectPath!))
-          ) {
-            assistant.setSessionProject(fallback, s.id);
-          }
-        }
+        sessionList = Object.values(assistant.sessions).map((s) => ({
+          id: s.id,
+          projectPath: s.projectPath ?? null,
+        }));
+        deleteOrphan = (id) => assistant.deleteSession(id);
       } catch {
-        /* assistant may not be ready */
+        /* ignore */
+      }
+      const result = reconcileWorkspaceBindings({
+        folderPaths,
+        activeTopicPath: this.activeTopicPath,
+        sessions: sessionList,
+      });
+      if (result.nextActiveTopicPath !== this.activeTopicPath) {
+        this.setActiveTopic(result.nextActiveTopicPath);
+      }
+      if (deleteOrphan) {
+        for (const id of result.orphanSessionIds) {
+          deleteOrphan(id);
+        }
       }
 
       // Drop recent notes that no longer exist (best-effort)

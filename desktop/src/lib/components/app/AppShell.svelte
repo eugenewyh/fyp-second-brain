@@ -48,7 +48,11 @@
       tabs.pruneMissingSessions();
       if (workspace.activeTopicPath) {
         tabs.ensureWorkspaceView();
-      } else if (Object.keys(assistant.sessions).length === 0 && app.isHome) {
+      } else if (
+        workspace.projectFolders.length > 0 &&
+        Object.keys(assistant.sessions).length === 0 &&
+        app.isHome
+      ) {
         tabs.newWorkspaceChat();
       } else if (assistant.activeSessionId) {
         tabs.ensureSessionTab(assistant.activeSessionId);
