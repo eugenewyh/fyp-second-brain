@@ -1,16 +1,6 @@
-/*
- * Idle-glass chrome: remap semantic fills, punch nested chrome paints so alpha
- * does not stack, and keep overlay enclaves opaque. Palettes stay solid oklch.
- */
-
 [data-chrome-mode="idle-glass"] {
   --bg: color-mix(in oklch, var(--background) 55%, transparent);
   --pane-bg: color-mix(in oklch, var(--muted) 50%, transparent);
-}
-
-/* Beat scoped component backgrounds so only :root paints the translucent fill. */
-[data-chrome-mode="idle-glass"] [data-chrome-layer] {
-  background: transparent !important;
 }
 
 [data-chrome-mode="idle-glass"] [data-chrome-solid] {

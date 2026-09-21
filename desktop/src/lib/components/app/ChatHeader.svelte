@@ -66,6 +66,10 @@
     app-region: drag;
   }
 
+  :global(html[data-chrome-mode="idle-glass"]) .chat-header {
+    background: transparent;
+  }
+
   .header-title {
     min-width: 0;
     flex: 1;

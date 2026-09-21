@@ -7,15 +7,10 @@ export type ChromeModeContext = {
 
 export const CHROME_MODE_CHANGE_EVENT = "nous-chrome-mode-change";
 
-/** Pure. idle-glass iff isHome && sessionIdle. */
 export function resolveChromeMode(ctx: ChromeModeContext): ChromeMode {
   return ctx.isHome && ctx.sessionIdle ? "idle-glass" : "solid";
 }
 
-/**
- * Idempotent sole writer of documentElement.dataset.chromeMode
- * ("idle-glass" | removed when solid).
- */
 export function applyChromeMode(mode: ChromeMode): void {
   if (typeof document === "undefined") return;
 

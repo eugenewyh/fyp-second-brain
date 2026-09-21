@@ -281,6 +281,10 @@
     border-right: 1px solid var(--border-subtle);
   }
 
+  :global(html[data-chrome-mode="idle-glass"]) .sidebar {
+    background: transparent;
+  }
+
   .titlebar {
     height: var(--titlebar-height);
     flex-shrink: 0;

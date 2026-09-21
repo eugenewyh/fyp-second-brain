@@ -85,6 +85,10 @@
     min-height: 0;
     background: var(--bg);
   }
+
+  :global(html[data-chrome-mode="idle-glass"]) .chat-home {
+    background: transparent;
+  }
   .thread-col {
     flex: 1;
     min-width: 18rem;
@@ -92,6 +96,10 @@
     display: flex;
     flex-direction: column;
     background: var(--bg);
+  }
+
+  :global(html[data-chrome-mode="idle-glass"]) .thread-col {
+    background: transparent;
   }
   .thread-col :global(.agent-pane) {
     flex: 1;
@@ -104,6 +112,10 @@
     display: flex;
     flex-direction: column;
     background: var(--bg);
+  }
+
+  :global(html[data-chrome-mode="idle-glass"]) .peek-pane {
+    background: transparent;
   }
 
   .peek-pane :global(.document) {

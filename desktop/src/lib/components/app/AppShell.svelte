@@ -204,6 +204,10 @@
     background: var(--pane-bg);
   }
 
+  :global(html[data-chrome-mode="idle-glass"]) .shell {
+    background: transparent;
+  }
+
   .body {
     flex: 1;
     min-height: 0;
@@ -219,6 +223,10 @@
     min-height: 0;
     position: relative;
     background: var(--bg);
+  }
+
+  :global(html[data-chrome-mode="idle-glass"]) .main-col {
+    background: transparent;
   }
 
   /* Overlay inset: drag to move the window. Columns paint through this band. */

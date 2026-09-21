@@ -657,6 +657,10 @@
     --chat-gutter: 1.25rem;
   }
 
+  :global(html[data-chrome-mode="idle-glass"]) .agent-pane {
+    background: transparent;
+  }
+
   .banner {
     flex-shrink: 0;
     display: flex;
