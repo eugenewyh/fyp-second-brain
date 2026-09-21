@@ -6,6 +6,7 @@ import {
   groupSessionsByWorkspace,
   lastChatInWorkspace,
   pathsMatch,
+  reconcileWorkspaceBindings,
   type WorkspaceSession,
 } from "./workspace-chats";
 
@@ -111,3 +112,61 @@ describe("formatRelativeTime", () => {
 const MS_MIN = 60_000;
 const MS_HOUR = 3_600_000;
 const MS_DAY = 86_400_000;
+
+const coffee = "/vault/Coffee";
+const plants = "/vault/Plants";
+
+describe("reconcileWorkspaceBindings", () => {
+  const coffeeSessions = [
+    { id: "c1", projectPath: coffee },
+    { id: "c2", projectPath: `${coffee}/` },
+  ];
+  const plantsSession = { id: "p1", projectPath: plants };
+  const unbound = { id: "u1", projectPath: null };
+
+  it("clears active topic for deleted Coffee when no folders remain", () => {
+    const result = reconcileWorkspaceBindings({
+      folderPaths: [],
+      activeTopicPath: coffee,
+      sessions: coffeeSessions,
+    });
+    expect(result.nextActiveTopicPath).toBeNull();
+  });
+
+  it("falls back active topic from deleted Coffee to remaining folder Plants", () => {
+    const result = reconcileWorkspaceBindings({
+      folderPaths: [plants],
+      activeTopicPath: coffee,
+      sessions: [...coffeeSessions, plantsSession],
+    });
+    expect(result.nextActiveTopicPath).toBe(plants);
+  });
+
+  it("lists Coffee sessions as orphans but not Plants sessions", () => {
+    const result = reconcileWorkspaceBindings({
+      folderPaths: [plants],
+      activeTopicPath: plants,
+      sessions: [...coffeeSessions, plantsSession, unbound],
+    });
+    expect(result.orphanSessionIds).toEqual(["c1", "c2"]);
+  });
+
+  it("does not treat unbound sessions as orphans", () => {
+    const result = reconcileWorkspaceBindings({
+      folderPaths: [plants],
+      activeTopicPath: plants,
+      sessions: [unbound, plantsSession],
+    });
+    expect(result.orphanSessionIds).toEqual([]);
+  });
+
+  it("orphans all Coffee sessions and clears active when folder list is empty", () => {
+    const result = reconcileWorkspaceBindings({
+      folderPaths: [],
+      activeTopicPath: coffee,
+      sessions: coffeeSessions,
+    });
+    expect(result.orphanSessionIds).toEqual(["c1", "c2"]);
+    expect(result.nextActiveTopicPath).toBeNull();
+  });
+});

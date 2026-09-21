@@ -14,6 +14,37 @@ export type WorkspaceGroup = {
   pinned: boolean;
 };
 
+export type ReconcileWorkspaceInput = {
+  folderPaths: string[];
+  activeTopicPath: string | null;
+  sessions: { id: string; projectPath: string | null }[];
+};
+
+export type ReconcileWorkspaceResult = {
+  nextActiveTopicPath: string | null;
+  orphanSessionIds: string[];
+};
+
+export function reconcileWorkspaceBindings(
+  input: ReconcileWorkspaceInput,
+): ReconcileWorkspaceResult {
+  const { folderPaths, activeTopicPath, sessions } = input;
+  const activeStillListed =
+    activeTopicPath != null &&
+    folderPaths.some((p) => pathsMatch(p, activeTopicPath));
+  const nextActiveTopicPath = activeStillListed
+    ? activeTopicPath
+    : (folderPaths[0] ?? null);
+  const orphanSessionIds = sessions
+    .filter(
+      (s) =>
+        s.projectPath != null &&
+        !folderPaths.some((p) => pathsMatch(p, s.projectPath)),
+    )
+    .map((s) => s.id);
+  return { nextActiveTopicPath, orphanSessionIds };
+}
+
 export function pathsMatch(
   a: string | null | undefined,
   b: string | null | undefined,
