@@ -105,6 +105,16 @@ class WorkspaceStore {
           deleteOrphan(id);
         }
       }
+      if (folderPaths.length === 0) {
+        try {
+          const { assistant } = await import("$lib/stores/assistant.svelte");
+          const { app } = await import("$lib/stores/app.svelte");
+          assistant.clearActiveSession();
+          app.openHome();
+        } catch {
+          /* ignore */
+        }
+      }
 
       // Drop recent notes that no longer exist (best-effort)
       if (this.activeNotePath) {

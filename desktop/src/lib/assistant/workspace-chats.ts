@@ -35,6 +35,16 @@ export function reconcileWorkspaceBindings(
   const nextActiveTopicPath = activeStillListed
     ? activeTopicPath
     : (folderPaths[0] ?? null);
+
+  // No workspaces left: drop every chat, including unbound leftovers from older
+  // sync that reassigned deleted folders to null.
+  if (folderPaths.length === 0) {
+    return {
+      nextActiveTopicPath: null,
+      orphanSessionIds: sessions.map((s) => s.id),
+    };
+  }
+
   const orphanSessionIds = sessions
     .filter(
       (s) =>

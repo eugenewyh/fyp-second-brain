@@ -151,7 +151,7 @@ describe("reconcileWorkspaceBindings", () => {
     expect(result.orphanSessionIds).toEqual(["c1", "c2"]);
   });
 
-  it("does not treat unbound sessions as orphans", () => {
+  it("does not treat unbound sessions as orphans while folders remain", () => {
     const result = reconcileWorkspaceBindings({
       folderPaths: [plants],
       activeTopicPath: plants,
@@ -168,5 +168,15 @@ describe("reconcileWorkspaceBindings", () => {
     });
     expect(result.orphanSessionIds).toEqual(["c1", "c2"]);
     expect(result.nextActiveTopicPath).toBeNull();
+  });
+
+  it("drops unbound leftover chats when no workspaces remain", () => {
+    const result = reconcileWorkspaceBindings({
+      folderPaths: [],
+      activeTopicPath: null,
+      sessions: [unbound, ...coffeeSessions],
+    });
+    expect(result.nextActiveTopicPath).toBeNull();
+    expect(result.orphanSessionIds).toEqual(["u1", "c1", "c2"]);
   });
 });

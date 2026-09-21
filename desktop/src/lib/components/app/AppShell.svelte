@@ -46,10 +46,14 @@
 
     void workspace.ensureProjects().then(() => {
       tabs.pruneMissingSessions();
+      if (workspace.projectFolders.length === 0) {
+        assistant.clearActiveSession();
+        if (app.isHome) app.openHome();
+        return;
+      }
       if (workspace.activeTopicPath) {
         tabs.ensureWorkspaceView();
       } else if (
-        workspace.projectFolders.length > 0 &&
         Object.keys(assistant.sessions).length === 0 &&
         app.isHome
       ) {
