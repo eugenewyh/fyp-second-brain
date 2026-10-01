@@ -29,7 +29,7 @@
   }
 </script>
 
-<header class="chat-header" data-tauri-drag-region>
+<header class="chat-header" data-chrome-layer data-tauri-drag-region>
   <div class="header-title" class:muted>
     <span class="channel">{title}</span>
   </div>
@@ -64,6 +64,10 @@
     border-bottom: 1px solid var(--border-subtle);
     -webkit-app-region: drag;
     app-region: drag;
+  }
+
+  :global(html[data-chrome-mode="idle-glass"]) .chat-header {
+    background: transparent;
   }
 
   .header-title {

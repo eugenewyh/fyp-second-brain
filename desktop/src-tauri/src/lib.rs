@@ -502,6 +502,22 @@ pub fn run() {
             if let Err(error) = start_sidecar_process(app.handle(), &state) {
                 eprintln!("Sidecar startup warning: {error}");
             }
+
+            #[cfg(target_os = "macos")]
+            {
+                if let Some(window) = app.get_webview_window("main") {
+                    use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
+                    if let Err(error) = apply_vibrancy(
+                        &window,
+                        NSVisualEffectMaterial::HudWindow,
+                        None,
+                        None,
+                    ) {
+                        eprintln!("macOS vibrancy warning: {error}");
+                    }
+                }
+            }
+
             Ok(())
         })
         .build(tauri::generate_context!())

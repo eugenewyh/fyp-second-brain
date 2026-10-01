@@ -31,7 +31,7 @@
   }
 </script>
 
-<aside class="memory-sidebar" aria-label="Memory">
+<aside class="memory-sidebar" data-chrome-layer aria-label="Memory">
   <div class="titlebar" data-tauri-drag-region></div>
 
   <div class="mem-head">
@@ -161,6 +161,10 @@
     min-height: 0;
     background: var(--pane-bg);
     border-right: 1px solid var(--border-subtle);
+  }
+
+  :global(html[data-chrome-mode="idle-glass"]) .memory-sidebar {
+    background: transparent;
   }
 
   .titlebar {

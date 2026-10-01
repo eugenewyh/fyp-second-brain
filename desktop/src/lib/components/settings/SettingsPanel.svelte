@@ -436,7 +436,7 @@
   });
 </script>
 
-<div class="settings-root">
+<div class="settings-root" data-chrome-solid>
   {#if tab === "account" || (connection.connected && settings)}
     <div class="st-layout">
       <nav class="st-nav" aria-label="Settings">

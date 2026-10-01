@@ -32,6 +32,7 @@
       class="overlay-panel sheet"
       class:sheet-settings={app.sheet === "settings"}
       class:sheet-wide={wide}
+      data-chrome-solid
       role="dialog"
       aria-label={title}
       onclick={(e) => e.stopPropagation()}

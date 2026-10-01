@@ -1,0 +1,10 @@
+[data-chrome-mode="idle-glass"] {
+  --bg: color-mix(in oklch, var(--background) 55%, transparent);
+  --pane-bg: color-mix(in oklch, var(--muted) 50%, transparent);
+}
+
+[data-chrome-mode="idle-glass"] [data-chrome-solid] {
+  --bg: var(--background);
+  --pane-bg: var(--muted);
+  background: var(--bg-elevated);
+}

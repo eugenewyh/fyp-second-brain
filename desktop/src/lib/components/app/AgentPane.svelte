@@ -514,7 +514,7 @@
   />
 {/snippet}
 
-<div class="agent-pane" class:empty={showNewChat} data-testid="pane-center">
+<div class="agent-pane" class:empty={showNewChat} data-chrome-layer data-testid="pane-center">
   {#if !showNewChat && needsSetup}
     <div class="banner">
       <span>Set up AI to start.</span>
@@ -655,6 +655,10 @@
     background: var(--bg);
     position: relative;
     --chat-gutter: 1.25rem;
+  }
+
+  :global(html[data-chrome-mode="idle-glass"]) .agent-pane {
+    background: transparent;
   }
 
   .banner {
