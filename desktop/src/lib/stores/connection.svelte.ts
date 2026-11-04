@@ -1,4 +1,5 @@
-import { api, resetSidecarUrlCache, waitForSidecar, WATCHES_API_VERSION } from "$lib/api";
+import { api, probeSidecar, resetSidecarUrlCache, waitForSidecar, WATCHES_API_VERSION } from "$lib/api";
+import { SidecarGuard, type GuardTick } from "$lib/stores/sidecar-guard";
 import { getVaultRoot } from "$lib/vault/load";
 
 class ConnectionStore {
@@ -33,6 +34,16 @@ class ConnectionStore {
 
   /** Avoid retry loops for the same reindex fingerprint until forced. */
   #healKey = "";
+  /** Background /health loop. Online as soon as the sidecar answers, then stays on it. */
+  #guard = new SidecarGuard(
+    () => probeSidecar(),
+    () => this.#restartSidecar(),
+  );
+  #guardStarted = false;
+  #guardTimer: ReturnType<typeof setTimeout> | null = null;
+  #connectFlight: Promise<boolean> | null = null;
+  #restartFlight: Promise<void> | null = null;
+  #onlineWaiters: Array<(ok: boolean) => void> = [];
 
   get watchesApiStale(): boolean {
     return this.connected && this.watchesApi < WATCHES_API_VERSION;
@@ -157,18 +168,105 @@ class ConnectionStore {
       }
       if (!opts?.skipHeal) void this.maybeAutoReindex();
     } catch (e) {
-      this.connected = false;
-      this.connectionError =
-        e instanceof Error ? e.message : "Can't reach the AI service";
-      this.watchesApi = 0;
-      this.watchPlanError = "";
-      this.briefsToday = 0;
-      this.cloudWatchAvailable = false;
-      this.cloudWatchConfigured = false;
-      this.cloudWatchEmail = "";
-      this.cloudWatchHasKey = false;
-      this.#stopCloudPullTimer();
+      // /api/status can be slow (embedding probe). Offline means /health failed.
+      const up = await probeSidecar();
+      if (up) {
+        this.connected = true;
+        this.connectionError = "";
+        this.#guard.forceOnline();
+        return;
+      }
+      this.#markUnreachable(e instanceof Error ? e.message : "Can't reach the AI service");
     }
+  }
+
+  #markUnreachable(message: string) {
+    this.#guard.forceOffline();
+    this.connected = false;
+    this.connectionError = message;
+    this.watchesApi = 0;
+    this.watchPlanError = "";
+    this.briefsToday = 0;
+    this.cloudWatchAvailable = false;
+    this.cloudWatchConfigured = false;
+    this.cloudWatchEmail = "";
+    this.cloudWatchHasKey = false;
+    this.#stopCloudPullTimer();
+  }
+
+  #resolveOnlineWaiters() {
+    const waiters = this.#onlineWaiters;
+    this.#onlineWaiters = [];
+    for (const waiter of waiters) waiter(true);
+  }
+
+  #waitConnected(timeoutMs: number): Promise<boolean> {
+    if (this.connected) return Promise.resolve(true);
+    return new Promise((resolve) => {
+      let timer: ReturnType<typeof setTimeout>;
+      const finish = (ok: boolean) => {
+        clearTimeout(timer);
+        this.#onlineWaiters = this.#onlineWaiters.filter((w) => w !== finish);
+        resolve(ok);
+      };
+      timer = setTimeout(() => finish(this.connected), timeoutMs);
+      this.#onlineWaiters.push(finish);
+    });
+  }
+
+  #applyTick(tick: GuardTick) {
+    if (tick.online) {
+      const needStatus = !this.connected;
+      this.connected = true;
+      this.connectionError = "";
+      this.connecting = false;
+      if (needStatus) {
+        this.#resolveOnlineWaiters();
+        void this.refreshStatus();
+      }
+      return;
+    }
+    if (this.connected || tick.becameOffline) {
+      this.#markUnreachable(
+        tick.message || "Can't reach the AI sidecar on port 8765. Retrying…",
+      );
+      return;
+    }
+    if (tick.message) this.connectionError = tick.message;
+  }
+
+  #ensureGuard() {
+    if (this.#guardStarted) return;
+    this.#guardStarted = true;
+    void this.#runTick();
+  }
+
+  async #runTick() {
+    let delay = 200;
+    try {
+      const tick = await this.#guard.tick();
+      delay = tick.nextDelayMs;
+      this.#applyTick(tick);
+    } catch {
+      delay = 200;
+    }
+    if (this.#guardTimer) clearTimeout(this.#guardTimer);
+    this.#guardTimer = setTimeout(() => void this.#runTick(), delay);
+  }
+
+  async #restartSidecar(): Promise<void> {
+    if (this.#restartFlight) return this.#restartFlight;
+    this.#restartFlight = (async () => {
+      try {
+        await api.restartSidecar();
+        resetSidecarUrlCache();
+      } catch {
+        /* browser / vite-only, or restart failed */
+      }
+    })().finally(() => {
+      this.#restartFlight = null;
+    });
+    return this.#restartFlight;
   }
 
   /** Rebuild the vault search index when the sidecar says re-ingest is required. */
@@ -198,68 +296,74 @@ class ConnectionStore {
     }
   }
 
-  /** Manual retry after auto-heal failed. */
+  /** Manual retry after auto-heal failed. Prefer repairing the model before a full re-ingest. */
   async retryReindex(): Promise<boolean> {
     this.#healKey = "";
     this.reindexError = "";
+    try {
+      const repaired = await api.repairEmbeddings();
+      this.embeddingsOk = repaired.embeddings_ok !== false;
+      this.reindexRequired = !!repaired.reindex_required;
+      this.embeddingsError = repaired.embeddings_error || "";
+      if (this.embeddingsOk && !this.reindexRequired) {
+        await this.refreshStatus({ skipHeal: true });
+        return true;
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Could not repair search model";
+      this.reindexError = /load failed|failed to fetch|network/i.test(msg)
+        ? "Could not reach the AI service while repairing search. Wait a second and retry."
+        : msg;
+      // Fall through — a forced re-ingest may still help once the model is back.
+    }
+    if (!this.embeddingsOk && !this.reindexRequired) {
+      return false;
+    }
     return this.maybeAutoReindex({ force: true });
   }
 
   /** Restart the sidecar and reconnect. Use when Watch routes 404 on a running process. */
   async reloadService(): Promise<boolean> {
+    this.#ensureGuard();
     this.connectionError = "";
-    try {
-      await api.restartSidecar();
-      resetSidecarUrlCache();
-    } catch {
-      /* browser / vite-only, or restart failed — still try health */
-    }
-    const ready = await waitForSidecar(24);
-    if (!ready) {
-      this.connected = false;
-      this.watchesApi = 0;
-      this.watchPlanError = "";
-      this.briefsToday = 0;
-      this.cloudWatchAvailable = false;
-      this.cloudWatchConfigured = false;
-      this.cloudWatchEmail = "";
-      this.cloudWatchHasKey = false;
-      this.connectionError =
-        "Can't reach the AI sidecar on port 8765. From the project root run: ./scripts/start_sidecar.sh";
-      return false;
-    }
-    await this.refreshStatus();
-    return this.connected;
-  }
-
-  /**
-   * Wait for sidecar health; if still down, try Tauri restart_sidecar once.
-   */
-  async connect(opts?: { restart?: boolean }): Promise<boolean> {
     this.connecting = true;
-    this.connectionError = "";
+    this.#guard.noteRestart();
     try {
-      let ready = await waitForSidecar(opts?.restart === false ? 20 : 10);
+      await this.#restartSidecar();
+      const ready = await waitForSidecar(80);
       if (!ready) {
-        try {
-          await api.restartSidecar();
-          resetSidecarUrlCache();
-          ready = await waitForSidecar(24);
-        } catch {
-          /* not in Tauri, or restart failed */
-        }
-      }
-      if (!ready) {
-        this.connected = false;
-        this.connectionError =
-          "Can't reach the AI sidecar on port 8765. From the project root run: ./scripts/start_sidecar.sh";
+        this.#markUnreachable(
+          "Can't reach the AI sidecar on port 8765. From the project root run: ./scripts/start_sidecar.sh",
+        );
         return false;
       }
-      await this.refreshStatus();
-      return this.connected;
+      this.#guard.forceOnline();
+      this.connected = true;
+      this.connectionError = "";
+      this.#resolveOnlineWaiters();
+      void this.refreshStatus();
+      return true;
     } finally {
       this.connecting = false;
     }
+  }
+
+  /**
+   * Start the health guard and resolve once /health succeeds.
+   * Does not block on /api/status. Pass restart to recycle the process first.
+   */
+  async connect(opts?: { restart?: boolean }): Promise<boolean> {
+    this.#ensureGuard();
+    if (opts?.restart) return this.reloadService();
+    if (this.connected) return true;
+    if (this.#connectFlight) return this.#connectFlight;
+    this.connecting = true;
+    this.connectionError = "";
+    this.#connectFlight = this.#waitConnected(20_000).finally(() => {
+      this.connecting = false;
+      this.#connectFlight = null;
+    });
+    return this.#connectFlight;
   }
 }
 

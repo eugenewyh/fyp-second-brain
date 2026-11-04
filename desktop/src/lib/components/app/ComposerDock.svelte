@@ -32,6 +32,7 @@
     skillPlaceholder,
     type ForcedJob,
   } from "$lib/assistant/composer-skills";
+  import { memorySearchErrorCopy } from "$lib/stores/memory-search-copy";
 
   type ModeAction = "ask" | "research" | "teach";
 
@@ -84,6 +85,12 @@
     header,
     onSubmit,
   }: Props = $props();
+
+  const offlineHint = $derived(
+    connection.connecting
+      ? "Connecting to backend…"
+      : "Backend offline — retrying…",
+  );
 
   let llmProvider = $state("nvidia");
   let llmModel = $state("");
@@ -600,7 +607,9 @@
       disabled={!canSubmit}
       onclick={onSubmit}
       title={offline
-        ? "Backend offline"
+        ? connection.connecting
+          ? "Connecting"
+          : "Backend offline"
         : connection.memorySearchBlocked
           ? "Memory unavailable"
           : "Send"}
@@ -679,7 +688,7 @@
           placeholder={dragOver
             ? "Drop files to attach…"
             : offline
-              ? "Backend offline — reconnect to send…"
+              ? offlineHint
               : placeholder}
           rows={3}
           onkeydown={handleKeydown}
@@ -712,7 +721,7 @@
           placeholder={dragOver
             ? "Drop files to attach…"
             : offline
-              ? "Backend offline — reconnect to send…"
+              ? offlineHint
               : placeholder}
           rows={1}
           onkeydown={handleKeydown}
@@ -737,19 +746,19 @@
   {@render skillPills()}
 
   {#if offline}
-    <p class="privacy warn" role="status">Backend offline — reconnect to send</p>
+    <p class="privacy warn" role="status">{offlineHint}</p>
   {:else if variant === "dock"}
     {#if connection.memorySearchBlocked}
       <p class="privacy warn" role="status">
         {#if connection.reindexBusy || connection.reindexRequired}
           Rebuilding search index…
         {:else if connection.reindexError}
-          {connection.reindexError}
+          {memorySearchErrorCopy(connection.reindexError)}
           <button type="button" class="linkish" onclick={() => void connection.retryReindex()}>
             Retry
           </button>
         {:else}
-          {connection.embeddingsError || "Vault search unavailable"}
+          {memorySearchErrorCopy(connection.embeddingsError)}
           <button type="button" class="linkish" onclick={() => void connection.retryReindex()}>
             Retry
           </button>
@@ -758,7 +767,7 @@
     {:else if assistant.isLoading}
       <p class="privacy quiet live" role="status">
         <span class="status-dot" aria-hidden="true"></span>
-        {assistant.routeStatus === "teach" ? "Filing into memory…" : "Working…"}
+        {assistant.routeStatus === "teach" ? "Learning…" : "Working…"}
       </p>
     {/if}
   {:else if connection.memorySearchBlocked}
@@ -766,12 +775,12 @@
       {#if connection.reindexBusy || connection.reindexRequired}
         Rebuilding search index…
       {:else if connection.reindexError}
-        {connection.reindexError}
+        {memorySearchErrorCopy(connection.reindexError)}
         <button type="button" class="linkish" onclick={() => void connection.retryReindex()}>
           Retry
         </button>
       {:else}
-        {connection.embeddingsError || "Vault search unavailable"}
+        {memorySearchErrorCopy(connection.embeddingsError)}
         <button type="button" class="linkish" onclick={() => void connection.retryReindex()}>
           Retry
         </button>
@@ -780,7 +789,7 @@
   {:else if assistant.isLoading}
     <p class="privacy quiet live" role="status">
       <span class="status-dot" aria-hidden="true"></span>
-      {assistant.routeStatus === "teach" ? "Filing into memory…" : "Working…"}
+        {assistant.routeStatus === "teach" ? "Learning…" : "Working…"}
     </p>
   {/if}
 </div>

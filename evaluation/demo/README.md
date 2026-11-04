@@ -5,7 +5,44 @@ Easy, non-technical topics for facilitators and participants.
 | Pack | Theme |
 |------|--------|
 | [`Coffee/`](Coffee/) | Home espresso — gear, beans, routine, recipes |
+| [`Recipes/`](Recipes/) | Weeknight cooking — staples, meals, prep, shopping |
 | [`Plants/`](Plants/) | Houseplants — light, watering, mistakes, weekly habit |
+
+---
+
+## Coffee + Recipes (demo pair)
+
+Two everyday topics. Use either Library import or a vault copy.
+
+### Copy into the vault
+
+```bash
+# From repo root
+cp -R evaluation/demo/Coffee data/documents/Coffee
+cp -R evaluation/demo/Recipes data/documents/Recipes
+```
+
+Then open each workspace and run **Remember** / Teach before Ask (files are not memory until filed).
+
+### Library import
+
+1. **New workspace** named **Coffee** or **Recipes** (paste `IDEA.md` if you want).
+2. **Import notes** → choose `evaluation/demo/Coffee/notes` or `evaluation/demo/Recipes/notes`.
+3. **Import & file to memory**.
+
+### Suggested prompts
+
+**Coffee — Ask**  
+> According to my notes, how do I pull a weekday double, and what do I fix if the shot is too bitter?
+
+**Recipes — Ask**  
+> What are my go-to weeknight meals, and what mistake should I avoid with garlic?
+
+**Recipes — Research**  
+> Looking at my notes, how do I cook simple dinners all week without takeaway? Cover staples, meals, and Sunday prep.
+
+**Teach (optional)**  
+Paste `Recipes/TEACH_DUMP.txt` into the composer, or Remember the Coffee notes folder.
 
 ---
 
@@ -56,13 +93,7 @@ Paste `Plants/TEACH_DUMP.txt` into the composer.
 
 ## Coffee (original Round 2 pack)
 
-See [`Coffee/README.md`](Coffee/README.md). Quick copy:
-
-```bash
-cp -R evaluation/demo/Coffee data/documents/Coffee
-```
-
-Then follow `evaluation/uat_questionnaire.md` (Round 2).
+See [`Coffee/README.md`](Coffee/README.md). Quick copy is under **Coffee + Recipes** above. Follow `evaluation/uat_questionnaire.md` (Round 2) for the full script.
 
 ### Important: files ≠ memory
 

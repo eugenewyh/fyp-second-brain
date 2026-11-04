@@ -43,6 +43,9 @@ def load_env_files() -> None:
 def ensure_data_dirs() -> None:
     (DATA_ROOT / "data" / "documents").mkdir(parents=True, exist_ok=True)
     (DATA_ROOT / "data" / "chroma").mkdir(parents=True, exist_ok=True)
+    (DATA_ROOT / "fastembed_cache").mkdir(parents=True, exist_ok=True)
+    if not (os.getenv("FASTEMBED_CACHE_PATH") or "").strip():
+        os.environ["FASTEMBED_CACHE_PATH"] = str((DATA_ROOT / "fastembed_cache").resolve())
 
 
 load_env_files()
@@ -85,7 +88,7 @@ LLM_FAST_MODEL = os.getenv("LLM_FAST_MODEL", "").strip()
 # Used when primary model hits rate limits (429)
 GROQ_FALLBACK_MODEL = os.getenv("GROQ_FALLBACK_MODEL", "qwen/qwen3-32b")
 _DEFAULT_LLM_FALLBACK = (
-    "nvidia/nemotron-3-nano-30b-a3b"
+    "nvidia/nemotron-3-super-120b-a12b"
     if LLM_PROVIDER == "nvidia"
     else GROQ_FALLBACK_MODEL
 )

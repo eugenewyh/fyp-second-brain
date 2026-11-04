@@ -3579,5 +3579,1993 @@
     "claims": 4,
     "attachments": false,
     "phase": "ready"
+  },
+  {
+    "text": "Remember this: my notes on espresso dial-in go under this topic.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Save the attached dump about espresso dial-in.",
+    "job": "file",
+    "claims": 1,
+    "attachments": true,
+    "phase": "seed"
+  },
+  {
+    "text": "File these bullets into memory about espresso dial-in.",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  },
+  {
+    "text": "According to my notes, what matters most for espresso dial-in?",
+    "job": "answer",
+    "claims": 4,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What did I already decide about espresso dial-in?",
+    "job": "answer",
+    "claims": 6,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Summarise my stance on espresso dial-in from memory only.",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Research recent work on espresso dial-in and cite sources.",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up best practices for espresso dial-in outside my vault.",
+    "job": "research",
+    "claims": 2,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "Compare approaches to espresso dial-in and write a short report.",
+    "job": "research",
+    "claims": 1,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "Based on my notes, how do I handle espresso dial-in?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Teach: paste dump for espresso dial-in",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Can you recall what I taught you about espresso dial-in?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Find papers on espresso dial-in",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Remember this: my notes on snake plant watering go under this topic.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Save the attached dump about snake plant watering.",
+    "job": "file",
+    "claims": 1,
+    "attachments": true,
+    "phase": "seed"
+  },
+  {
+    "text": "File these bullets into memory about snake plant watering.",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  },
+  {
+    "text": "According to my notes, what matters most for snake plant watering?",
+    "job": "answer",
+    "claims": 4,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What did I already decide about snake plant watering?",
+    "job": "answer",
+    "claims": 6,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Summarise my stance on snake plant watering from memory only.",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Research recent work on snake plant watering and cite sources.",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up best practices for snake plant watering outside my vault.",
+    "job": "research",
+    "claims": 2,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "Compare approaches to snake plant watering and write a short report.",
+    "job": "research",
+    "claims": 1,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "Based on my notes, how do I handle snake plant watering?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Teach: paste dump for snake plant watering",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Can you recall what I taught you about snake plant watering?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Find papers on snake plant watering",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Keep a Watch on snake plant watering and brief me weekly.",
+    "job": "file",
+    "claims": 2,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "Remember this: my notes on diffusion LMs go under this topic.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Save the attached dump about diffusion LMs.",
+    "job": "file",
+    "claims": 1,
+    "attachments": true,
+    "phase": "seed"
+  },
+  {
+    "text": "File these bullets into memory about diffusion LMs.",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  },
+  {
+    "text": "According to my notes, what matters most for diffusion LMs?",
+    "job": "answer",
+    "claims": 4,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What did I already decide about diffusion LMs?",
+    "job": "answer",
+    "claims": 6,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Summarise my stance on diffusion LMs from memory only.",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Research recent work on diffusion LMs and cite sources.",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up best practices for diffusion LMs outside my vault.",
+    "job": "research",
+    "claims": 2,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "Compare approaches to diffusion LMs and write a short report.",
+    "job": "research",
+    "claims": 1,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "Based on my notes, how do I handle diffusion LMs?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Teach: paste dump for diffusion LMs",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Can you recall what I taught you about diffusion LMs?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Find papers on diffusion LMs",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Remember this: my notes on claim write-back go under this topic.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Save the attached dump about claim write-back.",
+    "job": "file",
+    "claims": 1,
+    "attachments": true,
+    "phase": "seed"
+  },
+  {
+    "text": "File these bullets into memory about claim write-back.",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  },
+  {
+    "text": "According to my notes, what matters most for claim write-back?",
+    "job": "answer",
+    "claims": 4,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What did I already decide about claim write-back?",
+    "job": "answer",
+    "claims": 6,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Summarise my stance on claim write-back from memory only.",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Research recent work on claim write-back and cite sources.",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up best practices for claim write-back outside my vault.",
+    "job": "research",
+    "claims": 2,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "Compare approaches to claim write-back and write a short report.",
+    "job": "research",
+    "claims": 1,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "Based on my notes, how do I handle claim write-back?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Teach: paste dump for claim write-back",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Can you recall what I taught you about claim write-back?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Find papers on claim write-back",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Remember this: my notes on Watch briefs go under this topic.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Save the attached dump about Watch briefs.",
+    "job": "file",
+    "claims": 1,
+    "attachments": true,
+    "phase": "seed"
+  },
+  {
+    "text": "File these bullets into memory about Watch briefs.",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  },
+  {
+    "text": "According to my notes, what matters most for Watch briefs?",
+    "job": "answer",
+    "claims": 4,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What did I already decide about Watch briefs?",
+    "job": "answer",
+    "claims": 6,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Summarise my stance on Watch briefs from memory only.",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Research recent work on Watch briefs and cite sources.",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up best practices for Watch briefs outside my vault.",
+    "job": "research",
+    "claims": 2,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "Compare approaches to Watch briefs and write a short report.",
+    "job": "research",
+    "claims": 1,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "Based on my notes, how do I handle Watch briefs?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Teach: paste dump for Watch briefs",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Can you recall what I taught you about Watch briefs?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Find papers on Watch briefs",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Remember this: my notes on pour-over ratio go under this topic.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Save the attached dump about pour-over ratio.",
+    "job": "file",
+    "claims": 1,
+    "attachments": true,
+    "phase": "seed"
+  },
+  {
+    "text": "File these bullets into memory about pour-over ratio.",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  },
+  {
+    "text": "According to my notes, what matters most for pour-over ratio?",
+    "job": "answer",
+    "claims": 4,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What did I already decide about pour-over ratio?",
+    "job": "answer",
+    "claims": 6,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Summarise my stance on pour-over ratio from memory only.",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Research recent work on pour-over ratio and cite sources.",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up best practices for pour-over ratio outside my vault.",
+    "job": "research",
+    "claims": 2,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "Compare approaches to pour-over ratio and write a short report.",
+    "job": "research",
+    "claims": 1,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "Based on my notes, how do I handle pour-over ratio?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Teach: paste dump for pour-over ratio",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Can you recall what I taught you about pour-over ratio?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Find papers on pour-over ratio",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Remember this: my notes on FYP evaluation metrics go under this topic.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Save the attached dump about FYP evaluation metrics.",
+    "job": "file",
+    "claims": 1,
+    "attachments": true,
+    "phase": "seed"
+  },
+  {
+    "text": "File these bullets into memory about FYP evaluation metrics.",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  },
+  {
+    "text": "According to my notes, what matters most for FYP evaluation metrics?",
+    "job": "answer",
+    "claims": 4,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What did I already decide about FYP evaluation metrics?",
+    "job": "answer",
+    "claims": 6,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Summarise my stance on FYP evaluation metrics from memory only.",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Research recent work on FYP evaluation metrics and cite sources.",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up best practices for FYP evaluation metrics outside my vault.",
+    "job": "research",
+    "claims": 2,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "Compare approaches to FYP evaluation metrics and write a short report.",
+    "job": "research",
+    "claims": 1,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "Based on my notes, how do I handle FYP evaluation metrics?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Teach: paste dump for FYP evaluation metrics",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Can you recall what I taught you about FYP evaluation metrics?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Find papers on FYP evaluation metrics",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Remember this: my notes on indoor humidity for plants go under this topic.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Save the attached dump about indoor humidity for plants.",
+    "job": "file",
+    "claims": 1,
+    "attachments": true,
+    "phase": "seed"
+  },
+  {
+    "text": "File these bullets into memory about indoor humidity for plants.",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  },
+  {
+    "text": "According to my notes, what matters most for indoor humidity for plants?",
+    "job": "answer",
+    "claims": 4,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What did I already decide about indoor humidity for plants?",
+    "job": "answer",
+    "claims": 6,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Summarise my stance on indoor humidity for plants from memory only.",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Research recent work on indoor humidity for plants and cite sources.",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up best practices for indoor humidity for plants outside my vault.",
+    "job": "research",
+    "claims": 2,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "Compare approaches to indoor humidity for plants and write a short report.",
+    "job": "research",
+    "claims": 1,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "Based on my notes, how do I handle indoor humidity for plants?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Teach: paste dump for indoor humidity for plants",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Can you recall what I taught you about indoor humidity for plants?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Find papers on indoor humidity for plants",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Keep a Watch on indoor humidity for plants and brief me weekly.",
+    "job": "file",
+    "claims": 2,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "Remember this: my notes on arXiv retrieval go under this topic.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Save the attached dump about arXiv retrieval.",
+    "job": "file",
+    "claims": 1,
+    "attachments": true,
+    "phase": "seed"
+  },
+  {
+    "text": "File these bullets into memory about arXiv retrieval.",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  },
+  {
+    "text": "According to my notes, what matters most for arXiv retrieval?",
+    "job": "answer",
+    "claims": 4,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What did I already decide about arXiv retrieval?",
+    "job": "answer",
+    "claims": 6,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Summarise my stance on arXiv retrieval from memory only.",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Research recent work on arXiv retrieval and cite sources.",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up best practices for arXiv retrieval outside my vault.",
+    "job": "research",
+    "claims": 2,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "Compare approaches to arXiv retrieval and write a short report.",
+    "job": "research",
+    "claims": 1,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "Based on my notes, how do I handle arXiv retrieval?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Can you recall what I taught you about arXiv retrieval?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Find papers on arXiv retrieval",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Remember this: my notes on Manager job routing go under this topic.",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Save the attached dump about Manager job routing.",
+    "job": "file",
+    "claims": 1,
+    "attachments": true,
+    "phase": "seed"
+  },
+  {
+    "text": "File these bullets into memory about Manager job routing.",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  },
+  {
+    "text": "According to my notes, what matters most for Manager job routing?",
+    "job": "answer",
+    "claims": 4,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "What did I already decide about Manager job routing?",
+    "job": "answer",
+    "claims": 6,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Summarise my stance on Manager job routing from memory only.",
+    "job": "answer",
+    "claims": 3,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Research recent work on Manager job routing and cite sources.",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Look up best practices for Manager job routing outside my vault.",
+    "job": "research",
+    "claims": 2,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "Compare approaches to Manager job routing and write a short report.",
+    "job": "research",
+    "claims": 1,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "Based on my notes, how do I handle Manager job routing?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Teach: paste dump for Manager job routing",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Can you recall what I taught you about Manager job routing?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Find papers on Manager job routing",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Don't invent \u2014 I haven't taught anything yet. What do my notes say about dose?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "I attached a markdown dump \u2014 please remember it.",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  },
+  {
+    "text": "Open research goal: survey grounding metrics for personal RAG.",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Quick question from my Coffee notes: water hardness target?",
+    "job": "answer",
+    "claims": 8,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Refuse if you don't have notes: what's my espresso recipe?",
+    "job": "refuse",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Please ingest this Teach dump before I Ask.",
+    "job": "file",
+    "claims": 0,
+    "attachments": true,
+    "phase": "empty"
+  },
+  {
+    "text": "Run research on JustGRPO vs baselines with citations.",
+    "job": "research",
+    "claims": 1,
+    "attachments": false,
+    "phase": "seed"
+  },
+  {
+    "text": "From memory only \u2014 list contested claims about milk steaming.",
+    "job": "answer",
+    "claims": 7,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "research this",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research that",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research it",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research this for me",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "please research espresso dial-in",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "can you research espresso dial-in",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "could you research espresso dial-in",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research the latest on espresso dial-in",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research how to improve espresso dial-in",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research what people recommend for espresso dial-in",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Go ahead and research this",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "I need you to research that",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research this topic: espresso dial-in",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research that \u2014 cite sources",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "do some research on espresso dial-in",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "please research snake plant watering",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "can you research snake plant watering",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "could you research snake plant watering",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research the latest on snake plant watering",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research how to improve snake plant watering",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research what people recommend for snake plant watering",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research this topic: snake plant watering",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "do some research on snake plant watering",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "please research diffusion LMs",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "can you research diffusion LMs",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "could you research diffusion LMs",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research the latest on diffusion LMs",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research how to improve diffusion LMs",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research what people recommend for diffusion LMs",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research this topic: diffusion LMs",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "do some research on diffusion LMs",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "please research claim write-back",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "can you research claim write-back",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "could you research claim write-back",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research the latest on claim write-back",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research how to improve claim write-back",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research what people recommend for claim write-back",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research this topic: claim write-back",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "do some research on claim write-back",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "please research Watch briefs",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "can you research Watch briefs",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "could you research Watch briefs",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research the latest on Watch briefs",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research how to improve Watch briefs",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research what people recommend for Watch briefs",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research this topic: Watch briefs",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "do some research on Watch briefs",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "please research pour-over ratio",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "can you research pour-over ratio",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "could you research pour-over ratio",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research the latest on pour-over ratio",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research how to improve pour-over ratio",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research what people recommend for pour-over ratio",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research this topic: pour-over ratio",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "do some research on pour-over ratio",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "please research FYP metrics",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "can you research FYP metrics",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "could you research FYP metrics",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research the latest on FYP metrics",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research how to improve FYP metrics",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research what people recommend for FYP metrics",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research this topic: FYP metrics",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "do some research on FYP metrics",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "please research arXiv retrieval",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "can you research arXiv retrieval",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "could you research arXiv retrieval",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research the latest on arXiv retrieval",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research how to improve arXiv retrieval",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research what people recommend for arXiv retrieval",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research this topic: arXiv retrieval",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "do some research on arXiv retrieval",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "please research milk steaming",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "can you research milk steaming",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "could you research milk steaming",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research the latest on milk steaming",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research how to improve milk steaming",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research what people recommend for milk steaming",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research this topic: milk steaming",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "do some research on milk steaming",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "please research water hardness",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "can you research water hardness",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "could you research water hardness",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research the latest on water hardness",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "Research how to improve water hardness",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research what people recommend for water hardness",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "research this topic: water hardness",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "do some research on water hardness",
+    "job": "research",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "learn this about espresso",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "remember this: notes on espresso",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "save this dump on espresso",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "please remember that",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "teach this",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "add this to my notes on espresso",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "ingest this",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "keep this for espresso",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What should I know about espresso?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "How do I handle espresso?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Why does espresso matter?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Is my approach to espresso correct?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Can you summarise what I noted on espresso?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "teach me about espresso",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "learn this about snake plants",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "remember this: notes on snake plants",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "save this dump on snake plants",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "add this to my notes on snake plants",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "keep this for snake plants",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What should I know about snake plants?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "How do I handle snake plants?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Why does snake plants matter?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Is my approach to snake plants correct?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Can you summarise what I noted on snake plants?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "teach me about snake plants",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "learn this about diffusion LMs",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "remember this: notes on diffusion LMs",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "save this dump on diffusion LMs",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "add this to my notes on diffusion LMs",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "keep this for diffusion LMs",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What should I know about diffusion LMs?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "How do I handle diffusion LMs?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Why does diffusion LMs matter?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Is my approach to diffusion LMs correct?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Can you summarise what I noted on diffusion LMs?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "teach me about diffusion LMs",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "learn this about Watch briefs",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "remember this: notes on Watch briefs",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "save this dump on Watch briefs",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "add this to my notes on Watch briefs",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "keep this for Watch briefs",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What should I know about Watch briefs?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "How do I handle Watch briefs?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Why does Watch briefs matter?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Is my approach to Watch briefs correct?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Can you summarise what I noted on Watch briefs?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "teach me about Watch briefs",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "learn this about pour-over",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "remember this: notes on pour-over",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "save this dump on pour-over",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "add this to my notes on pour-over",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "keep this for pour-over",
+    "job": "file",
+    "claims": 0,
+    "attachments": false,
+    "phase": "empty"
+  },
+  {
+    "text": "What should I know about pour-over?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "How do I handle pour-over?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Why does pour-over matter?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Is my approach to pour-over correct?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "Can you summarise what I noted on pour-over?",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
+  },
+  {
+    "text": "teach me about pour-over",
+    "job": "answer",
+    "claims": 5,
+    "attachments": false,
+    "phase": "ready"
   }
 ]

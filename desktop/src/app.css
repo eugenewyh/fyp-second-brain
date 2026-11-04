@@ -7,6 +7,7 @@
 @import "./lib/theme/palettes/mono.css";
 @import "./lib/theme/palettes/lilac.css";
 @import "./lib/theme/palette-bridge.css";
+@import "./lib/theme/chrome-glass.css";
 
 :root {
   /*

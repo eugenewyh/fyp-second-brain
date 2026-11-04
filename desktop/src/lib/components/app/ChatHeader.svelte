@@ -29,7 +29,7 @@
   }
 </script>
 
-<header class="chat-header" data-tauri-drag-region>
+<header class="chat-header" data-chrome-layer data-tauri-drag-region>
   <div class="header-title" class:muted>
     <span class="channel">{title}</span>
   </div>

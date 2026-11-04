@@ -632,7 +632,7 @@
     {:else if data.nodes.length === 0}
       <div class="state">
         <p class="state-title">Nothing to show yet</p>
-        <p class="state-sub">Add notes, run research, or adjust the filters.</p>
+        <p class="state-sub">Add a workspace or some notes, or loosen the filters.</p>
       </div>
     {/if}
 

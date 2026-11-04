@@ -1,0 +1,278 @@
+:root {
+  color-scheme: dark;
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  background: #121411;
+  color: #eceae3;
+  --bg: #121411;
+  --card: #1b1e19;
+  --line: #2c3128;
+  --muted: #a3a89b;
+  --accent: #d7e2c4;
+  --danger: #e7b2a8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.panel,
+.browse {
+  height: 100%;
+  background: var(--bg);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 0.9rem 0.9rem 1rem;
+}
+
+.panel-head,
+.head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.browse {
+  display: flex;
+  flex-direction: column;
+}
+
+.browse-head {
+  padding: 1rem 1.25rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.browse main {
+  flex: 1;
+  overflow: auto;
+  padding: 1.1rem 1.25rem 2rem;
+}
+
+h1,
+h2 {
+  font-weight: 560;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.8rem;
+}
+
+h1 {
+  font-size: 1.6rem;
+}
+
+h2 {
+  margin-top: 1.3rem;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.search,
+.composer input,
+.composer textarea,
+.composer select,
+.add input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #161814;
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+}
+
+.search:focus,
+.composer input:focus,
+.composer textarea:focus,
+.add input:focus,
+.composer select:focus {
+  outline: 1px solid var(--accent);
+}
+
+.browse-head .search {
+  margin-top: 0.75rem;
+}
+
+.text-btn,
+.composer button,
+.add button,
+.app-card button {
+  border: 1px solid var(--line);
+  background: transparent;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+}
+
+.text-btn:hover,
+.composer button:hover,
+.add button:hover,
+.app-card button:hover:not(:disabled) {
+  background: #262a22;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.chips,
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chip {
+  border: 1px solid var(--line);
+  background: transparent;
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  color: var(--muted);
+}
+
+.chip.on {
+  color: #121411;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.add,
+.composer {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.composer.inline {
+  margin-bottom: 0.9rem;
+}
+
+.composer textarea {
+  min-height: 4.5rem;
+  resize: vertical;
+}
+
+.list,
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.list {
+  min-height: 0;
+  overflow: auto;
+}
+
+.card {
+  text-align: left;
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 16px;
+  padding: 0.85rem 0.9rem;
+}
+
+.memory-card p,
+.category p,
+.lead,
+.quiet,
+.empty p,
+.meta {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.memory-card p,
+.sentence {
+  color: var(--text, #eceae3);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.category-grid,
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.category {
+  min-height: 9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.category strong,
+.app-card strong {
+  font-size: 1.15rem;
+}
+
+.kicker,
+.count {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.count {
+  margin-top: auto;
+}
+
+.detail {
+  padding: 1.1rem 1.15rem;
+}
+
+.sentence {
+  font-size: 1.25rem;
+}
+
+.app-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
+}
+
+.app-card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.empty {
+  padding: 1rem 0;
+}
+
+.empty-title {
+  color: #eceae3;
+  margin: 0;
+}
+
+.error {
+  color: var(--danger);
+  margin: 0;
+}
+
+.lead {
+  margin-top: 0;
+}

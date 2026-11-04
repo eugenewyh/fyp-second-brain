@@ -3,9 +3,9 @@ export type TurnIntent = "teach" | "explain" | "lookup";
 const LOOKUP_RE =
   /\b(look\s*up|looking\s*up|find\s+papers?|arxiv|search\s+the\s+web|what'?s\s+new|latest)\b/i;
 
-/** Mission-style research (Research chip, "Research …", compare/write-up phrasing). */
+/** Mission-style research (Research chip, "Research …", "do a research on …"). */
 const RESEARCH_INTENT_RE =
-  /(?:^\s*research\b)|(?:\b(?:investigate|explore|survey|deep\s+dive|write\s+(?:a\s+)?report)\b)|(?:\b(?:file\s+(?:a\s+)?report|compile\s+(?:a\s+)?report|run\s+(?:a\s+)?report)\b)|(?:\b(?:find\s+sources|gather\s+sources|source\s+review)\b)|(?:\b(?:pros\s+and\s+cons|state\s+of\s+the\s+art|literature\s+review)\b)|(?:\b(?:compare|contrast)\s+.+\s+(?:vs\.?|versus|and)\b)|(?:\b(?:what\s+(?:are|is)\s+(?:the\s+)?(?:latest|current|recent))\b)/i;
+  /(?:^\s*research\b)|(?:\bdo\s+(?:a\s+|some\s+)?research\b)|(?:\bresearch\s+on\b)|(?:\bplease\s+research\b)|(?:\b(?:investigate|explore|survey|deep\s+dive|write\s+(?:a\s+)?report)\b)|(?:\b(?:file\s+(?:a\s+)?report|compile\s+(?:a\s+)?report|run\s+(?:a\s+)?report)\b)|(?:\b(?:find\s+sources|gather\s+sources|source\s+review)\b)|(?:\b(?:pros\s+and\s+cons|state\s+of\s+the\s+art|literature\s+review)\b)|(?:\b(?:compare|contrast)\s+.+\s+(?:vs\.?|versus|and)\b)|(?:\b(?:what\s+(?:are|is)\s+(?:the\s+)?(?:latest|current|recent))\b)/i;
 
 const SYNTHESIS_RE =
   /\b(synthesi[sz]e|synthesis|stance\s+on|write[- ]?up|literature\s+review|report\s+on|multi[- ]?part)\b/i;

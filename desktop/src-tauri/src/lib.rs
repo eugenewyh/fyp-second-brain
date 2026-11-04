@@ -1,3 +1,4 @@
+use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::mpsc::channel;
@@ -54,6 +55,8 @@ fn ensure_data_dirs(data: &Path) -> Result<(), String> {
         .map_err(|e| format!("Cannot create documents dir: {e}"))?;
     std::fs::create_dir_all(data.join("data").join("chroma"))
         .map_err(|e| format!("Cannot create chroma dir: {e}"))?;
+    std::fs::create_dir_all(data.join("fastembed_cache"))
+        .map_err(|e| format!("Cannot create fastembed cache: {e}"))?;
     Ok(())
 }
 
@@ -101,6 +104,7 @@ fn start_sidecar_process(app: &AppHandle, state: &SidecarState) -> Result<(), St
         (bundle, script, true, data)
     } else {
         let root = dev_project_root();
+        ensure_data_dirs(&root)?;
         if let Ok(mut store) = data_root_store().lock() {
             *store = root.clone();
         }
@@ -123,21 +127,41 @@ fn start_sidecar_process(app: &AppHandle, state: &SidecarState) -> Result<(), St
     cmd.arg(&script)
         .current_dir(&root)
         .env("PYTHONPATH", root.join("src"))
+        .env(
+            "FASTEMBED_CACHE_PATH",
+            if bundled {
+                root.join("fastembed_cache")
+            } else {
+                data_dir.join("fastembed_cache")
+            },
+        )
         .stdout(Stdio::null())
         .stderr(Stdio::piped());
 
     if bundled {
         cmd.env("NOUS_BUNDLE_ROOT", &root)
-            .env("NOUS_DATA_DIR", &data_dir)
-            .env(
-                "FASTEMBED_CACHE_PATH",
-                root.join("fastembed_cache"),
-            );
+            .env("NOUS_DATA_DIR", &data_dir);
     }
 
-    let child = cmd
+    let mut child = cmd
         .spawn()
         .map_err(|e| format!("Failed to start sidecar: {e}"))?;
+
+    // Stderr is piped. If nobody reads it, the pipe fills and Python blocks
+    // on the next log line — /health then looks offline. Drain it.
+    if let Some(stderr) = child.stderr.take() {
+        thread::spawn(move || {
+            let mut reader = BufReader::new(stderr);
+            let mut line = String::new();
+            loop {
+                line.clear();
+                match reader.read_line(&mut line) {
+                    Ok(0) | Err(_) => break,
+                    Ok(_) => eprint!("{line}"),
+                }
+            }
+        });
+    }
 
     *guard = Some(child);
     Ok(())
@@ -502,6 +526,22 @@ pub fn run() {
             if let Err(error) = start_sidecar_process(app.handle(), &state) {
                 eprintln!("Sidecar startup warning: {error}");
             }
+
+            #[cfg(target_os = "macos")]
+            {
+                if let Some(window) = app.get_webview_window("main") {
+                    use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
+                    if let Err(error) = apply_vibrancy(
+                        &window,
+                        NSVisualEffectMaterial::HudWindow,
+                        None,
+                        None,
+                    ) {
+                        eprintln!("macOS vibrancy warning: {error}");
+                    }
+                }
+            }
+
             Ok(())
         })
         .build(tauri::generate_context!())

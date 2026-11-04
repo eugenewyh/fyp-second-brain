@@ -150,3 +150,60 @@ def test_put_settings_persists_public_key_hides_runtime(client: TestClient, monk
     assert values["LLM_MAX_TOKENS"] == "2048"
     assert "LOCAL_ENGINE_RUNTIME" not in values
     assert os.environ.get("LOCAL_ENGINE_RUNTIME") == "stub"
+
+
+def test_put_settings_provider_switch_keeps_cloud_keys(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    """Switching active provider must not wipe BYOK keys left on disk."""
+    monkeypatch.setenv("LOCAL_ENGINE_RUNTIME", "stub")
+    env_path = tmp_path / ".env"
+    env_path.write_text(
+        "\n".join(
+            [
+                "LLM_PROVIDER=openrouter",
+                "LLM_MODEL=openai/gpt-oss-120b",
+                "OPENROUTER_API_KEY=sk-or-keep-me",
+                "GROQ_API_KEY=gsk-keep-me",
+                "LLM_API_KEY=sk-or-keep-me",
+                "EDGE0_CLI=/opt/edge0",
+                "EDGE0_35B_MODEL=/models/edge0-35b",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr("sidecar.server.ENV_PATH", env_path)
+
+    put = client.put(
+        "/api/settings",
+        json={
+            "values": {
+                "LLM_PROVIDER": "local",
+                "LLM_MODEL": "stub/tiny-moe",
+            }
+        },
+    )
+    assert put.status_code == 200, put.text
+    disk = env_path.read_text(encoding="utf-8")
+    assert "OPENROUTER_API_KEY=sk-or-keep-me" in disk
+    assert "GROQ_API_KEY=gsk-keep-me" in disk
+    assert "EDGE0_CLI=/opt/edge0" in disk
+    assert "EDGE0_35B_MODEL=/models/edge0-35b" in disk
+    assert "LLM_PROVIDER=local" in disk
+
+    again = client.put(
+        "/api/settings",
+        json={
+            "values": {
+                "LLM_PROVIDER": "openrouter",
+                "LLM_MODEL": "openai/gpt-oss-120b",
+                "LLM_API_KEY": "sk-or-keep-me",
+                "LLM_BASE_URL": "https://openrouter.ai/api/v1",
+            }
+        },
+    )
+    assert again.status_code == 200, again.text
+    disk2 = env_path.read_text(encoding="utf-8")
+    assert "OPENROUTER_API_KEY=sk-or-keep-me" in disk2
+    assert "GROQ_API_KEY=gsk-keep-me" in disk2

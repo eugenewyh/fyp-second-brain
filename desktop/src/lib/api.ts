@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { parseLocalEngine } from "$lib/llm/local-engine";
 import type { LocalEngine, LocalModelCard } from "$lib/llm/local-engine";
+import { sidecarProbeDelayMs } from "$lib/stores/sidecar-guard";
 
 const DEFAULT_URL = "http://127.0.0.1:8765";
 
@@ -22,16 +23,29 @@ export function resetSidecarUrlCache(): void {
   cachedBaseUrl = null;
 }
 
-export async function waitForSidecar(maxAttempts = 30): Promise<boolean> {
+/** Local health checks should fail fast. A live /health response is a few milliseconds. */
+const SIDECAR_HEALTH_TIMEOUT_MS = 350;
+
+/** One /health probe. True only when the sidecar answered ok. */
+export async function probeSidecar(timeoutMs = SIDECAR_HEALTH_TIMEOUT_MS): Promise<boolean> {
   const base = await getBaseUrl();
+  try {
+    const res = await fetch(`${base}/health`, {
+      signal: AbortSignal.timeout(timeoutMs),
+      cache: "no-store",
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function waitForSidecar(maxAttempts = 30): Promise<boolean> {
   for (let i = 0; i < maxAttempts; i++) {
-    try {
-      const res = await fetch(`${base}/health`, { signal: AbortSignal.timeout(2000) });
-      if (res.ok) return true;
-    } catch {
-      /* sidecar still starting or hung */
+    if (await probeSidecar()) return true;
+    if (i + 1 < maxAttempts) {
+      await new Promise((r) => setTimeout(r, sidecarProbeDelayMs(i)));
     }
-    await new Promise((r) => setTimeout(r, 500));
   }
   return false;
 }
@@ -594,6 +608,13 @@ export const WATCHES_API_VERSION = 3;
 export const api = {
   health: () => apiFetch<SidecarHealth>("/health"),
   status: () => apiFetch<Status>("/api/status"),
+  repairEmbeddings: () =>
+    apiFetch<{
+      embeddings_ok?: boolean;
+      embeddings_error?: string;
+      reindex_required?: boolean;
+      purged_incomplete?: number;
+    }>("/api/embeddings/repair", { method: "POST", body: "{}" }),
   query: (question: string, top_k = 5) =>
     apiFetch<QueryResult>("/api/query", {
       method: "POST",

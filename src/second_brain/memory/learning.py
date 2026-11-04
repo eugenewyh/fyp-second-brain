@@ -468,6 +468,7 @@ def consolidate_project_memory(
     session_id: str | None = None,
     claim_slugs: list[str] | None = None,
     ingest: bool = True,
+    polish: bool = True,
 ) -> Path:
     """Rewrite project.md into structured sections from active claims + open questions."""
     from second_brain.memory.claims import list_claims
@@ -558,7 +559,8 @@ def consolidate_project_memory(
             "",
         ]
     )
-    body = _optional_llm_polish_sections(body)
+    if polish:
+        body = _optional_llm_polish_sections(body)
 
     # Append log entry before rewrite
     try:

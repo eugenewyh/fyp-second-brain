@@ -25,13 +25,13 @@ describe("isIdleSession", () => {
     expect(isIdleSession({ turns: withUser })).toBe(false);
   });
 
-  it("treats Remember / digest turns as real work, not New Chat", () => {
+  it("treats Learning / digest turns as real work, not New Chat", () => {
     const digestOnly: AssistantTurn[] = [
       {
         id: "d1",
         kind: "digest",
         status: "running",
-        label: "Remember Collection.md, Light.md",
+        label: "Learning Collection.md, Light.md",
       },
     ];
     expect(isIdleSession({ turns: digestOnly })).toBe(false);

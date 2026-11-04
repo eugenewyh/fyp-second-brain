@@ -135,7 +135,7 @@ export function chatSetupItems(opts: {
   const items: ChatSetupItem[] = [];
 
   if (opts.offline) {
-    items.push({ id: "backend", label: "Start backend", done: false });
+    items.push({ id: "backend", label: "Connecting backend", done: false });
     return items;
   }
 

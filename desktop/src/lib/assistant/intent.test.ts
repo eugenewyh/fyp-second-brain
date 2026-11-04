@@ -74,6 +74,13 @@ describe("classifyIntent", () => {
     ).toBe("lookup");
     expect(hasResearchIntent("Research indoor plant care")).toBe(true);
     expect(
+      hasResearchIntent(
+        "do a research on how to make espresso at home. Cover grind and dose, steaming milk, and what I’d buy next.",
+      ),
+    ).toBe(true);
+    expect(hasResearchIntent("please research oat milk steaming")).toBe(true);
+    expect(hasResearchIntent("research on specialty roasting")).toBe(true);
+    expect(
       shouldAutoResearch(
         "Research how specialty coffee roasting affects flavor — compare light vs dark roast",
       ),

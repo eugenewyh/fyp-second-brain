@@ -20,7 +20,8 @@
   import RunDetailsDrawer from "./RunDetailsDrawer.svelte";
   import TopicPicker from "./TopicPicker.svelte";
   import { folderLabel, pathsMatch } from "$lib/assistant/workspace-chats";
-  import { fade, fly } from "svelte/transition";
+  import { memorySearchErrorCopy } from "$lib/stores/memory-search-copy";
+  import { fade } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
 
   function openMemoryForChat() {
@@ -36,6 +37,7 @@
     workspace.activeNotePath?.split("/").pop()?.replace(/\.md$/, "") ?? null,
   );
   const offline = $derived(!connection.connected);
+  const connecting = $derived(connection.connecting && offline);
   const aiConfigured = $derived(llmConfigured);
   const libraryReady = $derived(connection.collectionCount > 0);
   const hasWorkspace = $derived(workspace.projectFolders.length > 0);
@@ -50,15 +52,16 @@
   const needsSetup = $derived(!connection.connected || !aiConfigured);
   const thread = $derived(assistant.getActiveThread());
   const empty = $derived(isIdleSession({ turns: thread }));
-  /** Idle chat → Cursor-style centered composer; after first send → dock. */
+  /** Idle chat → Cursor-style centered landing + composer; after first send → dock. */
   const showNewChat = $derived(empty);
-  const showSetupLanding = $derived(empty && phase !== "ready");
   const newChatPlaceholder = $derived(
-    offline
-      ? "Backend offline — reconnect to send…"
-      : showSetupLanding
-        ? landingPlaceholder
-        : "Ask anything — memory first, then outside sources…",
+    connecting
+      ? "Connecting to backend…"
+      : offline
+        ? "Backend offline — retrying…"
+      : phase === "ready"
+        ? "Ask anything — memory first, then outside sources…"
+        : landingPlaceholder,
   );
   const missionTurn = $derived(assistant.getMissionTurn());
   const showDetails = $derived(
@@ -514,7 +517,7 @@
   />
 {/snippet}
 
-<div class="agent-pane" class:empty={showNewChat} data-testid="pane-center">
+<div class="agent-pane" class:empty={showNewChat} data-chrome-layer data-testid="pane-center">
   {#if !showNewChat && needsSetup}
     <div class="banner">
       <span>Set up AI to start.</span>
@@ -533,7 +536,9 @@
         <span>Updating search index…</span>
       {:else}
         <span>
-          {connection.embeddingsError || "Vault search is temporarily unavailable."}
+          {memorySearchErrorCopy(
+            connection.reindexError || connection.embeddingsError,
+          )}
         </span>
         <button type="button" class="link" onclick={() => void connection.retryReindex()}>
           Retry
@@ -549,37 +554,22 @@
       out:fade={{ duration: 80, easing: cubicOut }}
     >
       <div class="new-chat-inner">
-        {#if showSetupLanding}
-          <ChatLanding
-            {phase}
-            topicLabel={topicLabel}
-            {offline}
-            {aiConfigured}
-            {hasWorkspace}
-            libraryReady={libraryReady}
-            {channelEmpty}
-            memoryBlocked={connection.memorySearchBlocked}
-            disabled={offline || assistant.isLoading}
-            onStarter={applyStarter}
-            onSetupAction={openSetupAction}
-            onNewWorkspace={() => app.openNewProject()}
-          >
-            {#snippet compose()}
-              <ComposerDock
-                {offline}
-                {noteTitle}
-                variant="center"
-                placeholder={newChatPlaceholder}
-                header={workspacePicker}
-                onSubmit={submit}
-              />
-            {/snippet}
-          </ChatLanding>
-        {:else}
-          <div
-            class="new-chat-compose"
-            in:fly={{ y: 10, duration: 220, easing: cubicOut }}
-          >
+        <ChatLanding
+          {phase}
+          topicLabel={topicLabel}
+          {offline}
+          {connecting}
+          {aiConfigured}
+          {hasWorkspace}
+          libraryReady={libraryReady}
+          {channelEmpty}
+          memoryBlocked={connection.memorySearchBlocked}
+          disabled={offline || assistant.isLoading}
+          onStarter={applyStarter}
+          onSetupAction={openSetupAction}
+          onNewWorkspace={() => app.openNewProject()}
+        >
+          {#snippet compose()}
             <ComposerDock
               {offline}
               {noteTitle}
@@ -588,8 +578,8 @@
               header={workspacePicker}
               onSubmit={submit}
             />
-          </div>
-        {/if}
+          {/snippet}
+        </ChatLanding>
       </div>
     </div>
   {:else}

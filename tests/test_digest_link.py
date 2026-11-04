@@ -11,6 +11,7 @@ from second_brain.memory.claims import SourcedClaim, list_claims
 from second_brain.memory.digest_link import (
     content_hash,
     digest_and_link,
+    digest_many,
     is_memory_trace_path,
     quote_in_source,
 )
@@ -23,6 +24,12 @@ NOTE = (
     "Students should verify every citation against the original PDF."
 )
 
+NOTE_B = (
+    "Sourdough starter needs regular feeding with flour and water. "
+    "A warm kitchen speeds fermentation but can overproof the dough. "
+    "Bakers score the loaf so steam escapes in a controlled pattern."
+)
+
 
 def _noop_ingest(*_a, **_k):
     return 0
@@ -33,17 +40,11 @@ def project(tmp_path, monkeypatch):
     from second_brain.memory import digest_link as dl
     from second_brain.memory import claims as claims_mod
     from second_brain.memory import learning as learning_mod
-    from second_brain.memory.recall import MemoryContext
 
     monkeypatch.setattr(dl, "ingest_file", _noop_ingest)
     monkeypatch.setattr(claims_mod, "ingest_file", _noop_ingest)
     monkeypatch.setattr(learning_mod, "ingest_file", _noop_ingest)
     monkeypatch.setattr(learning_mod, "_optional_llm_polish_sections", lambda body: body)
-    monkeypatch.setattr(
-        dl,
-        "recall_for_query",
-        lambda *a, **k: MemoryContext(),
-    )
     return tmp_path / "RAG-Grounding"
 
 
@@ -155,21 +156,25 @@ def test_idempotent_same_hash_reuses_inbox(project, monkeypatch):
     from second_brain.memory import digest_link as dl
 
     quote = "Long-context models can beat RAG on short document sets."
-    monkeypatch.setattr(
-        dl,
-        "extract_sourced_claims",
-        lambda *a, **k: [
+    calls = {"n": 0}
+
+    def _extract(*a, **k):
+        calls["n"] += 1
+        return [
             SourcedClaim(
                 claim="Long-context models can beat RAG on short sets.",
                 source_quote=quote,
             )
-        ],
-    )
+        ]
+
+    monkeypatch.setattr(dl, "extract_sourced_claims", _extract)
     first = digest_and_link(text=NOTE, title="RAG note", project_path=str(project), ingest=False)
     second = digest_and_link(text=NOTE, title="RAG note again", project_path=str(project), ingest=False)
     assert first.content_hash == second.content_hash == content_hash(NOTE)
     assert second.idempotent is True
     assert Path(first.saved_path) == Path(second.saved_path)
+    assert calls["n"] == 1
+    assert second.summary == "Already remembered this dump"
     inbox = list((project / "inbox").glob("*.md"))
     assert len(inbox) == 1
     # Identical restatement should not mint extra claim files
@@ -177,3 +182,51 @@ def test_idempotent_same_hash_reuses_inbox(project, monkeypatch):
     active = list_claims(str(project), status="active")
     assert len(active) == 1
     assert len(all_claims) == 1
+
+
+def test_digest_many_one_extract_two_files(project, monkeypatch):
+    from second_brain.memory import digest_link as dl
+
+    calls = {"n": 0}
+
+    def _extract(text, **k):
+        calls["n"] += 1
+        out = []
+        if "fabricates" in text:
+            out.append(
+                SourcedClaim(
+                    claim="RAG still fabricates citations on thin corpora.",
+                    source_quote="Retrieval-augmented generation still fabricates citations when the corpus is thin.",
+                )
+            )
+        if "Sourdough" in text or "sourdough" in text.lower():
+            out.append(
+                SourcedClaim(
+                    claim="Sourdough starter needs regular feeding.",
+                    source_quote="Sourdough starter needs regular feeding with flour and water.",
+                )
+            )
+        return out
+
+    monkeypatch.setattr(dl, "extract_sourced_claims", _extract)
+
+    inbox = project / "inbox"
+    inbox.mkdir(parents=True)
+    p1 = inbox / "rag.md"
+    p2 = inbox / "bread.md"
+    p1.write_text(NOTE, encoding="utf-8")
+    p2.write_text(NOTE_B, encoding="utf-8")
+
+    result = digest_many(
+        paths=[str(p1), str(p2)],
+        title="Recipes",
+        project_path=str(project),
+        ingest=False,
+    )
+    assert calls["n"] == 1
+    assert result["claims_created"] >= 1
+    assert "results" in result
+    assert len(result["results"]) == 2
+    assert Path(result["results"][0]["saved_path"]).is_file()
+    assert Path(result["results"][1]["saved_path"]).is_file()
+    assert project_memory_path(str(project)).is_file()

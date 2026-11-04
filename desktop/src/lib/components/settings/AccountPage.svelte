@@ -166,22 +166,13 @@
       <h3 class="st-card-title">Account</h3>
       <p class="st-card-sub">
         One email code for sign-up and sign-in. Notes stay on this Mac whether you are signed in or
-        not. Cloud Scheduled Research uses this account when the Mac is asleep.
+        not.
       </p>
     </div>
 
     {#if step === "signed-in"}
       <p class="row"><span class="label">Email</span> {userEmail}</p>
       <p class="row"><span class="label">Device</span> {deviceName}</p>
-      {#if connection.cloudWatchAvailable}
-        <p class="row muted">
-          Cloud Scheduled Research: {connection.cloudWatchConfigured
-            ? connection.cloudWatchHasKey
-              ? "connected (Models key on server)"
-              : "connected — sync Models key from Settings → Models"
-            : "sign-in synced; open Scheduled Research to sync active schedules"}
-        </p>
-      {/if}
       <div class="actions">
         <button type="button" class="ghost" disabled={busy} onclick={() => void onSignOut()}>
           Sign out

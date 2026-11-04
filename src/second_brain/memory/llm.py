@@ -12,11 +12,12 @@ logger = logging.getLogger(__name__)
 
 # Default stack on NVIDIA Build NIM
 DEFAULT_NVIDIA_MODEL = "nvidia/nemotron-3-super-120b-a12b"
-DEFAULT_NVIDIA_FALLBACK = "nvidia/nemotron-3-nano-30b-a3b"
+# Nano 30B NIM was retired (HTTP 410); use Super until a live light tier exists.
+DEFAULT_NVIDIA_FALLBACK = "nvidia/nemotron-3-super-120b-a12b"
 # Optional BYOK on Groq
 DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b"
 DEFAULT_GROQ_FALLBACK = "qwen/qwen3-32b"
-DEFAULT_LOCAL_MODEL = "edge0-8b"
+DEFAULT_LOCAL_MODEL = "edge0-35b"
 
 LlmRole = Literal["main", "fast"]
 
@@ -67,8 +68,9 @@ def _primary_model() -> str:
 def _fast_model() -> str | None:
     """Light-tier model for Ask / verifier.
 
-    Explicit LLM_FAST_MODEL wins. On NVIDIA with no override, use nano so
-    role=fast is not Super 120B. Other providers keep falling back to main.
+    Explicit LLM_FAST_MODEL wins. On NVIDIA with no override, use the
+    fallback model (Super 120B after nano NIM retirement). Other providers
+    keep falling back to main.
     """
     explicit = os.getenv("LLM_FAST_MODEL", "").strip()
     if explicit:
@@ -141,7 +143,9 @@ def _base_url() -> str | None:
     return PROVIDER_BASE_URLS.get(provider)
 
 
-def _max_tokens() -> int:
+def _max_tokens(*, role: LlmRole = "main") -> int:
+    if role == "fast":
+        return int(os.getenv("LLM_FAST_MAX_TOKENS", "1024"))
     return int(os.getenv("LLM_MAX_TOKENS") or os.getenv("GROQ_MAX_TOKENS", "4096"))
 
 
@@ -170,13 +174,14 @@ def _chat_openai_compatible(
     temperature: float,
     api_key: str,
     base_url: str | None,
+    max_tokens: int | None = None,
 ) -> BaseChatModel:
     from langchain_openai import ChatOpenAI
 
     kwargs: dict[str, Any] = {
         "model": model_name,
         "temperature": temperature,
-        "max_tokens": _max_tokens(),
+        "max_tokens": max_tokens if max_tokens is not None else _max_tokens(),
         "api_key": api_key,
     }
     if base_url:
@@ -193,12 +198,12 @@ def get_llm(
     """Return the configured chat model (BYOK multi-provider).
 
     role=main → LLM_MODEL (planner / synthesizer)
-    role=fast → LLM_FAST_MODEL if set, else NVIDIA nano when provider is nvidia,
-    else main (Ask / verifier)
+    role=fast → LLM_FAST_MODEL if set, else NVIDIA fallback when provider is
+    nvidia, else main (Ask / verifier)
     """
     provider = _provider()
     model_name = (model or _model_for_role(role)).strip()
-    max_tokens = _max_tokens()
+    max_tokens = _max_tokens(role=role)
 
     if provider == "groq":
         api_key = _api_key()
@@ -238,6 +243,7 @@ def get_llm(
             api_key=state.endpoint.token,
             base_url=state.endpoint.base_url,
             temperature=temperature,
+            max_tokens=max_tokens,
         )
 
     if provider in {"nvidia", "openai", "xai", "openrouter", "openai_compatible"}:
@@ -263,6 +269,7 @@ def get_llm(
             temperature=temperature,
             api_key=api_key,
             base_url=base,
+            max_tokens=max_tokens,
         )
 
     raise ValueError(

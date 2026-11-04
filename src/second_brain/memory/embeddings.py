@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import threading
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -17,6 +18,7 @@ from second_brain.config import (
     EMBEDDING_MODEL,
     EMBEDDING_PROVIDER,
     OLLAMA_BASE_URL,
+    data_root,
 )
 
 logger = logging.getLogger(__name__)
@@ -36,13 +38,87 @@ class EmbeddingsProtocol(Protocol):
     def embed_query(self, text: str) -> list[float]: ...
 
 
+_embeddings_lock = threading.Lock()
+# (provider, model, instance) — rebuild when provider/model changes
+_embeddings_cache: tuple[str, str, EmbeddingsProtocol] | None = None
+
+
+def fastembed_cache_dir() -> Path:
+    """Durable on-disk cache. Temp dirs drop incomplete downloads and break vault search."""
+    raw = (os.getenv("FASTEMBED_CACHE_PATH") or "").strip()
+    if raw:
+        path = Path(raw).expanduser().resolve()
+    else:
+        path = (data_root() / "fastembed_cache").resolve()
+        os.environ["FASTEMBED_CACHE_PATH"] = str(path)
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def purge_incomplete_fastembed_downloads(cache: Path | None = None) -> int:
+    """Remove zero-byte / .incomplete HuggingFace blobs so the next load re-fetches."""
+    root = cache or fastembed_cache_dir()
+    removed = 0
+    if not root.is_dir():
+        return 0
+    for path in root.rglob("*"):
+        if not path.is_file():
+            continue
+        name = path.name
+        stale = name.endswith(".incomplete") or (
+            name.endswith(".onnx") and path.stat().st_size == 0
+        )
+        if stale:
+            try:
+                path.unlink()
+                removed += 1
+            except OSError as e:
+                logger.warning("Could not remove incomplete embed file %s: %s", path, e)
+    return removed
+
+
+def _friendly_embed_error(exc: BaseException) -> str:
+    raw = str(exc).strip() or exc.__class__.__name__
+    lower = raw.lower()
+    if (
+        "no_suchfile" in lower
+        or "model_optimized.onnx" in lower
+        or ".incomplete" in lower
+        or ("load model" in lower and "failed" in lower)
+    ):
+        return (
+            "Local search model is missing or incomplete. "
+            "Nous will re-download it — tap Retry, or check your network once."
+        )
+    if len(raw) > 220:
+        return raw[:217] + "…"
+    return raw
+
+
+def reset_embeddings_cache() -> None:
+    global _embeddings_cache
+    with _embeddings_lock:
+        _embeddings_cache = None
+
+
 class _FastEmbedWrapper:
     """Thin wrapper so callers share embed_documents / embed_query."""
 
     def __init__(self, model_name: str):
         from fastembed import TextEmbedding
 
-        self._model = TextEmbedding(model_name=model_name)
+        fastembed_cache_dir()
+        purge_incomplete_fastembed_downloads()
+        try:
+            self._model = TextEmbedding(model_name=model_name)
+        except Exception as first:
+            # Corrupt partial download — wipe incompletes once and retry.
+            purge_incomplete_fastembed_downloads()
+            logger.warning("fastembed load failed (%s); retrying after cache cleanup", first)
+            try:
+                self._model = TextEmbedding(model_name=model_name)
+            except Exception as second:
+                raise RuntimeError(_friendly_embed_error(second)) from second
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
         return [vec.tolist() if hasattr(vec, "tolist") else list(vec) for vec in self._model.embed(texts)]
@@ -99,10 +175,7 @@ def _openai_embed_credentials() -> tuple[str, str | None]:
     return key, base.rstrip("/") if base else None
 
 
-def get_embeddings() -> EmbeddingsProtocol:
-    provider = embedding_provider()
-    model = embedding_model_name()
-
+def _build_embeddings(provider: str, model: str) -> EmbeddingsProtocol:
     if provider == "fastembed":
         return _FastEmbedWrapper(model)
 
@@ -132,6 +205,20 @@ def get_embeddings() -> EmbeddingsProtocol:
         f"Unknown EMBEDDING_PROVIDER: {provider!r}. "
         "Use fastembed, ollama, or openai_compatible."
     )
+
+
+def get_embeddings() -> EmbeddingsProtocol:
+    """Return a process-wide embeddings backend keyed by (provider, model)."""
+    global _embeddings_cache
+    provider = embedding_provider()
+    model = embedding_model_name()
+    with _embeddings_lock:
+        cached = _embeddings_cache
+        if cached is not None and cached[0] == provider and cached[1] == model:
+            return cached[2]
+        emb = _build_embeddings(provider, model)
+        _embeddings_cache = (provider, model, emb)
+        return emb
 
 
 def current_fingerprint(*, dims: int | None = None) -> dict[str, Any]:
@@ -245,6 +332,19 @@ def probe_embeddings() -> dict[str, Any]:
                     logger.warning("Index probe query failed: %s", qe)
     except Exception as e:
         result["embeddings_ok"] = False
-        result["embeddings_error"] = str(e)[:400]
+        result["embeddings_error"] = _friendly_embed_error(e)
         logger.warning("Embedding probe failed: %s", e)
     return result
+
+
+def repair_embeddings() -> dict[str, Any]:
+    """Clear bad cache entries and reload the embedding backend."""
+    if embedding_provider() == "fastembed":
+        fastembed_cache_dir()
+        purged = purge_incomplete_fastembed_downloads()
+    else:
+        purged = 0
+    reset_embeddings_cache()
+    probe = probe_embeddings()
+    probe["purged_incomplete"] = purged
+    return probe

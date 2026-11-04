@@ -16,6 +16,7 @@
     phase: LandingPhase;
     topicLabel: string;
     offline?: boolean;
+    connecting?: boolean;
     aiConfigured?: boolean;
     hasWorkspace?: boolean;
     libraryReady?: boolean;
@@ -32,6 +33,7 @@
     phase,
     topicLabel,
     offline = false,
+    connecting = false,
     aiConfigured = true,
     hasWorkspace = true,
     libraryReady = true,
@@ -156,8 +158,10 @@
   {/if}
 
   <p class="foot-hint">
-    {#if offline}
-      Backend offline — reconnect to send.
+    {#if connecting}
+      Connecting to backend…
+    {:else if offline}
+      Backend offline — retrying…
     {:else if memoryBlocked}
       Rebuilding search index when needed — wait a moment, or retry from the banner.
     {:else if phase === "bootstrap"}

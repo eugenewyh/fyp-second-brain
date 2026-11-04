@@ -52,7 +52,7 @@ describe("formatDigestSummary", () => {
   it("summarizes remember write-back", () => {
     expect(
       formatDigestSummary({ created: 2, revised: 1, dropped: 3, idempotent: true }),
-    ).toBe("Already in memory · 2 claims remembered · 1 updated · 3 skipped");
+    ).toBe("Already in memory · 2 claims learned · 1 updated · 3 skipped");
   });
 });
 

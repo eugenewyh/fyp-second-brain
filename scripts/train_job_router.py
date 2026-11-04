@@ -10,7 +10,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from second_brain.agent.router.features import enrich_router_text
+# Load features module by path so we don't import second_brain.agent.__init__
+# (that pulls config → dotenv and requires the project venv).
+import importlib.util
+
+_features_path = ROOT / "src" / "second_brain" / "agent" / "router" / "features.py"
+_spec = importlib.util.spec_from_file_location("job_router_features", _features_path)
+if _spec is None or _spec.loader is None:
+    raise SystemExit(f"Cannot load {_features_path}")
+_features = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_features)
+enrich_router_text = _features.enrich_router_text
 
 LABELED = ROOT / "data" / "job_router" / "labeled_turns.json"
 MODEL_OUT = ROOT / "data" / "job_router" / "model.json"

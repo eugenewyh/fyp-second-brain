@@ -26,7 +26,9 @@ from second_brain.agent.policy import (
     has_research_intent,
     has_search_intent,
     has_synthesis_intent,
+    has_teach_intent,
     is_question,
+    prefers_ask,
 )
 from second_brain.agent.router import llm_router, local_model, recall
 from second_brain.agent.router.copy import CLARIFY_ASKS, DISPATCH_COPY, REFUSE_MESSAGE
@@ -151,12 +153,16 @@ def _propose_job(
         return "research", "explicit lookup", "rule", 1.0
     if has_research_intent(text):
         return "research", "research mission", "rule", 1.0
+    if has_teach_intent(text):
+        return "file", "teach / remember this", "rule", 1.0
     if has_synthesis_intent(text) and snapshot.matching_claim_count > 0:
         return "research", "synthesis over notes", "rule", 1.0
     if has_notes_intent(text):
         return "answer", "asked from notes", "rule", 1.0
     if has_learn_intent(text) and snapshot.matching_claim_count > 0:
         return "answer", "wants explanation from notes", "rule", 1.0
+    if prefers_ask(text, matching_claim_count=snapshot.matching_claim_count):
+        return "answer", "direct question from notes", "rule", 1.0
     if snapshot.matching_claim_count <= 0 and empty_topic_question(text):
         return "research", "empty topic question", "rule", 1.0
     if not is_question(text) and fallback_job(

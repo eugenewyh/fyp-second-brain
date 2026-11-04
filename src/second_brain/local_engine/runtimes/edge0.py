@@ -85,7 +85,9 @@ EDGE0_35B = Edge0Tier(
     served_id="edge0-35b",
     checkpoint_env="EDGE0_35B_MODEL",
     home_dirname="edge0-35b",
-    min_ram_bytes=32 * _GB,
+    # Active working set is ~3 GiB; 24 GB Macs are enough for short Asks (Edge0's
+    # own benches). Keep a floor above the phone-class active set for OS + KV.
+    min_ram_bytes=24 * _GB,
 )
 
 TIERS: tuple[Edge0Tier, ...] = (EDGE0_8B, EDGE0_35B)

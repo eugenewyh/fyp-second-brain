@@ -1,10 +1,9 @@
 <script lang="ts">
   import { app } from "$lib/stores/app.svelte";
-  import { tabs } from "$lib/stores/tabs.svelte";
   import { workspace } from "$lib/stores/workspace.svelte";
   import { memory, GRAPH_TYPE_STYLE, GRAPH_TYPE_COLORS, GRAPH_TYPE_ORDER } from "$lib/stores/memory.svelte";
+  import { authSession } from "$lib/auth/auth-session.svelte";
   import SectionLabel from "$lib/ui/SectionLabel.svelte";
-  import Button from "$lib/ui/Button.svelte";
   import TopicPicker from "./TopicPicker.svelte";
   import {
     groupPeekConnections,
@@ -14,7 +13,7 @@
     peekTypeLabel,
   } from "$lib/vault/graph-peek";
   import { vaultNodeTypeLabel } from "$lib/vault/vault-graph";
-  import { ChevronLeft, MessageSquare, Search, X } from "@lucide/svelte";
+  import { Plus, Search, Settings, X } from "@lucide/svelte";
 
   const iconSize = 16;
   const iconStroke = 1.75;
@@ -24,20 +23,24 @@
   const typeLabel = $derived(selected ? peekTypeLabel(selected.type, selected.id) : "");
   const connectionRows = $derived(peekConnectionRows(groupPeekConnections(memory.neighbors)));
   const searching = $derived(memory.search.trim().length > 0);
-
-  function askAbout(title: string) {
-    const topicPath = memory.topicFilter ?? workspace.activeTopicPath;
-    tabs.askInChat(`What do we know about ${title}? Cite claims if we have them.`, topicPath);
-  }
+  const accountLabel = $derived(authSession.label);
+  const accountInitial = $derived(authSession.initial);
+  const signedIn = $derived(authSession.signedIn);
 </script>
 
-<aside class="memory-sidebar" aria-label="Memory">
+<aside class="memory-sidebar" data-chrome-layer aria-label="Memory">
   <div class="titlebar" data-tauri-drag-region></div>
 
   <div class="mem-head">
-    <button type="button" class="back" onclick={() => app.openHome()}>
-      <ChevronLeft size={iconSize} strokeWidth={iconStroke} />
-      Back
+    <span class="brand">Memory</span>
+    <button
+      type="button"
+      class="section-add"
+      aria-label="New workspace"
+      title="New workspace"
+      onclick={() => app.openNewProject()}
+    >
+      <Plus size={14} strokeWidth={2} />
     </button>
   </div>
 
@@ -50,8 +53,11 @@
         allowAll
         allLabel="All workspaces"
         searchPlaceholder="Search workspaces…"
+        onNewWorkspace={() => app.openNewProject()}
+        onEditWorkspace={(path) => app.openEditProject(path)}
         onSelect={(path) => {
           memory.topicFilter = path || null;
+          if (path) workspace.setActiveTopic(path);
         }}
       />
     {/if}
@@ -128,10 +134,6 @@
               <X size={16} />
             </button>
           </div>
-          <Button variant="secondary" class="sel-action" onclick={() => askAbout(meta.title)}>
-            <MessageSquare size={14} strokeWidth={1.75} />
-            Ask in new chat
-          </Button>
         </div>
         {#if connectionRows.length > 0}
           <p class="conn-label">Connected · {connectionRows.length}</p>
@@ -148,6 +150,29 @@
         {/if}
       </div>
     {/if}
+  </div>
+
+  <div class="footer">
+    {#if signedIn}
+      <button type="button" class="account" onclick={() => app.openSettings("account")} title={accountLabel}>
+        <span class="avatar" aria-hidden="true">{accountInitial}</span>
+        <span class="account-name">{accountLabel}</span>
+      </button>
+    {:else}
+      <button type="button" class="account" onclick={() => app.openSettings("account")}>
+        Sign in
+      </button>
+    {/if}
+    <button
+      type="button"
+      class="settings-icon"
+      class:active={app.sheet === "settings"}
+      aria-label="Settings"
+      title="Settings"
+      onclick={() => app.openSettings("appearance")}
+    >
+      <Settings size={iconSize} strokeWidth={iconStroke} />
+    </button>
   </div>
 </aside>
 
@@ -180,25 +205,107 @@
   .mem-head {
     display: flex;
     align-items: center;
-    padding: 0 0.85rem 0.65rem;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0 0.85rem 0.65rem 1rem;
   }
 
-  .back {
+  .section-add {
     display: inline-flex;
     align-items: center;
-    gap: 0.15rem;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
     border: none;
+    border-radius: var(--radius-feedback);
     background: transparent;
-    color: var(--text-muted);
-    font-size: var(--text-sm);
-    padding: 0.25rem 0.45rem 0.25rem 0.15rem;
-    border-radius: var(--radius-md);
+    color: var(--text-faint);
     cursor: pointer;
   }
 
-  .back:hover {
-    color: var(--text);
+  .section-add:hover {
     background: var(--chrome-action-hover);
+    color: var(--text);
+  }
+
+  .brand {
+    font-size: var(--text-base);
+    font-weight: var(--font-medium);
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  .footer {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.35rem 0.5rem 0.55rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .account {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    text-align: left;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    min-height: 32px;
+    padding: 0.3rem 0.45rem;
+    border-radius: var(--radius-feedback);
+    cursor: pointer;
+  }
+
+  .account:hover {
+    background: var(--chrome-action-hover);
+    color: var(--text);
+  }
+
+  .avatar {
+    flex-shrink: 0;
+    width: 1.35rem;
+    height: 1.35rem;
+    border-radius: var(--radius-full);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--text-2xs);
+    font-weight: var(--font-semibold);
+    background: var(--control-fill);
+    color: var(--text);
+  }
+
+  .account-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .settings-icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: var(--radius-feedback);
+    background: transparent;
+    color: var(--text-faint);
+    cursor: pointer;
+  }
+
+  .settings-icon:hover,
+  .settings-icon.active {
+    background: var(--chrome-action-hover);
+    color: var(--text);
   }
 
   .mem-controls {
@@ -397,21 +504,6 @@
     line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-  }
-
-  .selected :global(.sel-action) {
-    width: 100%;
-    min-height: 30px;
-    padding: 0.32rem 0.65rem;
-    font-size: var(--text-sm);
-    border-radius: var(--radius-md);
-    border-color: var(--border-subtle);
-    background: var(--pane-bg);
-  }
-
-  .selected :global(.sel-action:hover:not(:disabled)) {
-    background: var(--chrome-action-hover);
-    border-color: var(--border);
   }
 
   .icon-close {

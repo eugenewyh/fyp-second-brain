@@ -60,6 +60,10 @@
   }
 
   function newChat() {
+    if (!workspace.activeTopicPath && workspace.projectFolders.length === 0) {
+      app.openNewProject();
+      return;
+    }
     ensureTopic();
     tabs.newWorkspaceChat();
   }
@@ -167,7 +171,7 @@
   });
 </script>
 
-<aside class="sidebar" aria-label="Navigation">
+<aside class="sidebar" data-chrome-layer aria-label="Navigation">
   <div class="titlebar" data-tauri-drag-region></div>
   <nav class="nav-top">
     <button type="button" class="nav-item" onclick={newChat}>

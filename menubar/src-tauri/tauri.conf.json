@@ -1,0 +1,55 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Memory",
+  "version": "0.1.0",
+  "identifier": "com.tp068819.memory",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1430",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "browse",
+        "title": "Memory",
+        "url": "index.html?view=browse",
+        "width": 1040,
+        "height": 720,
+        "minWidth": 760,
+        "minHeight": 520,
+        "visible": true,
+        "center": true
+      },
+      {
+        "label": "panel",
+        "title": "Memory",
+        "url": "index.html?view=panel",
+        "width": 380,
+        "height": 560,
+        "resizable": false,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "visible": false,
+        "skipTaskbar": true,
+        "shadow": true,
+        "acceptFirstMouse": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

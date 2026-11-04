@@ -26,7 +26,7 @@
   let searchHits = $state<VaultSearchHit[]>([]);
   let searchError = $state("");
   let searchLoading = $state(false);
-  let tab = $state<"docs" | "research" | "topics">("docs");
+  let tab = $state<"docs" | "topics">("docs");
 
   const topics = $derived(topicsFromTree(nodes));
   const activeTopic = $derived(
@@ -39,19 +39,6 @@
   const recentPaths = $derived(
     recentInTopic(workspace.recentNotePaths, workspace.activeTopicPath),
   );
-
-  const pastResearch = $derived.by(() => {
-    const all = flattenVaultFiles(nodes);
-    return all
-      .filter(
-        (f) =>
-          f.path.includes("/research/") ||
-          f.path.includes("\\research\\") ||
-          /research/i.test(f.name),
-      )
-      .slice(-12)
-      .reverse();
-  });
 
   async function refresh() {
     loading = true;
@@ -105,7 +92,7 @@
   }
 
   function openFile(path: string, name?: string) {
-    app.openDocument(path, { label: name, from: "agent" });
+    app.openDocument(path, { label: name, from: "graph" });
     workspace.setActiveNote(path);
   }
 
@@ -130,8 +117,8 @@
   <div class="panel-head" data-tauri-drag-region>
     <span class="title">Vault</span>
     <div class="head-actions">
-      <button type="button" class="graph-link" onclick={() => app.openHome()} title="Home">
-        Home
+      <button type="button" class="graph-link" onclick={() => app.openMemory()} title="Memory">
+        Memory
       </button>
       <button
         type="button"
@@ -155,9 +142,6 @@
   <div class="tabs">
     <button type="button" class:active={tab === "docs"} onclick={() => (tab = "docs")}>
       Documents
-    </button>
-    <button type="button" class:active={tab === "research"} onclick={() => (tab = "research")}>
-      Past research
     </button>
     <button type="button" class:active={tab === "topics"} onclick={() => (tab = "topics")}>
       Topics
@@ -198,24 +182,6 @@
       {/each}
       {#if topics.length === 0}
         <p class="muted">Top-level folders become topics.</p>
-      {/if}
-    {:else if tab === "research"}
-      <p class="sec">Research written back into memory</p>
-      {#if pastResearch.length === 0}
-        <p class="muted">
-          After Deep research, reports auto-save here. That’s how knowledge compounds — unlike a
-          disposable chat.
-        </p>
-      {:else}
-        <ul class="list">
-          {#each pastResearch as f (f.path)}
-            <li>
-              <button type="button" class="row" onclick={() => openFile(f.path, f.name)}>
-                {f.name}
-              </button>
-            </li>
-          {/each}
-        </ul>
       {/if}
     {:else}
       {#if !query.trim() && recentPaths.length}

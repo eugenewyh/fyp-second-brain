@@ -2,14 +2,13 @@
 
 /** Default stack on NVIDIA Build NIM (quality → specialty → fallback). */
 export const NVIDIA_DEFAULT_MODEL = "nvidia/nemotron-3-super-120b-a12b";
-export const NVIDIA_FALLBACK_MODEL = "nvidia/nemotron-3-nano-30b-a3b";
+export const NVIDIA_FALLBACK_MODEL = "nvidia/nemotron-3-super-120b-a12b";
 
 export const NVIDIA_MODELS = [
   "nvidia/nemotron-3-super-120b-a12b", // default
   "openai/gpt-oss-120b", // general / agents
   "deepseek-ai/deepseek-v4-flash-0731", // coding / web-heavy
   "nvidia/nemotron-3-ultra-550b-a55b", // research
-  "nvidia/nemotron-3-nano-30b-a3b", // fallback
 ] as const;
 
 /** Optional BYOK stack on Groq (gpt-oss-20b lives here, not on NVIDIA). */
@@ -49,7 +48,6 @@ export const MODEL_HINTS: Record<string, string> = {
   "openai/gpt-oss-120b": "General / agents",
   "deepseek-ai/deepseek-v4-flash-0731": "Coding / web-heavy",
   "nvidia/nemotron-3-ultra-550b-a55b": "Research · deepest reasoning",
-  "nvidia/nemotron-3-nano-30b-a3b": "Fallback · fast & light",
   "qwen/qwen3-32b": "Fallback if rate-limited · more RPM",
   "openai/gpt-oss-20b": "Light / faster · weaker for deep research",
   "meta-llama/llama-4-scout-17b-16e-instruct": "Fast Scout · medium quality",

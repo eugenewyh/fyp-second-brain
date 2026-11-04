@@ -35,7 +35,7 @@ from .store import (
     write_run_record,
 )
 
-DEFAULT_START_TIMEOUT_S = 180.0
+DEFAULT_START_TIMEOUT_S = 600.0
 _HEALTH_TIMEOUT_S = 2.0
 _HEALTH_INTERVAL_S = 0.5
 _REATTACH_TIMEOUT_S = 1.0
@@ -55,9 +55,17 @@ class _Reattached:
 
 def _target_model_id(runtime: Runtime) -> str:
     catalog = runtime.catalog()
-    wanted = (os.getenv("LLM_MODEL") or "").strip()
+    wanted = (
+        (os.getenv("LOCAL_ENGINE_MODEL") or "").strip()
+        or (os.getenv("LLM_MODEL") or "").strip()
+    )
     if wanted and any(m.id == wanted for m in catalog):
         return wanted
+    # Prefer a checkpoint already on disk; when several exist, take the largest tier
+    # (edge0-35b over edge0-8b) so a 24 GB Mac that downloaded 35b actually uses it.
+    installed = [m for m in catalog if not install_plan(m.id, runtime).missing]
+    if installed:
+        return max(installed, key=lambda m: m.disk_bytes).id
     if catalog:
         return catalog[0].id
     return wanted

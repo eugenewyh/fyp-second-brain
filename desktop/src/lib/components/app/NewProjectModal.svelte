@@ -9,12 +9,19 @@
   import { FolderPlus, FolderOpen, Folder, X, Plus, Trash2 } from "@lucide/svelte";
 
   const IDEA_CHIPS = [
+    {
+      label: "Coffee",
+      idea:
+        "Build a small home espresso habit that tastes sweet and balanced, not bitter “strong.” Prefer better grinding and water over buying a fancy machine first. Keep weekday drinks simple; experiment on weekends.",
+    },
+    {
+      label: "Recipes",
+      idea:
+        "Keep a small set of weeknight recipes I can cook without stress. Prefer one-pan or one-pot meals, ingredients I already buy, and leftovers that reheat well. Learn from soggy leftovers and burnt garlic before adding fancier dishes.",
+    },
     { label: "Digital garden", idea: "A personal knowledge garden for notes, links, and growing ideas." },
-    { label: "Budget tracker", idea: "Track spending, budgets, and financial goals over time." },
     { label: "Workout plan", idea: "Training logs, programs, and recovery notes." },
     { label: "Research log", idea: "Literature notes, open questions, and synthesis for a research topic." },
-    { label: "Music toy", idea: "Experiments, samples, and production ideas for music projects." },
-    { label: "Habit tracker", idea: "Daily habits, streaks, and reflection prompts." },
   ];
 
   type FolderRow = ProjectFolderSpec | { kind: "existing"; name: string };
@@ -30,6 +37,7 @@
   let hydratedFor = $state<string | null>(null);
 
   const isEdit = $derived(!!app.editingProjectPath);
+  const hasImports = $derived(folders.some((f) => f.kind === "import"));
   const canSubmit = $derived(name.trim().length > 0 && !busy);
 
   function reset() {
@@ -153,10 +161,8 @@
         }
         workspace.setActiveTopic(newPath);
         workspace.requestVaultRefresh();
-        void workspace.syncProjectsFromDisk();
+        await workspace.syncProjectsFromDisk();
         close();
-        // Only file claims when folders with notes were imported — empty edit must not
-        // spawn a failed "Remember topic notes" chat.
         if (importedNotes) void assistant.rememberTopicNotes(newPath);
         return;
       }
@@ -167,7 +173,7 @@
       workspace.setActiveTopic(path);
       tabs.newSessionTab({ projectPath: path });
       workspace.requestVaultRefresh();
-      void workspace.syncProjectsFromDisk();
+      await workspace.syncProjectsFromDisk();
       close();
       if (importedNotes) void assistant.rememberTopicNotes(path);
     } catch (e) {
@@ -206,6 +212,7 @@
   >
     <div
       class="overlay-panel dialog"
+      data-chrome-solid
       role="dialog"
       aria-modal="true"
       aria-labelledby="new-project-title"
@@ -217,7 +224,7 @@
           <p class="sub">
             {isEdit
               ? "Rename this workspace, update the idea, or add folders."
-              : "Name a workspace and add folders. Imported notes are filed as claims."}
+              : "Name it, choose folders with your notes, then Create — Nous teaches those notes into memory."}
           </p>
         </div>
         <button type="button" class="icon-close" aria-label="Close" onclick={close}>
@@ -247,7 +254,7 @@
         <section class="section">
           <div class="section-label">Folders</div>
           {#if folders.length === 0 && !addingFolder}
-            <p class="muted">No folders added yet.</p>
+            <p class="muted">Add folders that already have notes (e.g. Demo Materials/Coffee).</p>
           {:else}
             <ul class="folder-list">
               {#each folders as f, i (f.kind === "import" ? f.sourcePath : `${f.kind}:${f.name}`)}
@@ -262,7 +269,9 @@
                   <div class="folder-meta">
                     <span class="folder-name">{f.name}</span>
                     {#if f.kind === "import"}
-                      <span class="folder-hint" title={f.sourcePath}>{shortPath(f.sourcePath)}</span>
+                      <span class="folder-hint" title={f.sourcePath}>
+                        Will teach notes from {shortPath(f.sourcePath)}
+                      </span>
                     {:else if f.kind === "existing"}
                       <span class="folder-hint">Already in workspace</span>
                     {:else}
@@ -307,18 +316,18 @@
             </div>
           {:else}
             <div class="folder-actions">
-              <button type="button" class="add-folder" onclick={startAddFolder} disabled={busy}>
-                <Plus size={15} strokeWidth={2} />
-                Create folder
-              </button>
               <button
                 type="button"
-                class="add-folder"
+                class="add-folder primary-add"
                 onclick={() => void chooseExistingFolders()}
                 disabled={busy}
               >
                 <FolderOpen size={15} strokeWidth={1.75} />
                 Choose existing…
+              </button>
+              <button type="button" class="add-folder" onclick={startAddFolder} disabled={busy}>
+                <Plus size={15} strokeWidth={2} />
+                Empty folder
               </button>
             </div>
           {/if}
@@ -357,7 +366,17 @@
           disabled={!canSubmit}
           onclick={() => void submit()}
         >
-          {busy ? (isEdit ? "Saving…" : "Creating…") : isEdit ? "Save" : "Create"}
+          {busy
+            ? isEdit
+              ? "Saving…"
+              : hasImports
+                ? "Creating & teaching…"
+                : "Creating…"
+            : isEdit
+              ? "Save"
+              : hasImports
+                ? "Create & teach"
+                : "Create"}
         </button>
       </footer>
     </div>
@@ -675,6 +694,11 @@
     min-height: 30px;
     padding: 0.2rem 0.15rem;
     cursor: pointer;
+  }
+
+  .add-folder.primary-add {
+    color: var(--accent-live);
+    font-weight: var(--font-semibold);
   }
 
   .add-folder:hover:not(:disabled) {

@@ -137,14 +137,24 @@
     const next = { ...settingsForm, ...partial };
     const activeProv = (next.LLM_PROVIDER ?? "nvidia") as LlmProviderId;
     const keyEnv = providerMeta(activeProv).keyEnv;
-    if (keyEnv && next[keyEnv]) {
-      next.LLM_API_KEY = next[keyEnv];
+    // Only write the patch — never re-send the whole form (empty fields wipe keys on disk).
+    const payload: Record<string, string> = { ...partial };
+    if (
+      activeProv !== "local" &&
+      keyEnv &&
+      next[keyEnv]?.trim() &&
+      ("LLM_PROVIDER" in partial || "LLM_API_KEY" in partial || keyEnv in partial)
+    ) {
+      payload.LLM_API_KEY = next[keyEnv].trim();
     }
-    if (next.LLM_FALLBACK_MODEL) {
-      next.GROQ_FALLBACK_MODEL = next.LLM_FALLBACK_MODEL;
+    if (
+      next.LLM_FALLBACK_MODEL &&
+      ("LLM_FALLBACK_MODEL" in partial || "LLM_PROVIDER" in partial)
+    ) {
+      payload.GROQ_FALLBACK_MODEL = next.LLM_FALLBACK_MODEL;
     }
     settingsForm = next;
-    await api.updateSettings(next);
+    await api.updateSettings(payload);
     await assistant.loadHarnessDefaults();
     await loadSettings();
     await connection.refreshStatus();
@@ -167,6 +177,21 @@
         /* Models saved; CW sync optional */
       }
     }
+  }
+
+  async function waitForLocalReady(timeoutMs = 600_000): Promise<LocalEngine> {
+    let engine = await api.localEngineEnsure();
+    onLocalEngine(engine);
+    const deadline = Date.now() + timeoutMs;
+    while (
+      (engine.kind === "starting" || engine.kind === "acquiring") &&
+      Date.now() < deadline
+    ) {
+      await new Promise((r) => setTimeout(r, 1000));
+      engine = await api.localEngine();
+      onLocalEngine(engine);
+    }
+    return engine;
   }
 
   async function persistPartial(partial: Record<string, string>) {
@@ -306,37 +331,52 @@
   }
 
   async function setActive(id: LlmProviderId) {
-    const localReady = id === "local" && settings?.local_engine?.kind === "ready";
-    if (
-      !localReady &&
-      !isProviderConnected(id, settingsForm, {
-        connected: settings?.connected_providers,
-        llmBundled: settings?.llm_bundled,
-      })
-    )
-      return;
     settingsSaving = true;
     settingsMessage = "";
     settingsError = false;
     try {
+      if (id === "local") {
+        let engine = settings?.local_engine ?? null;
+        if (engine?.kind !== "ready") {
+          settingsMessage = "Starting on-device model…";
+          engine = await waitForLocalReady();
+        }
+        if (!engine || engine.kind !== "ready") {
+          settingsMessage =
+            engine?.kind === "failed"
+              ? engine.message
+              : "On-device model isn’t ready — tap Start, then Use.";
+          settingsError = true;
+          return;
+        }
+        // Keep cloud API keys / base URL on disk — local ignores them.
+        await persist({
+          LLM_PROVIDER: "local",
+          LLM_MODEL: engine.model.id,
+        });
+        settingsMessage = `Active: ${providerMeta("local").label}`;
+        return;
+      }
+
+      if (
+        !isProviderConnected(id, settingsForm, {
+          connected: settings?.connected_providers,
+          llmBundled: settings?.llm_bundled,
+        })
+      ) {
+        settingsMessage = `Connect ${providerMeta(id).label} first`;
+        settingsError = true;
+        return;
+      }
       const m = providerMeta(id);
       const patch: Record<string, string> = {
         LLM_PROVIDER: id,
         LLM_MODEL: resolveModelForProvider(id, settingsForm.LLM_MODEL),
       };
-      if (id === "local") {
-        const ready =
-          settings?.local_engine?.kind === "ready" ? settings.local_engine.model.id : "";
-        patch.LLM_MODEL = ready || patch.LLM_MODEL;
-        patch.LLM_BASE_URL = "";
-        patch.LLM_API_KEY = "";
-        patch.LLM_FALLBACK_MODEL = "";
-      } else {
-        if (m.defaultBaseUrl) patch.LLM_BASE_URL = m.defaultBaseUrl;
-        if (m.defaultFallback) patch.LLM_FALLBACK_MODEL = m.defaultFallback;
-        if (m.keyEnv && settingsForm[m.keyEnv]?.trim()) {
-          patch.LLM_API_KEY = settingsForm[m.keyEnv];
-        }
+      if (m.defaultBaseUrl) patch.LLM_BASE_URL = m.defaultBaseUrl;
+      if (m.defaultFallback) patch.LLM_FALLBACK_MODEL = m.defaultFallback;
+      if (m.keyEnv && settingsForm[m.keyEnv]?.trim()) {
+        patch.LLM_API_KEY = settingsForm[m.keyEnv];
       }
       await persist(patch);
       settingsMessage = `Active: ${m.label}`;
@@ -436,7 +476,7 @@
   });
 </script>
 
-<div class="settings-root">
+<div class="settings-root" data-chrome-solid>
   {#if tab === "account" || (connection.connected && settings)}
     <div class="st-layout">
       <nav class="st-nav" aria-label="Settings">

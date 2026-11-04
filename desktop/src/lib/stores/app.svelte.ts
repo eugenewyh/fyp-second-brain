@@ -21,7 +21,7 @@ export type AppSheet =
 export type ArtifactsFilter = "all" | "files" | "links" | "digests";
 
 class AppStore {
-  mode = $state<AppMode>("graph");
+  mode = $state<AppMode>("memory");
   documentPath = $state<string | null>(null);
   documentLabel = $state<string | null>(null);
   documentReturn = $state<DocumentReturn>("agent");
@@ -84,16 +84,11 @@ class AppStore {
   }
 
   openHome() {
-    this.mode = "graph";
-    this.documentPath = null;
-    this.documentLabel = null;
-    this.sheet = null;
+    this.openMemory();
   }
 
   openWatch() {
-    this.mode = "watch";
-    this.sheet = null;
-    this.watchListNonce += 1;
+    this.openMemory();
   }
 
   openMemory(opts?: { topicPath?: string | null }) {
@@ -105,24 +100,20 @@ class AppStore {
   }
 
   openGraph() {
-    this.mode = "graph";
-    this.sheet = null;
+    this.openMemory();
   }
 
   openAgent() {
-    this.mode = "graph";
-    this.sheet = null;
+    this.openMemory();
   }
 
   openCapabilities() {
-    this.mode = "graph";
-    this.sheet = "capabilities";
+    this.openMemory();
   }
 
   openArtifacts(opts?: { filter?: ArtifactsFilter }) {
-    this.mode = "graph";
-    this.sheet = "artifacts";
     this.artifactsFilter = opts?.filter ?? "all";
+    this.openMemory();
   }
 
   openDocument(path: string, opts?: { label?: string; from?: DocumentReturn }) {
@@ -136,24 +127,17 @@ class AppStore {
     this.sheet = null;
     if (same) this.documentGeneration += 1;
 
-    // Artifacts stays a full-page reader with Back. Chat/graph open beside the thread.
     if (from === "artifacts") {
       this.mode = "document";
       return;
     }
-    // Memory and Watch host their own document peek beside the main view.
-    if (this.mode === "memory" || this.mode === "watch") {
-      return;
-    }
-    if (this.mode !== "graph" && this.mode !== "agent") {
-      this.mode = "graph";
-    }
+    this.mode = "memory";
   }
 
   closeDocument() {
     this.documentPath = null;
     this.documentLabel = null;
-    if (this.mode === "document") this.mode = "graph";
+    if (this.mode === "document") this.mode = "memory";
   }
 
   backFromDocument() {

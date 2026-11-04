@@ -17,6 +17,12 @@ _SEARCH_INTENT = re.compile(
 _RESEARCH_INTENT = re.compile(
     r"(?ix)"
     r"(^\s*research\b)"
+    r"|(\bdo\s+(?:a\s+|some\s+)?research\b)"
+    r"|(\bresearch\s+on\b)"
+    r"|(\bplease\s+research\b)"
+    r"|(\b(?:can|could|would)\s+you\s+research\b)"
+    # Imperative: research this / that / it / the topic…
+    r"|(\bresearch\s+(?:this|that|it|the|my|a|an|some|how|what|whether)\b)"
     r"|(\b(?:investigate|explore|survey|deep\s+dive|write\s+(?:a\s+)?report)\b)"
     r"|(\b(?:file\s+(?:a\s+)?report|compile\s+(?:a\s+)?report|run\s+(?:a\s+)?report)\b)"
     r"|(\b(?:find\s+sources|gather\s+sources|source\s+review)\b)"
@@ -53,6 +59,16 @@ _LEARN_INTENT = re.compile(
     r")\b",
     re.I,
 )
+# System-directed remember: "learn this", "remember that" → Teach (file).
+# Distinct from "teach me about…" / "help me learn…" (Ask).
+_TEACH_INTENT = re.compile(
+    r"(?ix)"
+    r"(\b(?:learn|remember|memorise|memorize|save|ingest|file|keep)\s+(?:this|that|it)\b)"
+    r"|(\b(?:learn|remember|save|ingest)\s+(?:the\s+)?(?:following|below|attached)\b)"
+    r"|(\bteach\s+(?:this|that|it)\b)"
+    r"|(\bplease\s+(?:learn|remember|save|ingest)\s+(?:this|that|it)\b)"
+    r"|(\b(?:add|put)\s+this\s+(?:to|into|in)\s+(?:memory|notes|my\s+notes)\b)"
+)
 _QUESTION_START = re.compile(
     r"^(what|why|how|when|where|who|which|does|do|did|is|are|can|could|"
     r"should|would|explain|summarise|summarize|synthesi[sz]e|compare)\b",
@@ -80,6 +96,14 @@ def has_learn_intent(text: str) -> bool:
     return bool(_LEARN_INTENT.search((text or "").strip()))
 
 
+def has_teach_intent(text: str) -> bool:
+    """User wants the system to remember/ingest content (Teach / file)."""
+    t = (text or "").strip()
+    if not t or has_learn_intent(t) or has_research_intent(t):
+        return False
+    return bool(_TEACH_INTENT.search(t))
+
+
 def has_synthesis_intent(text: str) -> bool:
     """Multi-part stance / report — prefer Research over a one-shot Ask."""
     return bool(_SYNTHESIS.search((text or "").strip()))
@@ -92,6 +116,17 @@ def is_question(text: str) -> bool:
     if "?" in t:
         return True
     return bool(_QUESTION_START.match(t))
+
+
+def prefers_ask(text: str, *, matching_claim_count: int) -> bool:
+    """Direct questions default to Ask when topic memory exists (unless Research verbs)."""
+    if matching_claim_count <= 0:
+        return False
+    if has_search_intent(text) or has_research_intent(text) or has_teach_intent(text):
+        return False
+    if has_synthesis_intent(text):
+        return False
+    return is_question(text) or has_notes_intent(text) or has_learn_intent(text)
 
 
 def is_long_dump(text: str) -> bool:
@@ -126,6 +161,8 @@ def research_allowed(text: str, *, matching_claim_count: int) -> bool:
         return True
     if has_notes_intent(text) and not has_synthesis_intent(text):
         return False
+    if prefers_ask(text, matching_claim_count=matching_claim_count):
+        return False
     if matching_claim_count <= 0 and empty_topic_question(text):
         return True
     return False
@@ -133,6 +170,8 @@ def research_allowed(text: str, *, matching_claim_count: int) -> bool:
 
 def force_file(*, text: str, has_attachments: bool) -> bool:
     if has_attachments:
+        return True
+    if has_teach_intent(text):
         return True
     return is_long_dump(text)
 
@@ -162,6 +201,8 @@ def apply_policy(
         return job
     if has_search_intent(text) or has_research_intent(text):
         return "research"
+    if prefers_ask(text, matching_claim_count=matching_claim_count):
+        return "answer"
     if has_notes_intent(text):
         if matching_claim_count <= 0:
             return "refuse"
@@ -206,6 +247,8 @@ def fallback_job(
         return "file"
     if has_search_intent(text) or has_research_intent(text):
         return "research"
+    if prefers_ask(text, matching_claim_count=matching_claim_count):
+        return "answer"
     if has_synthesis_intent(text) and matching_claim_count > 0:
         return "research"
     if has_notes_intent(text):

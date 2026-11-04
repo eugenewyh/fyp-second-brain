@@ -41,7 +41,7 @@ from second_brain.config import (  # noqa: E402
     data_root,
 )
 from second_brain.memory.digest import get_digest, list_digests  # noqa: E402
-from second_brain.memory.digest_link import digest_and_link  # noqa: E402
+from second_brain.memory.digest_link import digest_and_link, digest_many  # noqa: E402
 from second_brain.graph import (  # noqa: E402
     run_plan,
     run_research,
@@ -50,9 +50,11 @@ from second_brain.graph import (  # noqa: E402
 )
 from second_brain.ingestion.pipeline import ingest_directory, ingest_file  # noqa: E402
 from second_brain.memory.chroma_store import collection_count, reset_vector_store  # noqa: E402
-from second_brain.memory.embeddings import probe_embeddings  # noqa: E402
+from second_brain.memory.embeddings import probe_embeddings, repair_embeddings  # noqa: E402
 from second_brain.memory.retriever import retrieve  # noqa: E402
+from second_brain.memory.vault_index import ensure_vault_indexed, vault_has_ingestible_files  # noqa: E402
 from second_brain.rag.chain import ChatContext, ChatMessage, ask, chat_with_context, iter_chat_events  # noqa: E402
+from second_brain.scope import normalize_scope  # noqa: E402
 from second_brain.tools.mcp_client import mcp_status  # noqa: E402
 
 from second_brain.local_engine import (  # noqa: E402
@@ -145,6 +147,11 @@ ENV_KEYS = [
     "LOCAL_ENGINE_RUNTIME",
     "LOCAL_ENGINE_BASE_URL",
     "LOCAL_ENGINE_HOME",
+    "LOCAL_ENGINE_MODEL",
+    "LOCAL_ENGINE_START_TIMEOUT_S",
+    "EDGE0_CLI",
+    "EDGE0_8B_MODEL",
+    "EDGE0_35B_MODEL",
 ]
 
 # Kept in .env for the sidecar; never shown or writable via Settings UI.
@@ -161,6 +168,11 @@ _HIDDEN_ENV_KEYS = frozenset(
         "LOCAL_ENGINE_RUNTIME",
         "LOCAL_ENGINE_BASE_URL",
         "LOCAL_ENGINE_HOME",
+        "LOCAL_ENGINE_MODEL",
+        "LOCAL_ENGINE_START_TIMEOUT_S",
+        "EDGE0_CLI",
+        "EDGE0_8B_MODEL",
+        "EDGE0_35B_MODEL",
     }
 )
 
@@ -384,6 +396,7 @@ class VaultRelatedRequest(BaseModel):
 
 
 def _read_env() -> dict[str, str]:
+    """Load .env. Keeps operator extras (EDGE0_*, …) so Settings saves do not wipe them."""
     values: dict[str, str] = {}
     if ENV_PATH.exists():
         for line in ENV_PATH.read_text().splitlines():
@@ -392,7 +405,7 @@ def _read_env() -> dict[str, str]:
                 values[key.strip()] = val.strip()
     for key in ENV_KEYS:
         values.setdefault(key, os.getenv(key, ""))
-    return {key: values.get(key, "") for key in ENV_KEYS}
+    return values
 
 
 # Numeric settings: never persist blank (breaks int() on restart / confuses UI)
@@ -412,7 +425,9 @@ def _write_env(updates: dict[str, str]) -> None:
     for key, default in _ENV_INT_DEFAULTS.items():
         if key in current and not str(current.get(key, "")).strip():
             current[key] = default
-    lines = [f"{key}={current[key]}" for key in ENV_KEYS if current.get(key) is not None]
+    # Stable ENV_KEYS order, then any preserved extras alphabetically.
+    ordered = list(ENV_KEYS) + sorted(k for k in current if k not in ENV_KEYS)
+    lines = [f"{key}={current[key]}" for key in ordered if current.get(key) is not None]
     ENV_PATH.write_text("\n".join(lines) + "\n")
     load_dotenv(ENV_PATH, override=True)
     # Refresh process env for live LLM provider switches without full restart
@@ -426,6 +441,12 @@ def health():
     return {"status": "ok", "watches_api": 3, "act_api": 1}
 
 
+@app.post("/api/embeddings/repair")
+def embeddings_repair():
+    """Re-download a broken local embedding model without re-ingesting the vault."""
+    return repair_embeddings()
+
+
 @app.get("/api/mcp/status")
 def mcp_status_endpoint():
     return mcp_status()
@@ -433,6 +454,11 @@ def mcp_status_endpoint():
 
 @app.get("/api/status")
 def status():
+    try:
+        ensure_vault_indexed()
+    except Exception:
+        # Probe still reports embedding health; ingest may retry on Ask/Research.
+        pass
     emb = probe_embeddings()
     return {
         "collection_count": collection_count(),
@@ -523,9 +549,7 @@ def session_title(req: SessionTitleRequest):
 
 @app.post("/api/chat")
 def chat(req: ChatRequest):
-    if collection_count() == 0:
-        raise HTTPException(400, "Knowledge base is empty. Ingest documents first.")
-    _require_embeddings_ready()
+    _prepare_memory_index(require_docs=False)
     messages = [ChatMessage(role=m.role, content=m.content) for m in req.messages]
     ctx = None
     if req.context:
@@ -579,9 +603,7 @@ def _chat_result_payload(response) -> dict:
 
 @app.post("/api/chat/stream")
 def chat_stream(req: ChatRequest):
-    if collection_count() == 0:
-        raise HTTPException(400, "Knowledge base is empty. Ingest documents first.")
-    _require_embeddings_ready()
+    _prepare_memory_index(require_docs=False)
     messages = [ChatMessage(role=m.role, content=m.content) for m in req.messages]
     ctx = None
     if req.context:
@@ -632,9 +654,7 @@ def memory_merge(req: MemoryMergeRequest):
 
 @app.post("/api/query")
 def query(req: QueryRequest):
-    if collection_count() == 0:
-        raise HTTPException(400, "Knowledge base is empty. Ingest documents first.")
-    _require_embeddings_ready()
+    _prepare_memory_index(require_docs=False)
     response = ask(req.question, top_k=req.top_k)
     return {
         "question": response.question,
@@ -721,14 +741,28 @@ def _friendly_research_error(exc: BaseException) -> str:
     return text
 
 
+def _prepare_memory_index(*, require_docs: bool) -> int:
+    """Re-index vault files if Chroma was wiped; optionally require at least one chunk."""
+    if collection_count() == 0 and vault_has_ingestible_files():
+        _require_embeddings_ready()
+    count = ensure_vault_indexed()
+    if count == 0 and require_docs:
+        raise HTTPException(400, "Knowledge base is empty. Ingest documents first.")
+    if count > 0:
+        _require_embeddings_ready()
+    return count
+
+
 def _require_kb_if_local(scope: str) -> None:
-    """Web-only runs may proceed with an empty vault."""
-    s = (scope or "hybrid").lower()
+    """Library-only needs an indexed vault. Hybrid/web may look outside with empty memory."""
+    s = normalize_scope(scope)
     if s == "web":
         return
-    if collection_count() == 0:
-        raise HTTPException(400, "Knowledge base is empty. Ingest documents first.")
-    _require_embeddings_ready()
+    if s == "hybrid":
+        # Prefer recalling notes when present; never block outside research on an empty index.
+        _prepare_memory_index(require_docs=False)
+        return
+    _prepare_memory_index(require_docs=True)
 
 
 @app.post("/api/research")
@@ -1580,49 +1614,34 @@ def digest_notes(req: DigestRequest):
     if not (req.project_path or "").strip():
         raise HTTPException(400, "project_path is required to remember notes")
 
-    results: list[dict] = []
+    text_body = (req.text or "").strip()
+    unit_count = (1 if text_body else 0) + len(paths)
     try:
-        if (req.text or "").strip():
-            results.append(
-                digest_and_link(
-                    text=req.text,
-                    title=req.title,
-                    project_path=req.project_path,
-                    session_id=req.session_id,
-                ).to_dict()
+        if unit_count >= 2:
+            return digest_many(
+                text=req.text if text_body else None,
+                title=req.title,
+                paths=paths,
+                project_path=req.project_path,
+                session_id=req.session_id,
             )
-        for p in paths:
-            results.append(
-                digest_and_link(
-                    path=p,
-                    title=req.title,
-                    project_path=req.project_path,
-                    session_id=req.session_id,
-                ).to_dict()
-            )
+        if text_body:
+            return digest_and_link(
+                text=req.text,
+                title=req.title,
+                project_path=req.project_path,
+                session_id=req.session_id,
+            ).to_dict()
+        return digest_and_link(
+            path=paths[0],
+            title=req.title,
+            project_path=req.project_path,
+            session_id=req.session_id,
+        ).to_dict()
     except FileNotFoundError as e:
         raise HTTPException(404, str(e)) from e
     except ValueError as e:
         raise HTTPException(400, str(e)) from e
-
-    if len(results) == 1:
-        return results[0]
-
-    created = sum(int(r.get("claims_created") or 0) for r in results)
-    revised = sum(int(r.get("claims_revised") or 0) for r in results)
-    dropped = sum(int(r.get("claims_dropped") or 0) for r in results)
-    return {
-        "saved_path": results[-1].get("saved_path") if results else None,
-        "content_hash": results[-1].get("content_hash") if results else "",
-        "idempotent": all(bool(r.get("idempotent")) for r in results) if results else False,
-        "claims_created": created,
-        "claims_revised": revised,
-        "claims_dropped": dropped,
-        "linked_sources": [s for r in results for s in (r.get("linked_sources") or [])],
-        "open_questions": [],
-        "summary": " · ".join(r.get("summary") or "" for r in results if r.get("summary")),
-        "results": results,
-    }
 
 
 def _model_card_view(model: ModelCard) -> dict:
@@ -1739,7 +1758,9 @@ def get_settings():
     else:
         llm_configured = _has("LLM_API_KEY")
 
-    public_values = {k: v for k, v in env.items() if k not in _HIDDEN_ENV_KEYS}
+    public_values = {
+        k: v for k, v in env.items() if k in ENV_KEYS and k not in _HIDDEN_ENV_KEYS
+    }
 
     return {
         "values": public_values,
@@ -1762,9 +1783,14 @@ def update_settings(req: SettingsUpdate):
         if k in ENV_KEYS and k not in _HIDDEN_ENV_KEYS
     }
     _write_env(allowed)
-    return {"updated": list(allowed.keys()), "values": {
-        k: v for k, v in _read_env().items() if k not in _HIDDEN_ENV_KEYS
-    }}
+    return {
+        "updated": list(allowed.keys()),
+        "values": {
+            k: v
+            for k, v in _read_env().items()
+            if k in ENV_KEYS and k not in _HIDDEN_ENV_KEYS
+        },
+    }
 
 
 def _format_retrieval_results(docs) -> list[dict]:
@@ -1784,18 +1810,18 @@ def _format_retrieval_results(docs) -> list[dict]:
 
 @app.post("/api/vault/search")
 def vault_search(req: VaultSearchRequest):
-    if collection_count() == 0:
-        raise HTTPException(400, "Knowledge base is empty. Ingest documents first.")
-    _require_embeddings_ready()
+    count = _prepare_memory_index(require_docs=False)
+    if count == 0:
+        return {"query": req.query, "results": []}
     docs = retrieve(req.query, top_k=req.top_k)
     return {"query": req.query, "results": _format_retrieval_results(docs)}
 
 
 @app.post("/api/vault/related")
 def vault_related(req: VaultRelatedRequest):
-    if collection_count() == 0:
+    count = _prepare_memory_index(require_docs=False)
+    if count == 0:
         return {"query": req.text, "results": []}
-    _require_embeddings_ready()
     docs = retrieve(req.text, top_k=req.top_k)
     return {"query": req.text, "results": _format_retrieval_results(docs)}
 

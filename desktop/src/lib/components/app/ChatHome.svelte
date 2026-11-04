@@ -49,15 +49,9 @@
     void assistant.activeSessionId;
     assistant.ensureManagerOpener(workspace.channelEmpty);
   });
-
-  $effect(() => {
-    const path = workspace.activeTopicPath;
-    if (!path || !app.isHome) return;
-    void assistant.ensureUnfiledNotesRemembered(path);
-  });
 </script>
 
-<div class="chat-home">
+<div class="chat-home" data-chrome-layer>
   <div class="thread-col">
     <ChatHeader
       chatTitle={chatTitle}

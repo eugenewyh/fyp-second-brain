@@ -7,6 +7,7 @@
   import AgentRunBlock from "./AgentRunBlock.svelte";
   import { markdownBodyToHtml } from "$lib/vault/markdown";
   import { formatDigestSummary } from "$lib/assistant/transparency";
+  import { formatWorkedDuration } from "$lib/assistant/elapsed";
   import { shouldAutoResearch } from "$lib/assistant/intent";
   import FailRetry from "./FailRetry.svelte";
 
@@ -29,9 +30,31 @@
   }: Props = $props();
 
   const routeStatus = $derived(assistant.routeStatus);
+  let nowMs = $state(Date.now());
+
+  $effect(() => {
+    if (routeStatus !== "teach" && !assistant.digestLoading) return;
+    nowMs = Date.now();
+    const id = setInterval(() => {
+      nowMs = Date.now();
+    }, 1000);
+    return () => clearInterval(id);
+  });
+
+  const learnElapsed = $derived.by(() => {
+    if (routeStatus !== "teach") return null;
+    const running = assistant.getActiveThread().find(
+      (t) => t.kind === "digest" && t.status === "running" && t.runStartedAt,
+    );
+    if (!running || running.kind !== "digest" || !running.runStartedAt) return null;
+    return formatWorkedDuration(nowMs - running.runStartedAt);
+  });
+
   const routeCopy = $derived(
     routeStatus === "teach"
-      ? "Remembering"
+      ? learnElapsed
+        ? `Learning · ${learnElapsed}`
+        : "Learning"
       : routeStatus === "explain"
         ? "Asking from memory"
         : routeStatus === "lookup"
@@ -249,12 +272,20 @@
                 {@const fileName = turn.savedPath
                   ? turn.savedPath.split(/[\\/]/).pop()
                   : null}
+                {@const workedMs =
+                  turn.runStartedAt != null
+                    ? turn.status === "running"
+                      ? nowMs - turn.runStartedAt
+                      : (turn.runEndedAt ?? nowMs) - turn.runStartedAt
+                    : null}
+                {@const workedLabel =
+                  workedMs != null ? `Worked for ${formatWorkedDuration(workedMs)}` : null}
                 {@const headline =
                   turn.status === "running"
-                    ? turn.label || "Remembering…"
+                    ? turn.label || "Learning…"
                     : turn.summary ||
                       turn.label ||
-                      (turn.idempotent ? "Already in memory" : "Remembered")}
+                      (turn.idempotent ? "Already in memory" : "Learned")}
                 {@const metaLine = formatDigestSummary({
                   created: turn.claimsCreated ?? 0,
                   revised: turn.claimsRevised ?? 0,
@@ -273,15 +304,23 @@
                     >
                       {headline}
                     </p>
-                    {#if turn.status !== "running"}
+                    {#if turn.status === "running" && workedLabel}
+                      <p class="digest-sub">
+                        <span>{workedLabel}</span>
+                      </p>
+                    {:else if turn.status !== "running"}
                       <p class="digest-sub">
                         <span>
                           {turn.idempotent
                             ? "Already in memory"
-                            : metaLine && metaLine !== "Remembered"
+                            : metaLine && metaLine !== "Learned"
                               ? metaLine
                               : "Saved to memory"}
                         </span>
+                        {#if workedLabel}
+                          <span class="digest-dot" aria-hidden="true">·</span>
+                          <span>{workedLabel}</span>
+                        {/if}
                         {#if fileName}
                           <span class="digest-dot" aria-hidden="true">·</span>
                           <button

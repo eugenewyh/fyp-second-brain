@@ -34,7 +34,6 @@ from second_brain.memory.learning import (
     project_memory_root,
     update_agent_session_memory,
 )
-from second_brain.memory.recall import recall_for_query
 
 logger = logging.getLogger(__name__)
 
@@ -213,8 +212,11 @@ def extract_sourced_claims(
     text: str,
     *,
     neighbors: list[ClaimCard] | None = None,
+    limit: int | None = None,
 ) -> list[SourcedClaim]:
-    """Fast-LLM extract; drop unverifiable quotes. Cap at MAX_CLAIMS."""
+    """Fast-LLM extract; drop unverifiable quotes. Cap at `limit` (default MAX_CLAIMS)."""
+    cap = MAX_CLAIMS if limit is None else max(1, min(int(limit), 24))
+    lo = min(3, cap)
     neighbor_block = ""
     if neighbors:
         lines = [f"- {c.claim}" for c in neighbors[:8] if c.claim]
@@ -225,7 +227,7 @@ def extract_sourced_claims(
                 + "\n\n"
             )
     prompt = (
-        "Extract 3 to 7 atomic factual claims from the note. "
+        f"Extract {lo} to {cap} atomic factual claims from the note. "
         "Write each claim as a plain factual sentence a non-expert can read. "
         "Do not introduce field jargon the source does not use. "
         "Each claim MUST include a verbatim source_quote copied from the note. "
@@ -264,7 +266,7 @@ def extract_sourced_claims(
         if len(claim) > 220:
             claim = claim[:217] + "…"
         sourced.append(SourcedClaim(claim=claim, source_quote=quote[:400]))
-        if len(sourced) >= MAX_CLAIMS:
+        if len(sourced) >= cap:
             break
 
     if not sourced:
@@ -274,7 +276,7 @@ def extract_sourced_claims(
     for item in sourced:
         if quote_in_source(item.source_quote, text):
             verified.append(item)
-        if len(verified) >= MAX_CLAIMS:
+        if len(verified) >= cap:
             break
     return verified
 
@@ -349,6 +351,58 @@ def _neighbor_claims(text: str, project_path: str | None) -> list[ClaimCard]:
     return list_claims(project_path, status="active")[:8]
 
 
+def _ingest_paths(paths: list[Path]) -> None:
+    seen: set[str] = set()
+    for path in paths:
+        key = str(path.resolve()) if path.exists() else str(path)
+        if key in seen:
+            continue
+        seen.add(key)
+        try:
+            ingest_file(path)
+        except Exception:
+            logger.debug("Ingest failed for %s", path, exc_info=True)
+
+
+def _collect_claim_ingest_paths(
+    upsert: Any,
+    *,
+    project_path: str | None,
+) -> list[Path]:
+    paths: list[Path] = []
+    for card in upsert.all_cards:
+        if card.path:
+            paths.append(Path(card.path))
+    superseded_ids = {c.supersedes for c in upsert.revised if c.supersedes}
+    if superseded_ids:
+        for old in list_claims(project_path, status=None):
+            if old.id in superseded_ids and old.path:
+                paths.append(Path(old.path))
+    return paths
+
+
+def _digest_summary(
+    *,
+    idempotent: bool,
+    created: int,
+    revised: int,
+    unchanged_count: int,
+    extracted: list[SourcedClaim],
+) -> str:
+    summary_bits: list[str] = []
+    if idempotent:
+        summary_bits.append("Already remembered this dump")
+    if created:
+        summary_bits.append(f"{created} new claim" + ("s" if created != 1 else ""))
+    if revised:
+        summary_bits.append(f"{revised} revised")
+    if unchanged_count:
+        summary_bits.append(f"{unchanged_count} unchanged")
+    if not extracted:
+        summary_bits.append("No sourced claims (quotes did not verify)")
+    return " · ".join(summary_bits) or "Remembered"
+
+
 def digest_and_link(
     *,
     text: str | None = None,
@@ -386,6 +440,14 @@ def digest_and_link(
     if prior and prior.get("path"):
         existing = Path(str(prior["path"]))
         if existing.is_file():
+            claim_ids = prior.get("claim_ids") or []
+            if claim_ids:
+                return DigestResult(
+                    saved_path=str(existing.resolve()),
+                    content_hash=digest_hash,
+                    idempotent=True,
+                    summary="Already remembered this dump",
+                )
             saved = existing
             idempotent = True
         else:
@@ -405,31 +467,15 @@ def digest_and_link(
             digest_hash=digest_hash,
         )
 
-    if ingest:
-        try:
-            ingest_file(saved)
-        except Exception:
-            logger.exception("Ingest failed for %s", saved)
-    else:
+    if not ingest:
         try:
             ensure_section_summaries(saved, project_path=project_path or infer_project_from_source(saved))
         except Exception:
             logger.debug("Section summaries skipped for %s", saved, exc_info=True)
 
-    try:
-        recall_for_query(
-            body[:400],
-            project_path=project_path,
-            session_id=session_id,
-            top_k=4,
-        )
-    except Exception:
-        logger.debug("Digest recall skipped", exc_info=True)
-
     neighbors = _neighbor_claims(body, project_path)
     extracted = extract_sourced_claims(body, neighbors=neighbors)
     dropped = 0
-    # extract_sourced_claims already drops unverifiable; count raw heuristic overflow as dropped
     if len(extracted) > MAX_CLAIMS:
         dropped += len(extracted) - MAX_CLAIMS
         extracted = extracted[:MAX_CLAIMS]
@@ -441,7 +487,7 @@ def digest_and_link(
         source_path=str(saved.resolve()),
         content_hash=digest_hash,
         neighbors=neighbors,
-        ingest=ingest,
+        ingest=False,
     )
 
     slugs = [c.slug for c in upsert.all_cards if c.slug]
@@ -451,26 +497,16 @@ def digest_and_link(
         if stem:
             linked_stems.append(stem)
     _replace_linked_section(saved, slugs, linked_stems[:8])
-    if ingest and saved.suffix.lower() in {".md", ".txt"}:
-        try:
-            ingest_file(saved)
-        except Exception:
-            logger.debug("Re-ingest after Linked section failed", exc_info=True)
 
     created = len(upsert.created)
     revised = len(upsert.revised)
-    summary_bits = []
-    if idempotent:
-        summary_bits.append("Already remembered this dump")
-    if created:
-        summary_bits.append(f"{created} new claim" + ("s" if created != 1 else ""))
-    if revised:
-        summary_bits.append(f"{revised} revised")
-    if upsert.unchanged:
-        summary_bits.append(f"{len(upsert.unchanged)} unchanged")
-    if not extracted:
-        summary_bits.append("No sourced claims (quotes did not verify)")
-    summary = " · ".join(summary_bits) or "Remembered"
+    summary = _digest_summary(
+        idempotent=idempotent,
+        created=created,
+        revised=revised,
+        unchanged_count=len(upsert.unchanged),
+        extracted=extracted,
+    )
 
     card = LearningCard(
         id="digest",
@@ -481,25 +517,28 @@ def digest_and_link(
         session_id=_safe_session_id(session_id),
         project_path=project_path,
     )
+    project_md: Path | None = None
     try:
-        consolidate_project_memory(
+        project_md = consolidate_project_memory(
             card,
             project_path=project_path,
             session_id=session_id,
             claim_slugs=slugs,
-            ingest=ingest,
+            ingest=False,
+            polish=False,
         )
     except Exception:
         logger.exception("project.md consolidate failed after digest")
+    session_md: Path | None = None
     sid = _safe_session_id(session_id)
     if sid:
         try:
-            update_agent_session_memory(
+            session_md = update_agent_session_memory(
                 card,
                 project_path=project_path,
                 session_id=sid,
                 claim_slugs=slugs,
-                ingest=ingest,
+                ingest=False,
             )
         except Exception:
             logger.exception("chat memory.md update failed after digest")
@@ -510,6 +549,14 @@ def digest_and_link(
         "updated": datetime.now(timezone.utc).isoformat(),
     }
     _save_index(project_path, index)
+
+    if ingest:
+        to_ingest = [saved, *_collect_claim_ingest_paths(upsert, project_path=project_path)]
+        if project_md is not None:
+            to_ingest.append(project_md)
+        if session_md is not None:
+            to_ingest.append(session_md)
+        _ingest_paths(to_ingest)
 
     return DigestResult(
         saved_path=str(saved.resolve()),
@@ -523,6 +570,279 @@ def digest_and_link(
         summary=summary,
         claim_slugs=slugs,
     )
+
+
+@dataclass
+class _DumpUnit:
+    body: str
+    title: str | None
+    source_path: Path | None
+    digest_hash: str
+    saved: Path
+    idempotent: bool
+    early: DigestResult | None = None
+
+
+def digest_many(
+    *,
+    text: str | None = None,
+    title: str | None = None,
+    paths: list[str] | None = None,
+    project_path: str | None = None,
+    session_id: str | None = None,
+    ingest: bool = True,
+) -> dict[str, Any]:
+    """Batch remember: one claim extract across dumps, one consolidate, batch ingest."""
+    if not has_topic_path(project_path):
+        raise ValueError("project_path is required to remember notes")
+
+    units: list[_DumpUnit] = []
+    body_text = (text or "").strip()
+    if body_text:
+        units.append(
+            _prepare_dump_unit(
+                body=body_text,
+                title=title,
+                source_path=None,
+                project_path=project_path,
+            )
+        )
+    for raw in paths or []:
+        source_path = Path(raw).expanduser()
+        if is_memory_trace_path(source_path):
+            raise ValueError("Refusing to digest memory or research traces")
+        if not source_path.is_file():
+            raise FileNotFoundError(f"Not a file: {source_path}")
+        suffix = source_path.suffix.lower()
+        if suffix not in SUPPORTED_EXTENSIONS:
+            raise ValueError(f"Unsupported file type: {suffix}")
+        loaded = _load_text(source_path)
+        if not loaded.strip():
+            continue
+        units.append(
+            _prepare_dump_unit(
+                body=loaded,
+                title=title,
+                source_path=source_path,
+                project_path=project_path,
+            )
+        )
+
+    if not units:
+        raise ValueError("Nothing to remember — provide text or a file path")
+
+    early_results = [u.early for u in units if u.early is not None]
+    work = [u for u in units if u.early is None]
+    if not work:
+        return _aggregate_digest_results(early_results)
+
+    combined_parts = [f"# {u.saved.stem}\n{u.body[:3000]}" for u in work]
+    combined = "\n\n---\n\n".join(combined_parts)[:12000]
+    neighbors = _neighbor_claims(combined, project_path)
+    batch_cap = min(MAX_CLAIMS * len(work), 24)
+    extracted = extract_sourced_claims(combined, neighbors=neighbors, limit=batch_cap)
+
+    # Assign each claim to the first dump whose body contains the quote
+    by_dump: list[list[SourcedClaim]] = [[] for _ in work]
+    for item in extracted:
+        assigned = False
+        for i, unit in enumerate(work):
+            if quote_in_source(item.source_quote, unit.body):
+                by_dump[i].append(item)
+                assigned = True
+                break
+        if not assigned:
+            by_dump[0].append(item)
+
+    index = _load_index(project_path)
+    by_hash: dict[str, Any] = index.setdefault("by_hash", {})
+    results: list[DigestResult] = list(early_results)
+    all_slugs: list[str] = []
+    to_ingest: list[Path] = []
+    linked_stems_all: list[str] = []
+
+    for unit, claims in zip(work, by_dump):
+        upsert = upsert_sourced_claims(
+            claims,
+            project_path=project_path,
+            session_id=session_id,
+            source_path=str(unit.saved.resolve()),
+            content_hash=unit.digest_hash,
+            neighbors=neighbors,
+            ingest=False,
+        )
+        slugs = [c.slug for c in upsert.all_cards if c.slug]
+        all_slugs.extend(slugs)
+        linked_stems: list[str] = []
+        for c in neighbors:
+            stem = Path(c.path).stem if c.path else c.slug
+            if stem:
+                linked_stems.append(stem)
+        linked_stems_all.extend(linked_stems[:8])
+        _replace_linked_section(unit.saved, slugs, linked_stems[:8])
+        to_ingest.append(unit.saved)
+        to_ingest.extend(_collect_claim_ingest_paths(upsert, project_path=project_path))
+
+        created = len(upsert.created)
+        revised = len(upsert.revised)
+        summary = _digest_summary(
+            idempotent=unit.idempotent,
+            created=created,
+            revised=revised,
+            unchanged_count=len(upsert.unchanged),
+            extracted=claims,
+        )
+        by_hash[unit.digest_hash] = {
+            "path": str(unit.saved.resolve()),
+            "claim_ids": [c.id for c in upsert.all_cards],
+            "updated": datetime.now(timezone.utc).isoformat(),
+        }
+        results.append(
+            DigestResult(
+                saved_path=str(unit.saved.resolve()),
+                content_hash=unit.digest_hash,
+                idempotent=unit.idempotent,
+                claims_created=created,
+                claims_revised=revised,
+                claims_dropped=0,
+                linked_sources=linked_stems[:8],
+                open_questions=[],
+                summary=summary,
+                claim_slugs=slugs,
+            )
+        )
+
+    _save_index(project_path, index)
+
+    aggregate_summary = " · ".join(r.summary for r in results if r.summary) or "Remembered"
+    card = LearningCard(
+        id="digest",
+        query=title or (work[0].saved.stem if work else "notes"),
+        summary=aggregate_summary,
+        open_questions=[],
+        confidence=0.55,
+        session_id=_safe_session_id(session_id),
+        project_path=project_path,
+    )
+    try:
+        project_md = consolidate_project_memory(
+            card,
+            project_path=project_path,
+            session_id=session_id,
+            claim_slugs=all_slugs,
+            ingest=False,
+            polish=False,
+        )
+        to_ingest.append(project_md)
+    except Exception:
+        logger.exception("project.md consolidate failed after digest_many")
+    sid = _safe_session_id(session_id)
+    if sid:
+        try:
+            session_md = update_agent_session_memory(
+                card,
+                project_path=project_path,
+                session_id=sid,
+                claim_slugs=all_slugs,
+                ingest=False,
+            )
+            to_ingest.append(session_md)
+        except Exception:
+            logger.exception("chat memory.md update failed after digest_many")
+
+    if ingest:
+        _ingest_paths(to_ingest)
+    else:
+        for unit in work:
+            try:
+                ensure_section_summaries(
+                    unit.saved,
+                    project_path=project_path or infer_project_from_source(unit.saved),
+                )
+            except Exception:
+                logger.debug("Section summaries skipped for %s", unit.saved, exc_info=True)
+
+    return _aggregate_digest_results(results)
+
+
+def _prepare_dump_unit(
+    *,
+    body: str,
+    title: str | None,
+    source_path: Path | None,
+    project_path: str | None,
+) -> _DumpUnit:
+    digest_hash = content_hash(body)
+    index = _load_index(project_path)
+    by_hash: dict[str, Any] = index.setdefault("by_hash", {})
+    prior = by_hash.get(digest_hash) if isinstance(by_hash.get(digest_hash), dict) else None
+    idempotent = False
+
+    if prior and prior.get("path"):
+        existing = Path(str(prior["path"]))
+        if existing.is_file():
+            claim_ids = prior.get("claim_ids") or []
+            if claim_ids:
+                return _DumpUnit(
+                    body=body,
+                    title=title,
+                    source_path=source_path,
+                    digest_hash=digest_hash,
+                    saved=existing.resolve(),
+                    idempotent=True,
+                    early=DigestResult(
+                        saved_path=str(existing.resolve()),
+                        content_hash=digest_hash,
+                        idempotent=True,
+                        summary="Already remembered this dump",
+                    ),
+                )
+            saved = existing.resolve()
+            idempotent = True
+            return _DumpUnit(
+                body=body,
+                title=title,
+                source_path=source_path,
+                digest_hash=digest_hash,
+                saved=saved,
+                idempotent=idempotent,
+            )
+
+    saved = _place_dump(
+        body=body,
+        title=title,
+        source_path=source_path,
+        project_path=project_path,
+        digest_hash=digest_hash,
+    )
+    return _DumpUnit(
+        body=body,
+        title=title,
+        source_path=source_path,
+        digest_hash=digest_hash,
+        saved=saved,
+        idempotent=False,
+    )
+
+
+def _aggregate_digest_results(results: list[DigestResult]) -> dict[str, Any]:
+    if len(results) == 1:
+        return results[0].to_dict()
+    created = sum(r.claims_created for r in results)
+    revised = sum(r.claims_revised for r in results)
+    dropped = sum(r.claims_dropped for r in results)
+    return {
+        "saved_path": results[-1].saved_path if results else None,
+        "content_hash": results[-1].content_hash if results else "",
+        "idempotent": all(r.idempotent for r in results) if results else False,
+        "claims_created": created,
+        "claims_revised": revised,
+        "claims_dropped": dropped,
+        "linked_sources": [s for r in results for s in r.linked_sources],
+        "open_questions": [],
+        "summary": " · ".join(r.summary for r in results if r.summary),
+        "results": [r.to_dict() for r in results],
+    }
 
 
 def _place_dump(

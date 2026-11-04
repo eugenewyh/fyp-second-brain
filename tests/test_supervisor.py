@@ -105,6 +105,26 @@ def test_research_allowed_with_research_intent_and_zero_matches():
     assert apply_policy("refuse", text=text, matching_claim_count=0) == "research"
 
 
+def test_do_a_research_on_counts_as_research_intent():
+    from second_brain.agent.policy import has_research_intent
+
+    text = (
+        "do a research on how to make espresso at home. "
+        "Cover grind and dose, steaming milk, and what I'd buy next."
+    )
+    assert has_research_intent(text)
+    assert has_research_intent("please research oat milk steaming")
+    assert has_research_intent("research on specialty roasting")
+    assert has_research_intent("research this")
+    assert has_research_intent("research that for me")
+    assert has_research_intent("can you research water hardness targets")
+    assert has_research_intent("Research the latest dial-in methods")
+    assert research_allowed(text, matching_claim_count=0) is True
+    assert apply_policy("answer", text=text, matching_claim_count=4) == "research"
+    assert apply_policy("answer", text="research this", matching_claim_count=0) == "research"
+    assert apply_policy("answer", text="research that", matching_claim_count=3) == "research"
+
+
 def test_forced_ask_on_empty_still_refuses():
     assert apply_policy(
         "answer",
@@ -165,6 +185,29 @@ def test_learn_intent_on_empty_routes_to_research():
     assert apply_policy("file", text=q, matching_claim_count=5) == "answer"
     assert apply_policy("answer", text=q, matching_claim_count=0) == "research"
     assert fallback_job(text=q, matching_claim_count=5) == "answer"
+
+
+def test_teach_intent_learn_this_files():
+    from second_brain.agent.policy import has_teach_intent, has_learn_intent
+
+    assert has_teach_intent("learn this")
+    assert has_teach_intent("remember that")
+    assert has_teach_intent("please save this")
+    assert has_teach_intent("teach this")
+    assert not has_learn_intent("learn this")
+    assert not has_teach_intent("teach me about espresso")
+    assert apply_policy("answer", text="learn this", matching_claim_count=0) == "file"
+    assert apply_policy("research", text="remember this dump", matching_claim_count=3) == "file"
+    assert fallback_job(text="learn this", matching_claim_count=0) == "file"
+
+
+def test_direct_question_defaults_to_ask_when_notes_exist():
+    q = "What grind size should I use for espresso?"
+    assert apply_policy("research", text=q, matching_claim_count=4) == "answer"
+    assert apply_policy("file", text=q, matching_claim_count=4) == "answer"
+    assert fallback_job(text=q, matching_claim_count=4) == "answer"
+    # Empty topic still looks outside for a general question
+    assert apply_policy("answer", text=q, matching_claim_count=0) == "research"
 
 
 def test_learn_intent_skips_llm_when_notes_match(matching_recall, monkeypatch):
@@ -243,9 +286,21 @@ def test_ambiguous_falls_back_to_llm(matching_recall, monkeypatch):
 
     monkeypatch.setattr("second_brain.agent.router.turn.local_model.route_job", lambda *_a, **_k: (None, "", 0.0))
     monkeypatch.setattr("second_brain.agent.router.turn.llm_router.llm_choose", fake_choose)
-    decision = decide_act("What about the checkpoint?", project_path="/vault/dlm")
+    # Non-question fragment — not teach/research/notes — so rules defer to the model.
+    decision = decide_act("checkpoint follow-up", project_path="/vault/dlm")
     assert calls["n"] == 1
     assert decision.job == "answer"
+
+
+def test_direct_question_skips_llm_when_notes_match(matching_recall, monkeypatch):
+    def boom(*_a, **_k):
+        raise AssertionError("direct questions with notes must skip the LLM")
+
+    monkeypatch.setattr("second_brain.agent.router.turn.local_model.route_job", boom)
+    monkeypatch.setattr("second_brain.agent.router.turn.llm_router.llm_choose", boom)
+    decision = decide_act("What about the checkpoint?", project_path="/vault/dlm")
+    assert decision.job == "answer"
+    assert decision.reason == "direct question from notes"
 
 
 def test_forced_job_skips_llm(matching_recall, monkeypatch):

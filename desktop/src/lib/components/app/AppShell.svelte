@@ -3,13 +3,8 @@
   import { app } from "$lib/stores/app.svelte";
   import { workspace } from "$lib/stores/workspace.svelte";
   import { connection } from "$lib/stores/connection.svelte";
-  import { assistant } from "$lib/stores/assistant.svelte";
-  import { tabs } from "$lib/stores/tabs.svelte";
-  import Sidebar from "./Sidebar.svelte";
   import MemorySidebar from "./MemorySidebar.svelte";
   import DocumentView from "./DocumentView.svelte";
-  import ChatHome from "./ChatHome.svelte";
-  import WatchHome from "./WatchHome.svelte";
   import MemoryHome from "./MemoryHome.svelte";
   import KnowledgePanel from "./KnowledgePanel.svelte";
   import AppSheet from "./AppSheet.svelte";
@@ -40,23 +35,8 @@
     void currentUser().catch(() => {});
 
     workspace.init();
-    void connection.connect().then((ok) => {
-      if (ok) void assistant.loadHarnessDefaults();
-    });
-
-    void workspace.ensureProjects().then(() => {
-      tabs.pruneMissingSessions();
-      if (workspace.activeTopicPath) {
-        tabs.ensureWorkspaceView();
-      } else if (Object.keys(assistant.sessions).length === 0 && app.isHome) {
-        tabs.newWorkspaceChat();
-      } else if (assistant.activeSessionId) {
-        tabs.ensureSessionTab(assistant.activeSessionId);
-      }
-    });
-
-    // Respect persisted knowledge-panel preference (default: open on first run)
-    // workspace.knowledgePanelOpen is loaded from localStorage; leave as-is.
+    void connection.connect();
+    void workspace.ensureProjects();
 
     let cleanup: (() => void) | undefined;
     void startVaultWatcher(() => {})
@@ -67,16 +47,6 @@
         /* Browser / missing Tauri IPC — UI still works without live vault watch */
       });
     return () => cleanup?.();
-  });
-
-  $effect(() => {
-    const id = assistant.activeSessionId;
-    if (id) tabs.ensureSessionTab(id);
-    tabs.pruneMissingSessions();
-  });
-
-  $effect(() => {
-    if (!app.isMemory) workspace.memoryFilesOpen = false;
   });
 
   function onKeydown(e: KeyboardEvent) {
@@ -92,7 +62,7 @@
     }
     if ((e.metaKey || e.ctrlKey) && e.key === "n") {
       e.preventDefault();
-      tabs.newWorkspaceChat();
+      app.openNewProject();
       return;
     }
     if ((e.metaKey || e.ctrlKey) && e.key === "l") {
@@ -107,7 +77,7 @@
     }
     if ((e.metaKey || e.ctrlKey) && e.key === "g") {
       e.preventDefault();
-      workspace.toggleMemoryPanel();
+      if (!app.isMemory) app.openMemory();
       return;
     }
     if (e.key === "Escape") {
@@ -115,23 +85,8 @@
         workspace.closeCommandPalette();
         return;
       }
-      if (app.isMemory && app.documentPath) {
+      if (app.documentPath) {
         app.closeDocument();
-        e.preventDefault();
-        return;
-      }
-      if (app.isMemory && !app.sheet) {
-        app.openHome();
-        e.preventDefault();
-        return;
-      }
-      if (app.isWatch && app.documentPath) {
-        app.closeDocument();
-        e.preventDefault();
-        return;
-      }
-      if (app.isWatch && !app.sheet) {
-        app.openHome();
         e.preventDefault();
         return;
       }
@@ -148,20 +103,16 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<div class="shell">
+<div class="shell" data-chrome-layer>
   <div class="body" style="--sidebar-width: {sidebarWidth}px">
-    {#if app.isMemory}
-      <MemorySidebar />
-    {:else}
-      <Sidebar />
-    {/if}
+    <MemorySidebar />
     <PaneResizer
       onResize={onSidebarResize}
       onResizeEnd={onSidebarResizeEnd}
       testId="splitter-sidebar"
     />
 
-    <div class="main-col">
+    <div class="main-col" data-chrome-layer>
       <div class="chrome-drag" data-tauri-drag-region aria-hidden="true"></div>
       <CommandPalette />
       <AppSheet />
@@ -169,12 +120,8 @@
       <div class="main-body">
         {#if app.isDocument}
           <DocumentView />
-        {:else if app.isWatch}
-          <WatchHome />
-        {:else if app.isMemory}
-          <MemoryHome />
         {:else}
-          <ChatHome />
+          <MemoryHome />
         {/if}
       </div>
     </div>

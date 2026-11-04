@@ -121,6 +121,7 @@ describe("chatSetupItems", () => {
     });
     expect(items).toHaveLength(1);
     expect(items[0]?.id).toBe("backend");
+    expect(items[0]?.label).toBe("Connecting backend");
   });
 
   it("lists workspace and AI before library on greenfield", () => {

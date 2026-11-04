@@ -1,0 +1,16 @@
+{
+  "name": "jev-job-label",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "label": "tsx label.mts",
+    "smoke": "tsx smoke.mts"
+  },
+  "dependencies": {
+    "ai": "^7.0.105",
+    "tsx": "^4.20.5"
+  }
+}

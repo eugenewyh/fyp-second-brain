@@ -115,6 +115,10 @@ export type AssistantTurn =
       error?: string;
       retryText?: string;
       retryPaths?: string[];
+      /** Wall-clock start for "Worked for …" summaries. */
+      runStartedAt?: number;
+      /** Wall-clock end when status leaves running. */
+      runEndedAt?: number;
     }
   | {
       id: string;
@@ -1995,7 +1999,7 @@ class AssistantStore {
         id: turnId,
         kind: "digest",
         status: "error",
-        label: "Remember topic notes",
+        label: "Learning topic notes",
         error: "No notes in this topic to file. Attach markdown or dump in the composer.",
       });
       this.persist();
@@ -2003,31 +2007,10 @@ class AssistantStore {
     }
     await this.runDigest({
       paths: files,
-      title: `Remember notes in ${topic.split(/[\\/]/).pop() ?? "topic"}`,
+      title: `Learning notes in ${topic.split(/[\\/]/).pop() ?? "topic"}`,
     });
     workspace.requestVaultRefresh();
   }
-
-  /**
-   * If the folder has markdown but no memory claims yet, file them once.
-   * Dropping files into the vault does not fill Ask memory until Teach runs.
-   */
-  async ensureUnfiledNotesRemembered(topicPath?: string | null): Promise<void> {
-    const topic = (topicPath ?? this.activeProjectPath() ?? "").trim();
-    if (!topic) return;
-    const key = topic.replace(/[/\\]+$/, "").toLowerCase();
-    if (this._rememberAttempted.has(key)) return;
-    try {
-      const { topicHasUnfiledNotes } = await import("$lib/vault/load");
-      if (!(await topicHasUnfiledNotes(topic))) return;
-    } catch {
-      return;
-    }
-    this._rememberAttempted.add(key);
-    await this.rememberTopicNotes(topic);
-  }
-
-  private _rememberAttempted = new Set<string>();
 
   async runDigest(opts?: {
     text?: string;
@@ -2054,8 +2037,9 @@ class AssistantStore {
 
     const label = body
       ? truncateSessionTitle(body)
-      : `Remember ${paths.map((p) => p.split(/[\\/]/).pop()).join(", ")}`;
+      : `Learning ${paths.map((p) => p.split(/[\\/]/).pop()).join(", ")}`;
     const turnId = newId();
+    const runStartedAt = Date.now();
     this.appendTurn(
       {
         id: turnId,
@@ -2064,6 +2048,7 @@ class AssistantStore {
         label,
         retryText: body || undefined,
         retryPaths: paths,
+        runStartedAt,
       },
       sid,
     );
@@ -2079,6 +2064,8 @@ class AssistantStore {
           error: "This chat is already busy.",
           retryText: body || undefined,
           retryPaths: paths,
+          runStartedAt,
+          runEndedAt: Date.now(),
         },
         sid,
       );
@@ -2111,6 +2098,8 @@ class AssistantStore {
           summary: result.summary,
           retryText: body || undefined,
           retryPaths: paths,
+          runStartedAt,
+          runEndedAt: Date.now(),
         },
         sid,
       );
@@ -2124,9 +2113,11 @@ class AssistantStore {
           kind: "digest",
           status: "error",
           label,
-          error: aborted ? "Cancelled" : e instanceof Error ? e.message : "Remember failed",
+          error: aborted ? "Cancelled" : e instanceof Error ? e.message : "Learning failed",
           retryText: body || undefined,
           retryPaths: paths,
+          runStartedAt,
+          runEndedAt: Date.now(),
         },
         sid,
       );
@@ -2137,7 +2128,7 @@ class AssistantStore {
     }
   }
 
-  /** Re-file a failed remember turn without a new user bubble. */
+  /** Re-file a failed learning turn without a new user bubble. */
   async retryDigest(turnId: string): Promise<void> {
     const located = this.locateAnyTurn(turnId);
     const sid = located?.sessionId ?? this.activeSessionId;
@@ -2148,6 +2139,7 @@ class AssistantStore {
     const paths = turn.retryPaths ?? [];
     if (!body && paths.length === 0) return;
 
+    const runStartedAt = Date.now();
     this.touchUiForSession(sid, { routeStatus: "teach" });
     this.updateTurn(
       turnId,
@@ -2158,6 +2150,8 @@ class AssistantStore {
         error: undefined,
         retryText: body || undefined,
         retryPaths: paths,
+        runStartedAt,
+        runEndedAt: undefined,
       },
       sid,
     );
@@ -2190,6 +2184,8 @@ class AssistantStore {
           summary: result.summary,
           retryText: body || undefined,
           retryPaths: paths,
+          runStartedAt,
+          runEndedAt: Date.now(),
         },
         sid,
       );
@@ -2203,9 +2199,11 @@ class AssistantStore {
           kind: "digest",
           status: "error",
           label: turn.label,
-          error: aborted ? "Cancelled" : e instanceof Error ? e.message : "Remember failed",
+          error: aborted ? "Cancelled" : e instanceof Error ? e.message : "Learning failed",
           retryText: body || undefined,
           retryPaths: paths,
+          runStartedAt,
+          runEndedAt: Date.now(),
         },
         sid,
       );
@@ -2229,7 +2227,7 @@ class AssistantStore {
       {
         id: newId(),
         kind: "manager",
-        content: `Remembered ${ideas} into #${channel} memory. Ask me about them when you're ready.`,
+        content: `Learned ${ideas} into #${channel} memory. Ask me about them when you're ready.`,
       },
       sid,
     );

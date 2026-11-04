@@ -14,6 +14,47 @@ export type WorkspaceGroup = {
   pinned: boolean;
 };
 
+export type ReconcileWorkspaceInput = {
+  folderPaths: string[];
+  activeTopicPath: string | null;
+  sessions: { id: string; projectPath: string | null }[];
+};
+
+export type ReconcileWorkspaceResult = {
+  nextActiveTopicPath: string | null;
+  orphanSessionIds: string[];
+};
+
+export function reconcileWorkspaceBindings(
+  input: ReconcileWorkspaceInput,
+): ReconcileWorkspaceResult {
+  const { folderPaths, activeTopicPath, sessions } = input;
+  const activeStillListed =
+    activeTopicPath != null &&
+    folderPaths.some((p) => pathsMatch(p, activeTopicPath));
+  const nextActiveTopicPath = activeStillListed
+    ? activeTopicPath
+    : (folderPaths[0] ?? null);
+
+  // No workspaces left: drop every chat, including unbound leftovers from older
+  // sync that reassigned deleted folders to null.
+  if (folderPaths.length === 0) {
+    return {
+      nextActiveTopicPath: null,
+      orphanSessionIds: sessions.map((s) => s.id),
+    };
+  }
+
+  const orphanSessionIds = sessions
+    .filter(
+      (s) =>
+        s.projectPath != null &&
+        !folderPaths.some((p) => pathsMatch(p, s.projectPath)),
+    )
+    .map((s) => s.id);
+  return { nextActiveTopicPath, orphanSessionIds };
+}
+
 export function pathsMatch(
   a: string | null | undefined,
   b: string | null | undefined,
