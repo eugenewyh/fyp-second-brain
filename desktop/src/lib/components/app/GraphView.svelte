@@ -37,10 +37,11 @@
 
   let hoveredId = $state<string | null>(null);
   let resizeHandler: (() => void) | null = null;
+  let resizeObserver: ResizeObserver | null = null;
   let keyHandler: ((e: KeyboardEvent) => void) | null = null;
   /** Ignore background clicks that fire in the same gesture as a node click. */
   let ignoreBackgroundUntil = 0;
-  let didFit = false;
+  let fitPending = false;
   let textColor = "#252525";
   let textMuted = "#9d9d9d";
   let labelBg = "rgba(252, 252, 252, 0.82)";
@@ -68,7 +69,7 @@
     return ids;
   });
 
-  function shortLabel(label: string, max = 18): string {
+  function shortLabel(label: string, max = 28): string {
     const t = label.trim();
     if (t.length <= max) return t;
     return t.slice(0, max - 1) + "…";
@@ -109,8 +110,8 @@
   }
 
   function nodeRadius(n: VaultGraphNode): number {
-    const base = n.type === "topic" ? 8 : 4.5;
-    return base + Math.min(7, (n.degree ?? 0) * 0.75);
+    const base = n.type === "topic" ? 12 : 7;
+    return base + Math.min(6, (n.degree ?? 0) * 0.6);
   }
 
   function hexToRgba(hex: string, alpha: number): string {
@@ -233,12 +234,12 @@
     dimmed: boolean,
     emphasized: boolean,
   ) {
-    const fadeIn = 0.85;
+    const fadeIn = 0.42;
     if (!emphasized && globalScale < fadeIn) return;
-    const labelAlpha = emphasized ? 1 : Math.min(1, (globalScale - fadeIn) / 0.45);
+    const labelAlpha = emphasized ? 1 : Math.min(1, (globalScale - fadeIn) / 0.35);
     if (labelAlpha <= 0.05) return;
 
-    const maxLen = globalScale < 1.15 && !emphasized ? 12 : 16;
+    const maxLen = emphasized ? 32 : 18;
     const label = shortLabel(n.label, maxLen);
     const fontSize = Math.max(10, 11 / Math.sqrt(Math.max(globalScale, 0.7)));
     ctx.save();
@@ -360,17 +361,7 @@
       nodes: data.nodes.map((n) => ({ ...n })),
       links: data.links.map((l) => ({ ...l })),
     });
-    if (data.nodes.length > 0 && !didFit) {
-      didFit = true;
-      // Let the force settle briefly, then frame the cluster
-      window.setTimeout(() => {
-        try {
-          graph?.zoomToFit?.(400, 72);
-        } catch {
-          /* ignore */
-        }
-      }, 350);
-    }
+    fitPending = data.nodes.length > 0;
   }
 
   function sizeGraph() {
@@ -402,7 +393,7 @@
   async function refresh() {
     loading = true;
     error = "";
-    didFit = false;
+    fitPending = true;
     try {
       const root = workspace.vaultRoot ?? (await getVaultRoot());
       workspace.vaultRoot = root;
@@ -481,13 +472,40 @@
         if (performance.now() < ignoreBackgroundUntil) return;
         closePeek();
       });
-    instance.d3Force("charge")?.strength(-280);
-    instance.d3Force("link")?.distance(90);
+    instance.warmupTicks(90).cooldownTime(1600);
+    instance.d3Force("charge")?.strength(-80);
+    instance.d3Force("link")?.distance(52);
+    instance.d3Force("group", (alpha: number) => {
+      const nodes = instance.graphData().nodes as { x?: number; y?: number; vx?: number; vy?: number }[];
+      for (const n of nodes) {
+        n.vx = (n.vx ?? 0) - (n.x ?? 0) * alpha * 0.08;
+        n.vy = (n.vy ?? 0) - (n.y ?? 0) * alpha * 0.08;
+      }
+    });
+    instance.onEngineStop(() => {
+      if (!fitPending) return;
+      fitPending = false;
+      try {
+        instance.zoomToFit(480, 96);
+      } catch {
+        /* ignore */
+      }
+    });
     graph = instance;
     sizeGraph();
     syncGraphData();
 
-    const onResize = () => sizeGraph();
+    const onResize = () => {
+      sizeGraph();
+      if (fitPending) return;
+      try {
+        instance.zoomToFit(180, 72);
+      } catch {
+        /* ignore */
+      }
+    };
+    resizeObserver = new ResizeObserver(onResize);
+    resizeObserver.observe(containerEl);
     window.addEventListener("resize", onResize);
     window.addEventListener(THEME_CHANGE_EVENT, onThemeChange);
     resizeHandler = onResize;
@@ -507,6 +525,8 @@
   });
 
   onDestroy(() => {
+    resizeObserver?.disconnect();
+    resizeObserver = null;
     memory.reset();
     window.removeEventListener(THEME_CHANGE_EVENT, onThemeChange);
     if (resizeHandler) {
@@ -622,17 +642,23 @@
   <div class="canvas-wrap">
     {#if loading && data.nodes.length === 0}
       <div class="state">
+        <span class="spinner" aria-hidden="true"></span>
         <p class="state-title">Loading vault…</p>
       </div>
     {:else if error}
       <div class="state">
+        <p class="state-kicker">Memory</p>
         <p class="state-title">Could not load graph</p>
         <p class="state-sub">{error}</p>
       </div>
     {:else if data.nodes.length === 0}
       <div class="state">
+        <p class="state-kicker">Memory</p>
         <p class="state-title">Nothing to show yet</p>
         <p class="state-sub">Add a workspace or some notes, or loosen the filters.</p>
+        <button type="button" class="state-action" onclick={() => app.openNewProject()}>
+          New workspace
+        </button>
       </div>
     {/if}
 
@@ -718,8 +744,8 @@
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    font-size: var(--text-2xs);
-    color: var(--text-muted);
+    font-size: var(--text-xs);
+    color: var(--text);
     font-weight: var(--font-medium);
   }
 
@@ -730,20 +756,61 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.3rem;
+    gap: 0.35rem;
     z-index: 3;
     pointer-events: none;
+    text-align: center;
+    padding: 1.5rem;
+  }
+
+  .state-kicker {
+    margin: 0;
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent-live);
   }
 
   .state-title {
     margin: 0;
-    font-size: var(--text-base);
+    font-size: var(--text-lg);
     font-weight: var(--font-semibold);
   }
 
   .state-sub {
     margin: 0;
+    max-width: 22rem;
     font-size: var(--text-sm);
-    color: var(--text-faint);
+    color: var(--text-muted);
+  }
+
+  .state-action {
+    pointer-events: auto;
+    margin-top: 0.45rem;
+    background: var(--accent-live);
+    color: var(--accent-on-live, var(--bg));
+    border-radius: var(--radius-md);
+    padding: 0.4rem 0.85rem;
+  }
+
+  .state-action:hover {
+    background: var(--accent-live-hover);
+  }
+
+  .spinner {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-bottom: 0.35rem;
+    border-radius: 50%;
+    border: 2px solid var(--border-subtle);
+    border-top-color: var(--accent-live);
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 </style>

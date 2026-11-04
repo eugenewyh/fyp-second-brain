@@ -13,7 +13,7 @@
     peekTypeLabel,
   } from "$lib/vault/graph-peek";
   import { vaultNodeTypeLabel } from "$lib/vault/vault-graph";
-  import { Plus, Search, Settings, X } from "@lucide/svelte";
+  import { Plus, Search, Settings, User, X } from "@lucide/svelte";
 
   const iconSize = 16;
   const iconStroke = 1.75;
@@ -29,9 +29,7 @@
 </script>
 
 <aside class="memory-sidebar" data-chrome-layer aria-label="Memory">
-  <div class="titlebar" data-tauri-drag-region></div>
-
-  <div class="mem-head">
+  <div class="titlebar" data-tauri-drag-region>
     <span class="brand">Memory</span>
     <button
       type="button"
@@ -160,7 +158,10 @@
       </button>
     {:else}
       <button type="button" class="account" onclick={() => app.openSettings("account")}>
-        Sign in
+        <span class="avatar guest" aria-hidden="true">
+          <User size={13} strokeWidth={2} />
+        </span>
+        <span class="account-name">Sign in</span>
       </button>
     {/if}
     <button
@@ -191,6 +192,12 @@
   .titlebar {
     height: var(--titlebar-height);
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    /* Room for the macOS traffic lights that sit in this band. */
+    padding: 0 0.85rem 0 4.75rem;
     -webkit-app-region: drag;
     app-region: drag;
   }
@@ -200,14 +207,6 @@
   .memory-sidebar :global(select) {
     -webkit-app-region: no-drag;
     app-region: no-drag;
-  }
-
-  .mem-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    padding: 0 0.85rem 0.65rem 1rem;
   }
 
   .section-add {
@@ -280,6 +279,15 @@
     font-weight: var(--font-semibold);
     background: var(--control-fill);
     color: var(--text);
+  }
+
+  .avatar.guest {
+    background: var(--accent-live-dim);
+    color: var(--accent-live);
+  }
+
+  .type-row:not(.off) .count {
+    color: var(--accent-live);
   }
 
   .account-name {

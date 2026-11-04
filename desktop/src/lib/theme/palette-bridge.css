@@ -70,6 +70,12 @@
 }
 
 [data-palette][data-theme="dark"] {
+  /* Sidebar sits darker than the canvas; cards sit a step above it. */
+  --pane-bg: color-mix(in oklch, var(--background) 74%, black);
+  --bg: color-mix(in oklch, var(--background) 94%, white);
+  --bg-elevated: color-mix(in oklch, var(--background) 86%, white);
+  --paper: var(--bg-elevated);
+  --border-subtle: color-mix(in oklch, var(--foreground) 16%, transparent);
   --surface-hover: color-mix(in oklch, var(--foreground) 9%, transparent);
   --selection-bg: color-mix(in oklch, var(--foreground) 9%, var(--background));
   --selection-hover: color-mix(in oklch, var(--foreground) 9%, transparent);
