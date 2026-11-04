@@ -188,19 +188,20 @@
 
   .palette-preview {
     display: flex;
-    gap: 0.35rem;
-    height: 4.5rem;
-    padding: 0.45rem;
+    gap: 0.4rem;
+    height: 5.25rem;
+    padding: 0.5rem;
     border-radius: var(--radius-md);
     background: var(--preview-bg);
-    border: 1px solid color-mix(in oklch, var(--preview-muted) 80%, transparent);
+    border: 1px solid color-mix(in oklch, var(--preview-muted) 70%, var(--preview-accent));
     overflow: hidden;
   }
 
   .preview-sidebar {
-    flex: 0 0 22%;
-    border-radius: 3px;
-    background: color-mix(in oklch, var(--preview-muted) 85%, var(--preview-bg));
+    flex: 0 0 28%;
+    border-radius: 4px;
+    background: color-mix(in oklch, var(--preview-muted) 55%, white);
+    box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--preview-accent) 45%, transparent);
   }
 
   .preview-main {
@@ -214,13 +215,14 @@
 
   .preview-line {
     display: block;
-    height: 0.35rem;
+    height: 0.4rem;
     border-radius: 999px;
-    background: color-mix(in oklch, var(--preview-muted) 70%, var(--preview-bg));
+    background: color-mix(in oklch, var(--preview-muted) 40%, white);
   }
 
   .preview-line.accent {
-    width: 55%;
+    width: 68%;
+    height: 0.5rem;
     background: var(--preview-accent);
   }
 

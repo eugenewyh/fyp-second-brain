@@ -37,7 +37,9 @@
   const displayNodes = $derived(treeForTopic(nodes, workspace.activeTopicPath));
   const topicFiles = $derived(filesForTopic(nodes, workspace.activeTopicPath));
   const recentPaths = $derived(
-    recentInTopic(workspace.recentNotePaths, workspace.activeTopicPath),
+    recentInTopic(workspace.recentNotePaths, workspace.activeTopicPath).filter(
+      (p) => p !== app.documentPath,
+    ),
   );
 
   async function refresh() {
@@ -232,7 +234,7 @@
 
 <style>
   .panel {
-    width: min(300px, 28vw);
+    width: min(240px, 22vw);
     flex-shrink: 0;
     border-left: 1px solid var(--border-subtle);
     background: var(--pane-bg);
