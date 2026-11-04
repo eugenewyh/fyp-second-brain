@@ -71,7 +71,7 @@ export function Browse() {
           onChange={(event) => setQuery(event.target.value)}
         />
       </header>
-      {error ? <p className="error">{error}</p> : null}
+      {error ? <p className="error" role="alert">{error}</p> : null}
       <main>
         <Board
           route={route}
@@ -120,6 +120,7 @@ function HomeBoard({
 }) {
   const [summary, setSummary] = useState<HomeSummary | null>(null);
   const [hits, setHits] = useState<Memory[]>([]);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let cancel = false;
@@ -132,10 +133,14 @@ function HomeBoard({
         if (!cancel) {
           setSummary(nextSummary);
           setHits(nextHits);
+          setFailed(false);
           onError("");
         }
       } catch (err) {
-        if (!cancel) onError(err instanceof Error ? err.message : "Could not load memory");
+        if (!cancel) {
+          setFailed(true);
+          onError(err instanceof Error ? err.message : "Could not load memory");
+        }
       }
     })();
     return () => {
@@ -160,6 +165,15 @@ function HomeBoard({
     );
   }
 
+  if (!summary) {
+    return (
+      <section>
+        <h1>Memory</h1>
+        {failed ? null : <p className="loading">Loading memory…</p>}
+      </section>
+    );
+  }
+
   return (
     <section>
       <h1>Memory</h1>
@@ -167,20 +181,20 @@ function HomeBoard({
         <button type="button" className="card category" onClick={() => onOpen({ name: "about" })}>
           <span className="kicker">Category</span>
           <strong>About you</strong>
-          <p>{summary?.aboutPreview ?? "Durable facts, with no topic attached."}</p>
-          <span className="count">{summary?.aboutCount ?? 0}</span>
+          <p>{summary.aboutPreview ?? "Durable facts, with no topic attached."}</p>
+          <span className="count">{summary.aboutCount} {summary.aboutCount === 1 ? "memory" : "memories"}</span>
         </button>
         <button type="button" className="card category" onClick={() => onOpen({ name: "topics" })}>
           <span className="kicker">Category</span>
           <strong>Topics</strong>
-          <p>{summary?.topicPreview ?? "Clusters that come out of real use."}</p>
-          <span className="count">{summary?.topicCount ?? 0}</span>
+          <p>{summary.topicPreview ?? "Clusters that come out of real use."}</p>
+          <span className="count">{summary.topicCount} {summary.topicCount === 1 ? "topic" : "topics"}</span>
         </button>
         <button type="button" className="card category" onClick={() => onOpen({ name: "conversations" })}>
           <span className="kicker">Category</span>
           <strong>Conversations</strong>
-          <p>{summary?.conversationPreview ?? "Which app a memory came from."}</p>
-          <span className="count">{summary?.conversationCount ?? 0}</span>
+          <p>{summary.conversationPreview ?? "Which app a memory came from."}</p>
+          <span className="count">{summary.conversationCount} {summary.conversationCount === 1 ? "app" : "apps"}</span>
         </button>
       </div>
     </section>
@@ -313,7 +327,7 @@ function TopicsBoard({
             >
               <strong>{topic.title}</strong>
               <p>{topic.preview ?? "No memories in this topic yet."}</p>
-              <span className="count">{topic.memoryCount}</span>
+              <span className="count">{topic.memoryCount} {topic.memoryCount === 1 ? "memory" : "memories"}</span>
             </button>
           ))}
         </div>
@@ -527,8 +541,8 @@ function MemoryBoard({
       <article className="card detail">
         <p className="sentence">{memory.body}</p>
         <p className="meta">
-          {memory.status}
-          {source ? ` · ${source}` : ""}
+          <span className="pill">{memory.status}</span>
+          {source ? <span className="pill">{source}</span> : null}
         </p>
         <div className="links">
           {memory.topicId && topicTitle ? (
@@ -616,7 +630,12 @@ function ConnectBoard({ onError }: { onError: (message: string) => void }) {
           <article key={app.id} className="card app-card">
             <strong>{app.name}</strong>
             <p>{app.installed ? "Installed" : "Not found"}</p>
-            <button type="button" disabled={!app.installed} onClick={() => void toggle(app)}>
+            <button
+              type="button"
+              className={app.connected ? "is-on" : ""}
+              disabled={!app.installed}
+              onClick={() => void toggle(app)}
+            >
               {app.connected ? "Connected" : "Connect"}
             </button>
           </article>

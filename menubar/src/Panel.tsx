@@ -9,6 +9,7 @@ export function Panel() {
   const [query, setQuery] = useState("");
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
+  const [ready, setReady] = useState(false);
 
   async function refresh(nextQuery = query) {
     try {
@@ -21,6 +22,8 @@ export function Panel() {
       setError("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load memory");
+    } finally {
+      setReady(true);
     }
   }
 
@@ -93,10 +96,13 @@ export function Panel() {
         </button>
       </form>
 
-      {error ? <p className="error">{error}</p> : null}
+      {error ? <p className="error" role="alert">{error}</p> : null}
 
+      <p className="kicker panel-label">Recent</p>
       <div className="list">
-        {memories.length === 0 ? (
+        {!ready ? (
+          <p className="loading">Loading memory…</p>
+        ) : memories.length === 0 ? (
           <p className="quiet">Nothing saved yet.</p>
         ) : (
           memories.map((memory) => (
