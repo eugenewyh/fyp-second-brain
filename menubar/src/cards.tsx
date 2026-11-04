@@ -19,8 +19,8 @@ export function MemoryCard({ memory, onOpen }: { memory: Memory; onOpen: () => v
     <button type="button" className="card memory-card" onClick={onOpen}>
       <p>{memory.body}</p>
       <span className="meta">
-        {memory.status}
-        {source ? ` · ${source}` : ""}
+        <span className="pill">{memory.status}</span>
+        {source ? <span className="pill">{source}</span> : null}
       </span>
     </button>
   );
@@ -30,7 +30,7 @@ export function Empty({ title, body }: { title: string; body: string }) {
   return (
     <div className="empty">
       <p className="empty-title">{title}</p>
-      <p>{body}</p>
+      <p className="quiet">{body}</p>
     </div>
   );
 }
